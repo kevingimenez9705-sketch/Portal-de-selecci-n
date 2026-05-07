@@ -941,8 +941,20 @@ async function reabrir(id) {
         ingreso: null, ingreso_nombre: ''
     }).select().single();
     if (error) { toast('Error', true); return; }
-    await sb.from('historial').insert({ busqueda_id: nueva.id, texto: `Reapertura. Anterior: ${orig.ingreso_nombre||'N/D'} (${orig.ingreso||'sin fecha'})`, fecha: new Date().toISOString() });
-    await sb.from('busquedas').update({ status: 'Sustituida' }).eq('id', id);
+    // Copiar historial anterior a la nueva búsqueda
+    const historialAnterior = orig.historial.map(h => ({
+        busqueda_id: nueva.id,
+        texto: h.texto,
+        fecha: new Date().toISOString()
+    }));
+    historialAnterior.push({
+        busqueda_id: nueva.id,
+        texto: `Reapertura. Anterior ingresó: ${orig.ingreso_nombre||'N/D'} (${orig.ingreso||'sin fecha'})`,
+        fecha: new Date().toISOString()
+    });
+    await sb.from('historial').insert(historialAnterior);
+    // La original queda Cerrada
+    await sb.from('busquedas').update({ status: 'Cerrada' }).eq('id', id);
     await loadData(); renderTable(); toast('Búsqueda reabierta ✓');
 }
 async function eliminar(id) {
