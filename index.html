@@ -663,7 +663,7 @@ function renderTable() {
                 <div style="font-size:11px;color:var(--muted);margin-top:2px">${b.depto} · <span style="padding:1px 5px;border-radius:3px;background:${b.tipo==='Staff'?'#cfe2ff':'#d1e7dd'};color:${b.tipo==='Staff'?'#0a367a':'#0a3622'};font-weight:700">${b.tipo}</span></div>
                 <div style="margin-top:6px;font-size:12px">
                     Selector:
-                    ${isLocked ? `<strong>${b.selector}</strong>` : `<select class="inline-select" onchange="updateField(${b.id},'selector',this.value)">${['Agustín','Agustina','Facundo','Mariano','Emiliano'].map(s=>`<option ${b.selector===s?'selected':''}>${s}</option>`).join('')}</select>`}
+                    ${isLocked ? `<strong>${b.selector}</strong>` : `<select class="inline-select" onchange="updateField(${b.id},'selector',this.value)">${['Vagioleth','Silvina','Juan','Magali','Soledad'].map(s=>`<option ${b.selector===s?'selected':''}>${s}</option>`).join('')}</select>`}
                 </div>
                 <div style="margin-top:4px;font-size:11px;color:var(--muted)">Nivel: <strong>${b.nivel}</strong></div>
             </td>
@@ -1152,7 +1152,7 @@ function renderChartsTiempo() {
 
 function renderChartsSelectores() {
     const data={};
-    const selectores=['Agustín','Agustina','Facundo','Mariano','Emiliano'];
+    const selectores=['Vagioleth','Silvina','Juan','Magali','Soledad'];
     selectores.forEach(s=>{data[s]={total:0,cerradas:0,proceso:0,candidatos:0,psico:0,psico_realizado:0,dias:[]};});
     busquedas.forEach(b=>{
         if(!data[b.selector])return;
