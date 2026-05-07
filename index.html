@@ -483,8 +483,11 @@ async function logout() {
 //  DATA LOADING
 // ══════════════════════════════════════════════
 async function loadProfile() {
-    const { data } = await sb.from('profiles').select('*').single();
+    const { data: { user } } = await sb.auth.getUser();
+    const { data, error } = await sb.from('profiles').select('*').eq('id', user.id).single();
+    if (error) { console.error('Error cargando perfil:', error); return; }
     currentProfile = data;
+    console.log('Perfil cargado:', currentProfile);
 }
 
 async function loadData() {
