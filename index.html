@@ -280,7 +280,7 @@
                 <span class="filter-label">Filtrar:</span>
                 <select class="filter-select" id="f-selector" onchange="applyFilters()">
                     <option value="">Todos los selectores</option>
-                    <option>Soledad</option><option>Vagioleth</option><option>Juan</option><option>Magali</option><option>Silvina</option>
+                    <option>Vangioleth</option><option>Juan</option><option>Magali</option><option>Soledad</option>
                 </select>
                 <select class="filter-select" id="f-tipo" onchange="applyFilters()">
                     <option value="">Fábrica y Staff</option>
@@ -340,7 +340,7 @@
             <div class="form-group form-full"><label>Puesto / Cargo</label><input class="form-input" id="n-puesto" placeholder="Ej: Analista Contable"></div>
             <div class="form-group"><label>Selector a cargo</label>
                 <select class="form-input" id="n-selector">
-                    <option>Soledad</option><option>Vagioleth</option><option>Juan</option><option>Magali</option><option>Silvina</option>
+                    <option>Vangioleth</option><option>Juan</option><option>Magali</option><option>Soledad</option>
                 </select>
             </div>
             <div class="form-group"><label>Departamento</label><input class="form-input" id="n-depto" placeholder="Ej: Administración"></div>
@@ -401,7 +401,7 @@
             <div class="form-group"><label>Selector que lo realiza</label>
                 <select class="form-input" id="psico-selector">
                     <option value="">— Sin asignar —</option>
-                    <option>Soledad</option><option>Vagioleth</option><option>Juan</option><option>Magali</option><option>Silvina</option>
+                    <option>Vangioleth</option><option>Juan</option><option>Magali</option><option>Soledad</option>
                 </select>
             </div>
             <div class="form-group"><label>¿Quién lo realizó? (evaluador externo)</label><input class="form-input" id="psico-realizado" placeholder="Nombre del evaluador"></div>
@@ -522,8 +522,9 @@ async function initDashboard() {
     await loadData();
     document.getElementById('loading-screen').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
-    document.getElementById('sidebar-nombre').textContent = currentProfile?.nombre || '—';
-    document.getElementById('sidebar-rol').textContent = currentProfile?.rol === 'admin' ? '🔑 Administrador' : '👤 Selector';
+    const esAdmin = currentProfile?.rol === 'admin';
+    document.getElementById('sidebar-nombre').textContent = esAdmin ? '🔑 Administrador' : '👤 ' + (currentProfile?.nombre || 'Selector');
+    document.getElementById('sidebar-rol').textContent = esAdmin ? (currentProfile?.nombre || '') : 'Selector';
     renderTable();
 }
 
@@ -663,7 +664,7 @@ function renderTable() {
                 <div style="font-size:11px;color:var(--muted);margin-top:2px">${b.depto} · <span style="padding:1px 5px;border-radius:3px;background:${b.tipo==='Staff'?'#cfe2ff':'#d1e7dd'};color:${b.tipo==='Staff'?'#0a367a':'#0a3622'};font-weight:700">${b.tipo}</span></div>
                 <div style="margin-top:6px;font-size:12px">
                     Selector:
-                    ${isLocked ? `<strong>${b.selector}</strong>` : `<select class="inline-select" onchange="updateField(${b.id},'selector',this.value)">${['Vagioleth','Silvina','Juan','Magali','Soledad'].map(s=>`<option ${b.selector===s?'selected':''}>${s}</option>`).join('')}</select>`}
+                    ${isLocked ? `<strong>${b.selector}</strong>` : `<select class="inline-select" onchange="updateField(${b.id},'selector',this.value)">${['Vangioleth','Juan','Magali','Soledad'].map(s=>`<option ${b.selector===s?'selected':''}>${s}</option>`).join('')}</select>`}
                 </div>
                 <div style="margin-top:4px;font-size:11px;color:var(--muted)">Nivel: <strong>${b.nivel}</strong></div>
             </td>
@@ -749,6 +750,7 @@ function renderTable() {
                             ${['Proceso','Cerrada','Pausada'].map(s=>`<option ${b.status===s?'selected':''}>${s}</option>`).join('')}
                            </select>`}
                     ${b.status==='Cerrada' && isAdmin() ? `<button class="btn-sm" style="font-size:11px" onclick="reabrir(${b.id})"><i class="fas fa-undo" style="font-size:8px"></i> Reabrir</button>` : ''}
+                    ${b.status==='Cerrada' && !isAdmin() ? `<span style="font-size:10px;color:var(--muted);font-style:italic">Solo admin puede reabrir</span>` : ''}
                     ${isAdmin() ? `<button class="btn-sm btn-danger" onclick="eliminar(${b.id})"><i class="fas fa-trash" style="font-size:8px"></i></button>` : ''}
                 </div>
             </td>
@@ -1152,7 +1154,7 @@ function renderChartsTiempo() {
 
 function renderChartsSelectores() {
     const data={};
-    const selectores=['Vagioleth','Silvina','Juan','Magali','Soledad'];
+    const selectores=['Vangioleth','Juan','Magali','Soledad'];
     selectores.forEach(s=>{data[s]={total:0,cerradas:0,proceso:0,candidatos:0,psico:0,psico_realizado:0,dias:[]};});
     busquedas.forEach(b=>{
         if(!data[b.selector])return;
