@@ -147,13 +147,16 @@
         .estado-add-row { display: flex; gap: 5px; margin-top: 6px; }
         .estado-add-input { flex: 1; font-family: 'DM Sans', sans-serif; font-size: 12px; border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; background: #fff; color: var(--text); outline: none; }
         .estado-add-btn { background: var(--text); color: #fff; border: none; border-radius: 6px; padding: 5px 10px; font-size: 11px; cursor: pointer; font-weight: 700; white-space: nowrap; }
-        .pdf-item { display: flex; align-items: center; gap: 6px; padding: 4px 6px; background: #f8d7da22; border-radius: 5px; margin-bottom: 3px; }
-        .pdf-item-name { font-size: 11px; font-weight: 600; color: var(--red); flex: 1; cursor: pointer; }
+ 
+        /* ── CAMBIO 3: PDF de rojo a gris ── */
+        .pdf-item { display: flex; align-items: center; gap: 6px; padding: 4px 6px; background: #e5e0d822; border-radius: 5px; margin-bottom: 3px; }
+        .pdf-item-name { font-size: 11px; font-weight: 600; color: var(--muted); flex: 1; cursor: pointer; }
         .pdf-item-name:hover { text-decoration: underline; }
         .pdf-item-date { font-size: 10px; color: var(--muted); }
-        .pdf-upload-btn { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: var(--red); padding: 3px 8px; border-radius: 5px; background: #f8d7da; border: none; cursor: pointer; margin-top: 4px; }
-        .pdf-upload-btn:hover { background: #f1aeb5; }
+        .pdf-upload-btn { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: #4b5563; padding: 3px 8px; border-radius: 5px; background: #e5e7eb; border: none; cursor: pointer; margin-top: 4px; }
+        .pdf-upload-btn:hover { background: #d1d5db; }
         input[type="file"].pdf-file-input { display: none; }
+ 
         .page-tabs { display: flex; gap: 4px; margin-bottom: 24px; background: #e5e0d8; padding: 4px; border-radius: 12px; width: fit-content; }
         .page-tab { padding: 10px 22px; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; background: none; border: none; border-radius: 9px; cursor: pointer; color: var(--muted); transition: all .18s; white-space: nowrap; }
         .page-tab:hover { color: var(--text); background: rgba(255,255,255,.5); }
@@ -185,7 +188,7 @@
     </style>
 </head>
 <body>
-
+ 
 <!-- ══ LOGIN ══ -->
 <div id="login-screen">
     <div class="login-box">
@@ -199,19 +202,18 @@
         <div class="login-error" id="login-error"></div>
     </div>
 </div>
-
+ 
 <!-- ══ LOADING ══ -->
 <div id="loading-screen" class="hidden">
     <div class="spinner"></div>
     <div class="loading-txt">Cargando datos...</div>
 </div>
-
+ 
 <!-- ══ APP ══ -->
 <div id="app" class="shell hidden">
     <aside class="sidebar">
         <div class="sidebar-logo">Panel de<br>Selección</div>
         <button class="nav-btn active" id="nav-pipeline" onclick="showView('pipeline',this)"><i class="fas fa-table"></i> Pipeline</button>
-        <!-- ✅ CAMBIO 1: Estadísticas y Gráficos se ocultan para selectores vía JS en initDashboard -->
         <button class="nav-btn" id="nav-stats" onclick="showView('stats',this)"><i class="fas fa-chart-bar"></i> Estadísticas</button>
         <button class="nav-btn" id="nav-charts" onclick="showView('charts',this)"><i class="fas fa-chart-pie"></i> Gráficos</button>
         <div class="sidebar-sep"></div>
@@ -223,7 +225,7 @@
             <span id="sidebar-rol">—</span>
         </div>
     </aside>
-
+ 
     <main class="main">
         <div class="top-bar">
             <div>
@@ -232,15 +234,16 @@
             </div>
             <button class="btn-primary" onclick="openModal()"><i class="fas fa-plus"></i> Nueva Búsqueda</button>
         </div>
-
+ 
         <!-- PIPELINE -->
         <div id="view-pipeline">
             <div class="kpi-row" id="kpi-row"></div>
             <div class="filters">
                 <span class="filter-label">Filtrar:</span>
+                <!-- CAMBIO 1+2: Vagioleth corregido + Silvina agregada -->
                 <select class="filter-select" id="f-selector" onchange="applyFilters()">
                     <option value="">Todos los selectores</option>
-                    <option>Vangioleth</option><option>Juan</option><option>Magali</option><option>Soledad</option>
+                    <option>Vagioleth</option><option>Juan</option><option>Magali</option><option>Silvina</option><option>Soledad</option>
                 </select>
                 <select class="filter-select" id="f-tipo" onchange="applyFilters()">
                     <option value="">Fábrica y Staff</option>
@@ -269,7 +272,7 @@
                 </table>
             </div>
         </div>
-
+ 
         <!-- STATS -->
         <div id="view-stats" class="hidden">
             <div class="page-tabs">
@@ -279,7 +282,7 @@
             </div>
             <div id="stats-content"></div>
         </div>
-
+ 
         <!-- GRÁFICOS -->
         <div id="view-charts" class="hidden">
             <div class="page-tabs">
@@ -291,7 +294,7 @@
         </div>
     </main>
 </div>
-
+ 
 <!-- ══ MODALES ══ -->
 <div id="modal-nueva" class="modal-bg hidden">
     <div class="modal-box">
@@ -299,8 +302,9 @@
         <div class="form-row">
             <div class="form-group form-full"><label>Puesto / Cargo</label><input class="form-input" id="n-puesto" placeholder="Ej: Analista Contable"></div>
             <div class="form-group"><label>Selector a cargo</label>
+                <!-- CAMBIO 1+2: Vagioleth corregido + Silvina agregada -->
                 <select class="form-input" id="n-selector">
-                    <option>Vangioleth</option><option>Juan</option><option>Magali</option><option>Soledad</option>
+                    <option>Vagioleth</option><option>Juan</option><option>Magali</option><option>Silvina</option><option>Soledad</option>
                 </select>
             </div>
             <div class="form-group"><label>Departamento</label><input class="form-input" id="n-depto" placeholder="Ej: Administración"></div>
@@ -315,8 +319,28 @@
             </div>
             <div class="form-group"><label>Sueldo bruto (ARS)</label><input class="form-input" id="n-sueldo" type="number" placeholder="Ej: 800000"></div>
             <div class="form-group"><label>Jornada</label><input class="form-input" id="n-jornada" placeholder="Ej: Full Time, Por turnos…"></div>
+            <!-- CAMBIO 4: Nueva lista de ubicaciones -->
             <div class="form-group"><label>Ubicación</label>
-                <select class="form-input" id="n-ubicacion"><option>Oficina</option><option>Lo Pamilleo</option><option>Coanmito</option><option>Office</option><option>Planta</option></select>
+                <select class="form-input" id="n-ubicacion">
+                    <option>San Martin Empanadas</option>
+                    <option>Jamon y Queso</option>
+                    <option>Medialunas</option>
+                    <option>Extremas</option>
+                    <option>Papelera</option>
+                    <option>Procesadora</option>
+                    <option>Pastas</option>
+                    <option>Tapas 1</option>
+                    <option>Tapas 2</option>
+                    <option>Congelados</option>
+                    <option>Panificados</option>
+                    <option>San Miguel Empanadas</option>
+                    <option>San Miguel Pizzas</option>
+                    <option>Taller Mantenimiento</option>
+                    <option>Oficina San Lorenzo</option>
+                    <option>Paralelo 50</option>
+                    <option>Caamaño</option>
+                    <option>Office Park</option>
+                </select>
             </div>
             <div class="form-group"><label>Fecha de apertura</label><input class="form-input" id="n-inicio" type="date"></div>
         </div>
@@ -326,7 +350,7 @@
         </div>
     </div>
 </div>
-
+ 
 <div id="modal-cand" class="modal-bg hidden">
     <div class="modal-box" style="max-width:400px">
         <div class="modal-title">Agregar Candidato</div>
@@ -345,7 +369,7 @@
         </div>
     </div>
 </div>
-
+ 
 <div id="modal-psico" class="modal-bg hidden">
     <div class="modal-box" style="max-width:420px">
         <div class="modal-title">Agregar Psicotécnico</div>
@@ -359,9 +383,10 @@
                 </select>
             </div>
             <div class="form-group"><label>Selector que lo realiza</label>
+                <!-- CAMBIO 1+2: Vagioleth corregido + Silvina agregada -->
                 <select class="form-input" id="psico-selector">
                     <option value="">— Sin asignar —</option>
-                    <option>Vangioleth</option><option>Juan</option><option>Magali</option><option>Soledad</option>
+                    <option>Vagioleth</option><option>Juan</option><option>Magali</option><option>Silvina</option><option>Soledad</option>
                 </select>
             </div>
             <div class="form-group"><label>¿Quién lo realizó? (evaluador externo)</label><input class="form-input" id="psico-realizado" placeholder="Nombre del evaluador"></div>
@@ -373,7 +398,7 @@
         </div>
     </div>
 </div>
-
+ 
 <div id="modal-hist" class="modal-bg hidden">
     <div class="modal-box" style="max-width:380px">
         <div class="modal-title">Agregar al Historial</div>
@@ -385,23 +410,23 @@
         </div>
     </div>
 </div>
-
+ 
 <div id="toast"></div>
-
+ 
 <script>
 const SUPABASE_URL = 'https://nhlkndwwsuybnejbyigk.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5obGtuZHd3c3V5Ym5lamJ5aWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNzY5ODYsImV4cCI6MjA5Mzc1Mjk4Nn0.Xdli4VzqAKuYLkU5q8m8G6UTNda_BAaJlibROm9tGhw';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
+ 
 const DEMORA_LIMITE = { 'Gerente/Director': 45, 'Jefe/Encargado': 30, 'Otros': 15 };
 let busquedas = [];
 let filteredIds = null;
 let currentProfile = null;
 let nroSeq = 1;
-
+ 
 function isAdmin() { return currentProfile?.rol === 'admin'; }
 function today() { return new Date().toISOString().slice(0, 10); }
-
+ 
 let toastTimer;
 function toast(msg, isError = false) {
     const t = document.getElementById('toast');
@@ -410,7 +435,7 @@ function toast(msg, isError = false) {
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => t.className = '', 3000);
 }
-
+ 
 async function login() {
     const email = document.getElementById('login-email').value.trim();
     const pass  = document.getElementById('login-pass').value;
@@ -420,12 +445,12 @@ async function login() {
     if (error) { errEl.textContent = 'Email o contraseña incorrectos'; errEl.style.display = 'block'; return; }
     await initDashboard();
 }
-
+ 
 async function logout() {
     await sb.auth.signOut();
     location.reload();
 }
-
+ 
 async function loadProfile() {
     const { data: { user } } = await sb.auth.getUser();
     const { data, error } = await sb.from('profiles').select('*').eq('id', user.id).single();
@@ -433,7 +458,7 @@ async function loadProfile() {
     currentProfile = data;
     console.log('Perfil cargado:', currentProfile);
 }
-
+ 
 async function loadData() {
     const { data, error } = await sb
         .from('busquedas')
@@ -444,7 +469,7 @@ async function loadData() {
     const nums = busquedas.map(b => parseInt((b.numero || '').replace('SEL-', '')) || 0);
     nroSeq = nums.length ? Math.max(...nums) + 1 : 1;
 }
-
+ 
 function mapRow(b) {
     return {
         ...b,
@@ -455,12 +480,9 @@ function mapRow(b) {
         archivos:        (b.archivos    || []).sort((a,x)=>a.id-x.id),
     };
 }
-
+ 
 function nextNro() { return 'SEL-' + String(nroSeq++).padStart(3, '0'); }
-
-// ══════════════════════════════════════════════
-//  APP INIT
-// ══════════════════════════════════════════════
+ 
 async function initDashboard() {
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('loading-screen').classList.remove('hidden');
@@ -471,22 +493,21 @@ async function initDashboard() {
     const esAdmin = isAdmin();
     document.getElementById('sidebar-nombre').textContent = esAdmin ? '🔑 Administrador' : '👤 ' + (currentProfile?.nombre || 'Selector');
     document.getElementById('sidebar-rol').textContent = esAdmin ? (currentProfile?.nombre || '') : 'Selector';
-
-    // ✅ CAMBIO 1: Ocultar Estadísticas y Gráficos para selectores
+ 
     if (!esAdmin) {
         document.getElementById('nav-stats').classList.add('hidden');
         document.getElementById('nav-charts').classList.add('hidden');
     }
-
+ 
     renderTable();
 }
-
+ 
 async function initApp() {
     const { data: { session } } = await sb.auth.getSession();
     if (session) await initDashboard();
 }
 initApp();
-
+ 
 function daysDiff(from, to = null) {
     if (!from) return 0;
     const s = new Date(from), e = to ? new Date(to) : new Date();
@@ -518,23 +539,22 @@ function tagClass(s) {
     if (s === 'Sustituida') return 'tag-sustituida';
     return 'tag-pausada';
 }
-
+ 
 // ══════════════════════════════════════════════
 //  RENDER TABLE
 // ══════════════════════════════════════════════
 function renderTable() {
     const body = document.getElementById('table-body');
     const list = filteredIds ? busquedas.filter(b => filteredIds.includes(b.id)) : busquedas;
-    // Selector no puede editar búsquedas cerradas (solo ver + botón reabrir)
     const locked = (b) => b.status === 'Cerrada' && !isAdmin();
-
+ 
     body.innerHTML = list.map(b => {
         const dias = b.ingreso ? daysDiff(b.inicio, b.ingreso) : daysDiff(b.inicio);
         const dClass = demoraClass(dias, b.nivel);
         const limite = DEMORA_LIMITE[b.nivel] || 15;
         const isLocked = locked(b);
         const dis = isLocked ? 'disabled style="opacity:.5;pointer-events:none"' : '';
-
+ 
         // PSICO
         const psicoHtml = b.psicotecnicos.length > 0
             ? b.psicotecnicos.map(p => `
@@ -549,7 +569,7 @@ function renderTable() {
                     </span>
                 </div>`).join('')
             : `<span class="tip">Sin psicotécnicos</span>`;
-
+ 
         // CANDIDATOS
         const candHtml = b.candidatos.length > 0
             ? b.candidatos.map(c => {
@@ -589,7 +609,7 @@ function renderTable() {
                 </div>`;
               }).join('')
             : `<span class="tip">Sin candidatos enviados</span>`;
-
+ 
         // ARCHIVOS
         const archivosHtml = b.archivos.length > 0
             ? b.archivos.map(a => `
@@ -598,7 +618,7 @@ function renderTable() {
                     ${!isLocked ? `<button onclick="eliminarPDF(${a.id},'${a.url}')" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:10px">✕</button>` : ''}
                 </div>`).join('')
             : `<span class="tip">Sin archivos</span>`;
-
+ 
         return `
         <tr id="row-${b.id}" class="${isLocked?'row-locked':''}">
             <td>
@@ -615,7 +635,8 @@ function renderTable() {
                 <div style="font-size:11px;color:var(--muted);margin-top:2px">${b.depto} · <span style="padding:1px 5px;border-radius:3px;background:${b.tipo==='Staff'?'#cfe2ff':'#d1e7dd'};color:${b.tipo==='Staff'?'#0a367a':'#0a3622'};font-weight:700">${b.tipo}</span></div>
                 <div style="margin-top:6px;font-size:12px">
                     Selector:
-                    ${isLocked ? `<strong>${b.selector}</strong>` : `<select class="inline-select" onchange="updateField(${b.id},'selector',this.value)">${['Vangioleth','Juan','Magali','Soledad'].map(s=>`<option ${b.selector===s?'selected':''}>${s}</option>`).join('')}</select>`}
+                    <!-- CAMBIO 1+2: Vagioleth corregido + Silvina agregada en inline select -->
+                    ${isLocked ? `<strong>${b.selector}</strong>` : `<select class="inline-select" onchange="updateField(${b.id},'selector',this.value)">${['Vagioleth','Juan','Magali','Silvina','Soledad'].map(s=>`<option ${b.selector===s?'selected':''}>${s}</option>`).join('')}</select>`}
                 </div>
                 <div style="margin-top:4px;font-size:11px;color:var(--muted)">Nivel: <strong>${b.nivel}</strong></div>
             </td>
@@ -709,7 +730,7 @@ function renderTable() {
     renderKPIs();
     updateDeptoFilter();
 }
-
+ 
 function renderKPIs() {
     const total = busquedas.length;
     const proceso = busquedas.filter(b=>b.status==='Proceso').length;
@@ -721,7 +742,7 @@ function renderKPIs() {
         <div class="kpi"><div class="kpi-num" style="color:var(--green)">${cerradas}</div><div class="kpi-lbl">Cerradas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--red)">${vencidas}</div><div class="kpi-lbl">Fuera de plazo</div></div>`;
 }
-
+ 
 function applyFilters() {
     const sel = document.getElementById('f-selector').value;
     const tipo = document.getElementById('f-tipo').value;
@@ -738,14 +759,14 @@ function applyFilters() {
     }).map(b => b.id);
     renderTable();
 }
-
+ 
 function updateDeptoFilter() {
     const deptos = [...new Set(busquedas.map(b=>b.depto))];
     const sel = document.getElementById('f-depto');
     const cur = sel.value;
     sel.innerHTML = '<option value="">Todos los dptos.</option>' + deptos.map(d=>`<option ${d===cur?'selected':''}>${d}</option>`).join('');
 }
-
+ 
 async function updateField(id, field, val) {
     const update = { [field]: val };
     if (field === 'ingreso' && val) update.status = 'Cerrada';
@@ -753,7 +774,7 @@ async function updateField(id, field, val) {
     if (error) { toast('Error al guardar', true); return; }
     await loadData(); renderTable(); toast('Guardado ✓');
 }
-
+ 
 async function addEstadoEntry(id) {
     const input = document.getElementById('estado-input-' + id);
     const texto = input?.value.trim();
@@ -763,14 +784,13 @@ async function addEstadoEntry(id) {
     input.value = '';
     await loadData(); renderTable(); toast('Comentario agregado ✓');
 }
-
-// ✅ CAMBIO 2: removeEstadoEntry solo se puede llamar si es admin (el botón ✕ no se muestra para selectores)
+ 
 async function removeEstadoEntry(entryId) {
     if (!isAdmin()) { toast('Solo un administrador puede eliminar comentarios', true); return; }
     await sb.from('estado_log').delete().eq('id', entryId);
     await loadData(); renderTable(); toast('Eliminado');
 }
-
+ 
 function openHistModal(id) { document.getElementById('hist-bid').value = id; document.getElementById('hist-texto').value = ''; openModal('modal-hist'); }
 async function saveHist() {
     const id = +document.getElementById('hist-bid').value;
@@ -784,7 +804,7 @@ async function removeHist(histId) {
     await sb.from('historial').delete().eq('id', histId);
     await loadData(); renderTable(); toast('Eliminado');
 }
-
+ 
 function openCandModal(id) { document.getElementById('cand-bid').value = id; document.getElementById('cand-nombre').value = ''; openModal('modal-cand'); }
 async function saveCand() {
     const id = +document.getElementById('cand-bid').value;
@@ -812,7 +832,7 @@ async function updateCandEstado(candId, estado) {
     await sb.from('candidatos').update(update).eq('id', candId);
     await loadData(); renderTable(); toast('Estado actualizado ✓');
 }
-
+ 
 function openPsicoModal(id) {
     document.getElementById('psico-bid').value = id;
     ['psico-nombre','psico-realizado','psico-auth'].forEach(i => document.getElementById(i).value = '');
@@ -835,7 +855,7 @@ async function removePsico(psicoId) {
     await sb.from('psicotecnicos').delete().eq('id', psicoId);
     await loadData(); renderTable(); toast('Eliminado');
 }
-
+ 
 async function addNew() {
     const puesto = document.getElementById('n-puesto').value.trim();
     if (!puesto) { toast('Ingresá el puesto', true); return; }
@@ -857,8 +877,7 @@ async function addNew() {
     await sb.from('historial').insert({ busqueda_id: data.id, texto: 'Apertura de vacante', fecha: new Date().toISOString() });
     closeModal('modal-nueva'); await loadData(); renderTable(); toast('Búsqueda creada ✓');
 }
-
-// ✅ CAMBIO 3: reabrir() ya no requiere ser admin — cualquier usuario autenticado puede reabrir
+ 
 async function reabrir(id) {
     const orig = busquedas.find(x=>x.id===id);
     if (!orig || !confirm(`¿Reabrir búsqueda "${orig.puesto}"?`)) return;
@@ -884,14 +903,14 @@ async function reabrir(id) {
     await sb.from('busquedas').update({ status: 'Cerrada' }).eq('id', id);
     await loadData(); renderTable(); toast('Búsqueda reabierta ✓');
 }
-
+ 
 async function eliminar(id) {
     if (!isAdmin()) { toast('Solo un administrador puede eliminar búsquedas', true); return; }
     if (!confirm('¿Eliminar esta búsqueda?')) return;
     await sb.from('busquedas').delete().eq('id', id);
     await loadData(); renderTable(); toast('Búsqueda eliminada');
 }
-
+ 
 async function subirPDF(busquedaId, input) {
     const file = input.files[0];
     if (!file) return;
@@ -916,9 +935,8 @@ async function eliminarPDF(archivoId, storagePath) {
     await sb.from('archivos').delete().eq('id', archivoId);
     await loadData(); renderTable(); toast('Archivo eliminado');
 }
-
+ 
 function showView(v, btn) {
-    // Protección extra: selector no puede acceder a stats/charts aunque intente navegar
     if ((v === 'stats' || v === 'charts') && !isAdmin()) {
         toast('Acceso restringido a administradores', true);
         return;
@@ -936,7 +954,7 @@ function showView(v, btn) {
 function openModal(id='modal-nueva') { document.getElementById(id).classList.remove('hidden'); }
 function closeModal(id='modal-nueva') { document.getElementById(id).classList.add('hidden'); }
 document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.add('hidden'); }));
-
+ 
 function switchStatsTab(tab, btn) {
     document.querySelectorAll('#view-stats .page-tab').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active'); renderStats(tab);
@@ -998,12 +1016,12 @@ function renderStats(tab) {
             </div>
         </div>`;
 }
-
+ 
 let chartInstances = {};
 function destroyCharts() { Object.values(chartInstances).forEach(c=>{try{c.destroy();}catch(e){}}); chartInstances={}; }
 function switchChartsTab(tab,btn) { document.querySelectorAll('#view-charts .page-tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderCharts(tab); }
 function renderCharts(tab) { destroyCharts(); if(tab==='general') renderChartsGeneral(); else if(tab==='tiempo') renderChartsTiempo(); else if(tab==='selectores') renderChartsSelectores(); }
-
+ 
 function renderChartsGeneral() {
     const cerradas=busquedas.filter(b=>b.status==='Cerrada').length;
     const proceso=busquedas.filter(b=>b.status==='Proceso').length;
@@ -1045,7 +1063,7 @@ function renderChartsGeneral() {
     chartInstances['ubic']=new Chart(document.getElementById('ch-ubic'),{type:'polarArea',data:{labels:Object.keys(byUbic),datasets:[{data:Object.values(byUbic),backgroundColor:palette.map(c=>c+'99')}]},options:{...cd,scales:{r:{ticks:{font:{family:'DM Mono',size:9}}}}}});
     chartInstances['nivel']=new Chart(document.getElementById('ch-nivel'),{type:'bar',data:{labels:Object.keys(byNivel),datasets:[{label:'Cantidad',data:Object.values(byNivel),backgroundColor:['#ca6702cc','#005f73cc','#9b2226cc'],borderRadius:6}]},options:{...cd,plugins:{legend:{display:false}},indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{precision:0}},y:{grid:{display:false}}}}});
 }
-
+ 
 function renderChartsTiempo() {
     const cerradas=busquedas.filter(b=>b.status==='Cerrada'&&b.ingreso);
     const diasList=cerradas.map(b=>daysDiff(b.inicio,b.ingreso));
@@ -1079,10 +1097,11 @@ function renderChartsTiempo() {
     chartInstances['seltime']=new Chart(document.getElementById('ch-seltime'),{type:'bar',data:{labels:selAvg.map(s=>s.sel),datasets:[{label:'Días promedio',data:selAvg.map(s=>s.avg),backgroundColor:selAvg.map(s=>s.avg>20?'#f8d7da':'#d1e7dd'),borderColor:selAvg.map(s=>s.avg>20?'#721c24':'#0a3622'),borderWidth:2,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}});
     chartInstances['nivellib']=new Chart(document.getElementById('ch-nivellib'),{type:'bar',data:{labels:nivelAvg.map(n=>n.nivel),datasets:[{label:'Tiempo real (días)',data:nivelAvg.map(n=>n.avg),backgroundColor:'#005f73cc',borderRadius:4},{label:'Límite establecido',data:nivelAvg.map(n=>n.limite),backgroundColor:'#9b222633',borderColor:'#9b2226',borderWidth:2,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}});
 }
-
+ 
 function renderChartsSelectores() {
+    // CAMBIO 1+2: Vagioleth corregido + Silvina agregada en gráficos de selectores
     const data={};
-    const selectores=['Vangioleth','Juan','Magali','Soledad'];
+    const selectores=['Vagioleth','Juan','Magali','Silvina','Soledad'];
     selectores.forEach(s=>{data[s]={total:0,cerradas:0,proceso:0,candidatos:0,psico:0,psico_realizado:0,dias:[]};});
     busquedas.forEach(b=>{
         if(!data[b.selector])return;
