@@ -147,8 +147,6 @@
         .estado-add-row { display: flex; gap: 5px; margin-top: 6px; }
         .estado-add-input { flex: 1; font-family: 'DM Sans', sans-serif; font-size: 12px; border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; background: #fff; color: var(--text); outline: none; }
         .estado-add-btn { background: var(--text); color: #fff; border: none; border-radius: 6px; padding: 5px 10px; font-size: 11px; cursor: pointer; font-weight: 700; white-space: nowrap; }
- 
-        /* ── CAMBIO 3: PDF de rojo a gris ── */
         .pdf-item { display: flex; align-items: center; gap: 6px; padding: 4px 6px; background: #e5e0d822; border-radius: 5px; margin-bottom: 3px; }
         .pdf-item-name { font-size: 11px; font-weight: 600; color: var(--muted); flex: 1; cursor: pointer; }
         .pdf-item-name:hover { text-decoration: underline; }
@@ -156,7 +154,6 @@
         .pdf-upload-btn { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: #4b5563; padding: 3px 8px; border-radius: 5px; background: #e5e7eb; border: none; cursor: pointer; margin-top: 4px; }
         .pdf-upload-btn:hover { background: #d1d5db; }
         input[type="file"].pdf-file-input { display: none; }
- 
         .page-tabs { display: flex; gap: 4px; margin-bottom: 24px; background: #e5e0d8; padding: 4px; border-radius: 12px; width: fit-content; }
         .page-tab { padding: 10px 22px; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; background: none; border: none; border-radius: 9px; cursor: pointer; color: var(--muted); transition: all .18s; white-space: nowrap; }
         .page-tab:hover { color: var(--text); background: rgba(255,255,255,.5); }
@@ -240,7 +237,6 @@
             <div class="kpi-row" id="kpi-row"></div>
             <div class="filters">
                 <span class="filter-label">Filtrar:</span>
-                <!-- CAMBIO 1+2: Vagioleth corregido + Silvina agregada -->
                 <select class="filter-select" id="f-selector" onchange="applyFilters()">
                     <option value="">Todos los selectores</option>
                     <option>Vagioleth</option><option>Juan</option><option>Magali</option><option>Silvina</option><option>Soledad</option>
@@ -302,7 +298,6 @@
         <div class="form-row">
             <div class="form-group form-full"><label>Puesto / Cargo</label><input class="form-input" id="n-puesto" placeholder="Ej: Analista Contable"></div>
             <div class="form-group"><label>Selector a cargo</label>
-                <!-- CAMBIO 1+2: Vagioleth corregido + Silvina agregada -->
                 <select class="form-input" id="n-selector">
                     <option>Vagioleth</option><option>Juan</option><option>Magali</option><option>Silvina</option><option>Soledad</option>
                 </select>
@@ -319,7 +314,6 @@
             </div>
             <div class="form-group"><label>Sueldo bruto (ARS)</label><input class="form-input" id="n-sueldo" type="number" placeholder="Ej: 800000"></div>
             <div class="form-group"><label>Jornada</label><input class="form-input" id="n-jornada" placeholder="Ej: Full Time, Por turnos…"></div>
-            <!-- CAMBIO 4: Nueva lista de ubicaciones -->
             <div class="form-group"><label>Ubicación</label>
                 <select class="form-input" id="n-ubicacion">
                     <option>San Martin Empanadas</option>
@@ -383,7 +377,6 @@
                 </select>
             </div>
             <div class="form-group"><label>Selector que lo realiza</label>
-                <!-- CAMBIO 1+2: Vagioleth corregido + Silvina agregada -->
                 <select class="form-input" id="psico-selector">
                     <option value="">— Sin asignar —</option>
                     <option>Vagioleth</option><option>Juan</option><option>Magali</option><option>Silvina</option><option>Soledad</option>
@@ -635,13 +628,16 @@ function renderTable() {
                 <div style="font-size:11px;color:var(--muted);margin-top:2px">${b.depto} · <span style="padding:1px 5px;border-radius:3px;background:${b.tipo==='Staff'?'#cfe2ff':'#d1e7dd'};color:${b.tipo==='Staff'?'#0a367a':'#0a3622'};font-weight:700">${b.tipo}</span></div>
                 <div style="margin-top:6px;font-size:12px">
                     Selector:
-                    <!-- CAMBIO 1+2: Vagioleth corregido + Silvina agregada en inline select -->
                     ${isLocked ? `<strong>${b.selector}</strong>` : `<select class="inline-select" onchange="updateField(${b.id},'selector',this.value)">${['Vagioleth','Juan','Magali','Silvina','Soledad'].map(s=>`<option ${b.selector===s?'selected':''}>${s}</option>`).join('')}</select>`}
                 </div>
                 <div style="margin-top:4px;font-size:11px;color:var(--muted)">Nivel: <strong>${b.nivel}</strong></div>
             </td>
             <td>
-                <div style="font-weight:700;font-size:13px;color:var(--green)">${fmtMoney(b.sueldo)}</div>
+                ${isLocked
+                    ? `<div style="font-weight:700;font-size:13px;color:var(--green)">${fmtMoney(b.sueldo)}</div>`
+                    : `<input class="inline-input" type="number" value="${b.sueldo||''}" placeholder="Sueldo ARS…"
+                           onchange="updateField(${b.id},'sueldo', parseFloat(this.value)||0)"
+                           style="font-weight:700;font-size:13px;color:var(--green);width:100%;margin-bottom:2px">`}
                 ${isLocked
                     ? `<div style="font-size:11px;font-weight:700;background:#ece9e3;border-radius:4px;padding:2px 6px;display:inline-block;margin-top:2px">${b.jornada||'—'}</div>`
                     : `<input class="inline-input" value="${b.jornada||''}" placeholder="Jornada…" onchange="updateField(${b.id},'jornada',this.value)" style="font-size:12px;font-weight:700;background:#ece9e3;border-radius:4px;padding:2px 6px;width:100%;margin-top:2px">`}
@@ -1099,7 +1095,6 @@ function renderChartsTiempo() {
 }
  
 function renderChartsSelectores() {
-    // CAMBIO 1+2: Vagioleth corregido + Silvina agregada en gráficos de selectores
     const data={};
     const selectores=['Vagioleth','Juan','Magali','Silvina','Soledad'];
     selectores.forEach(s=>{data[s]={total:0,cerradas:0,proceso:0,candidatos:0,psico:0,psico_realizado:0,dias:[]};});
