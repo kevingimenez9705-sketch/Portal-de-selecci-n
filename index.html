@@ -667,7 +667,7 @@ function renderTable() {
         if (b.ingreso && b.ingreso_nombre) {
             const milestone = diasEnEmpresa >= 130 ? '🏆 6 meses' : diasEnEmpresa >= 65 ? '✓ 3 meses' : diasEnEmpresa >= 22 ? '📌 1 mes' : '';
             permHtml = `<div class="perm-box">
-                <div class="perm-box-num">${diasEnEmpresa}hd</div>
+                <div class="perm-box-num">${diasEnEmpresa}</div>
                 <div class="perm-box-lbl">Días háb. en empresa</div>
                 ${milestone ? `<div class="perm-box-milestone">${milestone}</div>` : ''}
             </div>`;
