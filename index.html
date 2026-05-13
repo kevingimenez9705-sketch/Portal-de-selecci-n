@@ -40,15 +40,26 @@
         #toast.show { opacity: 1; transform: translateY(0); }
         #toast.error { background: var(--red); }
         .shell { display: flex; min-height: 100vh; }
-        .sidebar { width: 220px; background: var(--text); color: #fff; padding: 28px 20px; display: flex; flex-direction: column; gap: 6px; position: sticky; top: 0; height: 100vh; flex-shrink: 0; }
-        .sidebar-logo { font-family: 'Syne', sans-serif; font-size: 23px; font-weight: 800; letter-spacing: -0.8px; margin-bottom: 28px; line-height: 1.15; color: #fff; }
+        /* ── SIDEBAR ── */
+        .sidebar { width: 220px; background: var(--text); color: #fff; padding: 24px 16px 28px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; height: 100vh; flex-shrink: 0; overflow-y: auto; }
+        .sidebar-logo { font-family: 'Syne', sans-serif; font-size: 21px; font-weight: 800; letter-spacing: -0.8px; margin-bottom: 14px; line-height: 1.15; color: #fff; }
+        /* KPIs en sidebar – entre logo y nav */
+        .sidebar-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,.1); }
+        .sidebar-kpi { background: rgba(255,255,255,.08); border-radius: 8px; padding: 9px 7px; text-align: center; }
+        .sidebar-kpi-num { font-family: 'Syne', sans-serif; font-size: 19px; font-weight: 800; color: #fff; line-height: 1; }
+        .sidebar-kpi-num.blue  { color: #90e0ef; }
+        .sidebar-kpi-num.green { color: #95d5b2; }
+        .sidebar-kpi-num.red   { color: #ff9b9b; }
+        .sidebar-kpi-num.amber { color: #ffd166; }
+        .sidebar-kpi-lbl { font-size: 9px; color: rgba(255,255,255,.45); text-transform: uppercase; letter-spacing: .7px; margin-top: 3px; }
         .sidebar-user { font-size: 11px; color: rgba(255,255,255,.45); margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.08); }
         .sidebar-user strong { display: block; color: rgba(255,255,255,.8); font-size: 12px; }
         .nav-btn { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; background: transparent; border: none; color: rgba(255,255,255,.5); cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; text-align: left; transition: all .15s; width: 100%; }
         .nav-btn i { width: 14px; text-align: center; }
         .nav-btn:hover { background: rgba(255,255,255,.08); color: #fff; }
         .nav-btn.active { background: rgba(255,255,255,.13); color: #fff; font-weight: 700; }
-        .sidebar-sep { height: 1px; background: rgba(255,255,255,.08); margin: 10px 0; }
+        .sidebar-sep { height: 1px; background: rgba(255,255,255,.08); margin: 8px 0; }
+        /* ── MAIN ── */
         .main { flex: 1; padding: 32px; overflow-x: auto; }
         .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
         .page-title { font-family: 'Syne', sans-serif; font-size: 25px; font-weight: 800; letter-spacing: -1px; }
@@ -80,9 +91,7 @@
         .tag-cerrada { background: #d1e7dd; color: #0a3622; }
         .tag-sustituida { background: #f0d9ff; color: #4a1272; }
         .tag-pausada { background: #fff3cd; color: #664d03; }
-        .hist-list { list-style: none; display: flex; flex-direction: column; gap: 3px; }
-        .hist-list li { font-size: 12px; color: var(--muted); display: flex; align-items: flex-start; gap: 5px; }
-        .hist-list li::before { content: '›'; color: var(--border); flex-shrink: 0; }
+        .tag-finalizada { background: #fef3c7; color: #92400e; }
         .psico-item { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 4px 8px; border-radius: 6px; background: #f0ede8; margin-bottom: 3px; }
         .psico-nombre { font-size: 12px; font-weight: 600; }
         .psico-result { font-size: 11px; font-weight: 700; text-transform: uppercase; }
@@ -118,7 +127,7 @@
         .bar-track { height: 6px; background: #e5e0d8; border-radius: 4px; overflow: hidden; }
         .bar-fill { height: 100%; background: var(--text); border-radius: 4px; transition: width .4s ease; }
         .bar-fill-staff { background: var(--blue); } .bar-fill-fab { background: var(--green); }
-        .kpi-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+        .kpi-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
         .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 20px; flex: 1; min-width: 100px; }
         .kpi-num { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; line-height: 1; }
         .kpi-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-top: 4px; }
@@ -137,20 +146,21 @@
         .sep { height: 1px; background: var(--border); margin: 6px 0; }
         .tip { font-size: 11px; color: var(--muted); font-style: italic; }
         .cell-scroll { max-height: 200px; overflow-y: auto; }
-        .ingreso-name { font-size: 13px; font-weight: 700; color: var(--green); }
         .estado-log { display: flex; flex-direction: column; gap: 4px; }
         .estado-entry { display: flex; align-items: flex-start; gap: 7px; }
         .d-badge { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 700; background: var(--text); color: #fff; border-radius: 4px; padding: 2px 5px; flex-shrink: 0; margin-top: 1px; }
         .estado-entry-body { flex: 1; }
         .estado-entry-text { font-size: 12px; font-weight: 600; }
         .estado-entry-meta { font-size: 10px; color: var(--muted); margin-top: 1px; }
-        .estado-add-row { display: flex; gap: 5px; margin-top: 6px; }
+        /* Estado add row – dropdown + input */
+        .estado-add-wrap { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+        .estado-preset-select { font-family: 'DM Sans', sans-serif; font-size: 11px; border: 1px solid var(--border); border-radius: 6px; padding: 4px 7px; background: #fff; color: var(--text); outline: none; cursor: pointer; width: 100%; }
+        .estado-add-row { display: flex; gap: 5px; }
         .estado-add-input { flex: 1; font-family: 'DM Sans', sans-serif; font-size: 12px; border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; background: #fff; color: var(--text); outline: none; }
         .estado-add-btn { background: var(--text); color: #fff; border: none; border-radius: 6px; padding: 5px 10px; font-size: 11px; cursor: pointer; font-weight: 700; white-space: nowrap; }
         .pdf-item { display: flex; align-items: center; gap: 6px; padding: 4px 6px; background: #e5e0d822; border-radius: 5px; margin-bottom: 3px; }
         .pdf-item-name { font-size: 11px; font-weight: 600; color: var(--muted); flex: 1; cursor: pointer; }
         .pdf-item-name:hover { text-decoration: underline; }
-        .pdf-item-date { font-size: 10px; color: var(--muted); }
         .pdf-upload-btn { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: #4b5563; padding: 3px 8px; border-radius: 5px; background: #e5e7eb; border: none; cursor: pointer; margin-top: 4px; }
         .pdf-upload-btn:hover { background: #d1d5db; }
         input[type="file"].pdf-file-input { display: none; }
@@ -159,13 +169,14 @@
         .page-tab:hover { color: var(--text); background: rgba(255,255,255,.5); }
         .page-tab.active { background: var(--text); color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.18); }
         .charts-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
-        .charts-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 20px; }
+        .charts-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 20px; }
         .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px; }
         .chart-card.full { grid-column: span 2; }
         .chart-card-title { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
         .chart-wrap { position: relative; height: 220px; }
         .chart-wrap-sm { position: relative; height: 170px; }
         .chart-wrap-lg { position: relative; height: 260px; }
+        .chart-wrap-xl { position: relative; height: 340px; }
         .mini-kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
         .mini-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
         .mini-kpi-num { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; line-height: 1; }
@@ -176,16 +187,21 @@
         .rank-pos { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); width: 20px; }
         .rank-name { flex: 1; font-size: 13px; font-weight: 600; }
         .rank-stat { font-family: 'DM Mono', monospace; font-size: 12px; }
+        /* Permanencia badge */
+        .perm-box { margin-top: 8px; background: var(--ok); border-radius: 8px; padding: 8px 10px; text-align: center; }
+        .perm-box-num { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: var(--green); line-height: 1; }
+        .perm-box-lbl { font-size: 9px; color: var(--ok-text); text-transform: uppercase; letter-spacing: .8px; margin-top: 2px; }
+        .perm-box-milestone { font-size: 10px; color: var(--green); font-weight: 700; margin-top: 3px; }
         @media(max-width:900px) {
             .sidebar { display: none; } .main { padding: 16px; }
-            .charts-grid, .charts-grid-3 { grid-template-columns: 1fr; }
+            .charts-grid, .charts-grid-2 { grid-template-columns: 1fr; }
             .chart-card.full { grid-column: span 1; }
             .mini-kpi-row { grid-template-columns: repeat(2,1fr); }
         }
     </style>
 </head>
 <body>
- 
+
 <!-- ══ LOGIN ══ -->
 <div id="login-screen">
     <div class="login-box">
@@ -199,17 +215,26 @@
         <div class="login-error" id="login-error"></div>
     </div>
 </div>
- 
+
 <!-- ══ LOADING ══ -->
 <div id="loading-screen" class="hidden">
     <div class="spinner"></div>
     <div class="loading-txt">Cargando datos...</div>
 </div>
- 
+
 <!-- ══ APP ══ -->
 <div id="app" class="shell hidden">
     <aside class="sidebar">
         <div class="sidebar-logo">Panel de<br>Selección</div>
+
+        <!-- KPIs entre logo y nav (se renderizan por JS) -->
+        <div class="sidebar-kpis" id="sidebar-kpis">
+            <div class="sidebar-kpi"><div class="sidebar-kpi-num">—</div><div class="sidebar-kpi-lbl">Total</div></div>
+            <div class="sidebar-kpi"><div class="sidebar-kpi-num blue">—</div><div class="sidebar-kpi-lbl">En curso</div></div>
+            <div class="sidebar-kpi"><div class="sidebar-kpi-num green">—</div><div class="sidebar-kpi-lbl">Cerradas</div></div>
+            <div class="sidebar-kpi"><div class="sidebar-kpi-num red">—</div><div class="sidebar-kpi-lbl">Vencidas</div></div>
+        </div>
+
         <button class="nav-btn active" id="nav-pipeline" onclick="showView('pipeline',this)"><i class="fas fa-table"></i> Pipeline</button>
         <button class="nav-btn" id="nav-stats" onclick="showView('stats',this)"><i class="fas fa-chart-bar"></i> Estadísticas</button>
         <button class="nav-btn" id="nav-charts" onclick="showView('charts',this)"><i class="fas fa-chart-pie"></i> Gráficos</button>
@@ -222,7 +247,7 @@
             <span id="sidebar-rol">—</span>
         </div>
     </aside>
- 
+
     <main class="main">
         <div class="top-bar">
             <div>
@@ -231,7 +256,7 @@
             </div>
             <button class="btn-primary" onclick="openModal()"><i class="fas fa-plus"></i> Nueva Búsqueda</button>
         </div>
- 
+
         <!-- PIPELINE -->
         <div id="view-pipeline">
             <div class="kpi-row" id="kpi-row"></div>
@@ -248,7 +273,7 @@
                 <select class="filter-select" id="f-depto" onchange="applyFilters()"><option value="">Todos los dptos.</option></select>
                 <select class="filter-select" id="f-status" onchange="applyFilters()">
                     <option value="">Todos los estados</option>
-                    <option>Proceso</option><option>Cerrada</option><option>Pausada</option>
+                    <option>Proceso</option><option>Cerrada</option><option>Pausada</option><option>Finalizada</option>
                 </select>
                 <input class="filter-input" id="f-search" placeholder="Buscar puesto..." oninput="applyFilters()">
             </div>
@@ -256,19 +281,19 @@
                 <table>
                     <thead><tr>
                         <th style="width:130px">N° / Motivo</th>
-                        <th style="width:170px">Puesto · Dpto · Selector</th>
+                        <th style="width:180px">Puesto · Dpto · Selector</th>
                         <th style="width:130px">Sueldo · Jornada</th>
-                        <th style="width:220px">Estado · Historial · Psico</th>
+                        <th style="width:240px">Estado · Psicotécnicos</th>
                         <th style="width:200px">Candidatos</th>
                         <th style="width:150px">Archivos PDF</th>
-                        <th style="width:150px">Ingreso</th>
+                        <th style="width:160px">Ingreso</th>
                         <th style="width:80px"></th>
                     </tr></thead>
                     <tbody id="table-body"></tbody>
                 </table>
             </div>
         </div>
- 
+
         <!-- STATS -->
         <div id="view-stats" class="hidden">
             <div class="page-tabs">
@@ -278,7 +303,7 @@
             </div>
             <div id="stats-content"></div>
         </div>
- 
+
         <!-- GRÁFICOS -->
         <div id="view-charts" class="hidden">
             <div class="page-tabs">
@@ -290,7 +315,7 @@
         </div>
     </main>
 </div>
- 
+
 <!-- ══ MODALES ══ -->
 <div id="modal-nueva" class="modal-bg hidden">
     <div class="modal-box">
@@ -316,24 +341,12 @@
             <div class="form-group"><label>Jornada</label><input class="form-input" id="n-jornada" placeholder="Ej: Full Time, Por turnos…"></div>
             <div class="form-group"><label>Ubicación</label>
                 <select class="form-input" id="n-ubicacion">
-                    <option>San Martin Empanadas</option>
-                    <option>Jamon y Queso</option>
-                    <option>Medialunas</option>
-                    <option>Extremas</option>
-                    <option>Papelera</option>
-                    <option>Procesadora</option>
-                    <option>Pastas</option>
-                    <option>Tapas 1</option>
-                    <option>Tapas 2</option>
-                    <option>Congelados</option>
-                    <option>Panificados</option>
-                    <option>San Miguel Empanadas</option>
-                    <option>San Miguel Pizzas</option>
-                    <option>Taller Mantenimiento</option>
-                    <option>Oficina San Lorenzo</option>
-                    <option>Paralelo 50</option>
-                    <option>Caamaño</option>
-                    <option>Office Park</option>
+                    <option>San Martin Empanadas</option><option>Jamon y Queso</option><option>Medialunas</option>
+                    <option>Extremas</option><option>Papelera</option><option>Procesadora</option>
+                    <option>Pastas</option><option>Tapas 1</option><option>Tapas 2</option>
+                    <option>Congelados</option><option>Panificados</option><option>San Miguel Empanadas</option>
+                    <option>San Miguel Pizzas</option><option>Taller Mantenimiento</option><option>Oficina San Lorenzo</option>
+                    <option>Paralelo 50</option><option>Caamaño</option><option>Office Park</option>
                 </select>
             </div>
             <div class="form-group"><label>Fecha de apertura</label><input class="form-input" id="n-inicio" type="date"></div>
@@ -344,7 +357,7 @@
         </div>
     </div>
 </div>
- 
+
 <div id="modal-cand" class="modal-bg hidden">
     <div class="modal-box" style="max-width:400px">
         <div class="modal-title">Agregar Candidato</div>
@@ -363,7 +376,7 @@
         </div>
     </div>
 </div>
- 
+
 <div id="modal-psico" class="modal-bg hidden">
     <div class="modal-box" style="max-width:420px">
         <div class="modal-title">Agregar Psicotécnico</div>
@@ -391,35 +404,23 @@
         </div>
     </div>
 </div>
- 
-<div id="modal-hist" class="modal-bg hidden">
-    <div class="modal-box" style="max-width:380px">
-        <div class="modal-title">Agregar al Historial</div>
-        <input type="hidden" id="hist-bid">
-        <div class="form-group"><label>Detalle del avance</label><input class="form-input" id="hist-texto" placeholder="Ej: Entrevistas técnicas realizadas"></div>
-        <div class="modal-footer">
-            <button class="btn-cancel" onclick="closeModal('modal-hist')">Cancelar</button>
-            <button class="btn-primary" onclick="saveHist()">Guardar</button>
-        </div>
-    </div>
-</div>
- 
+
 <div id="toast"></div>
- 
+
 <script>
 const SUPABASE_URL = 'https://nhlkndwwsuybnejbyigk.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5obGtuZHd3c3V5Ym5lamJ5aWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNzY5ODYsImV4cCI6MjA5Mzc1Mjk4Nn0.Xdli4VzqAKuYLkU5q8m8G6UTNda_BAaJlibROm9tGhw';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
- 
+
 const DEMORA_LIMITE = { 'Gerente/Director': 45, 'Jefe/Encargado': 30, 'Otros': 15 };
 let busquedas = [];
 let filteredIds = null;
 let currentProfile = null;
 let nroSeq = 1;
- 
+
 function isAdmin() { return currentProfile?.rol === 'admin'; }
 function today() { return new Date().toISOString().slice(0, 10); }
- 
+
 let toastTimer;
 function toast(msg, isError = false) {
     const t = document.getElementById('toast');
@@ -428,7 +429,7 @@ function toast(msg, isError = false) {
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => t.className = '', 3000);
 }
- 
+
 async function login() {
     const email = document.getElementById('login-email').value.trim();
     const pass  = document.getElementById('login-pass').value;
@@ -438,31 +439,28 @@ async function login() {
     if (error) { errEl.textContent = 'Email o contraseña incorrectos'; errEl.style.display = 'block'; return; }
     await initDashboard();
 }
- 
-async function logout() {
-    await sb.auth.signOut();
-    location.reload();
-}
- 
+
+async function logout() { await sb.auth.signOut(); location.reload(); }
+
 async function loadProfile() {
     const { data: { user } } = await sb.auth.getUser();
     const { data, error } = await sb.from('profiles').select('*').eq('id', user.id).single();
     if (error) { console.error('Error cargando perfil:', error); return; }
     currentProfile = data;
-    console.log('Perfil cargado:', currentProfile);
 }
- 
+
 async function loadData() {
+    // Nuevas búsquedas primero (orden DESC)
     const { data, error } = await sb
         .from('busquedas')
         .select('*, historial(*), estado_log(*), candidatos(*), psicotecnicos(*), archivos(*)')
-        .order('id');
+        .order('id', { ascending: false });
     if (error) { toast('Error al cargar datos', true); return; }
     busquedas = (data || []).map(mapRow);
     const nums = busquedas.map(b => parseInt((b.numero || '').replace('SEL-', '')) || 0);
     nroSeq = nums.length ? Math.max(...nums) + 1 : 1;
 }
- 
+
 function mapRow(b) {
     return {
         ...b,
@@ -473,34 +471,47 @@ function mapRow(b) {
         archivos:        (b.archivos    || []).sort((a,x)=>a.id-x.id),
     };
 }
- 
+
 function nextNro() { return 'SEL-' + String(nroSeq++).padStart(3, '0'); }
- 
+
+// ── Auto-finalizar búsquedas con ingresado ≥ 90 días ──
+async function checkAndFinalizeSearches() {
+    const toFinalize = busquedas.filter(b =>
+        b.status === 'Cerrada' &&
+        b.ingreso &&
+        daysDiff(b.ingreso) >= 90
+    );
+    if (toFinalize.length === 0) return;
+    for (const b of toFinalize) {
+        const { error } = await sb.from('busquedas').update({ status: 'Finalizada' }).eq('id', b.id);
+        if (!error) b.status = 'Finalizada';
+    }
+}
+
 async function initDashboard() {
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('loading-screen').classList.remove('hidden');
     await loadProfile();
     await loadData();
+    await checkAndFinalizeSearches();
     document.getElementById('loading-screen').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
     const esAdmin = isAdmin();
     document.getElementById('sidebar-nombre').textContent = esAdmin ? '🔑 Administrador' : '👤 ' + (currentProfile?.nombre || 'Selector');
     document.getElementById('sidebar-rol').textContent = esAdmin ? (currentProfile?.nombre || '') : 'Selector';
- 
     if (!esAdmin) {
         document.getElementById('nav-stats').classList.add('hidden');
         document.getElementById('nav-charts').classList.add('hidden');
     }
- 
     renderTable();
 }
- 
+
 async function initApp() {
     const { data: { session } } = await sb.auth.getSession();
     if (session) await initDashboard();
 }
 initApp();
- 
+
 function daysDiff(from, to = null) {
     if (!from) return 0;
     const s = new Date(from), e = to ? new Date(to) : new Date();
@@ -530,24 +541,37 @@ function tagClass(s) {
     if (s === 'Proceso') return 'tag-proceso';
     if (s === 'Cerrada') return 'tag-cerrada';
     if (s === 'Sustituida') return 'tag-sustituida';
+    if (s === 'Finalizada') return 'tag-finalizada';
     return 'tag-pausada';
 }
- 
+
+// Preset de estado de búsqueda
+function setEstadoPreset(id, selectEl) {
+    const val = selectEl.value;
+    if (val) {
+        const input = document.getElementById('estado-input-' + id);
+        if (input) input.value = val;
+    }
+    selectEl.value = '';
+}
+
 // ══════════════════════════════════════════════
 //  RENDER TABLE
 // ══════════════════════════════════════════════
 function renderTable() {
     const body = document.getElementById('table-body');
     const list = filteredIds ? busquedas.filter(b => filteredIds.includes(b.id)) : busquedas;
-    const locked = (b) => b.status === 'Cerrada' && !isAdmin();
- 
+    // Bloqueado para no-admin si está cerrada o finalizada
+    const locked = (b) => (b.status === 'Cerrada' || b.status === 'Finalizada') && !isAdmin();
+
     body.innerHTML = list.map(b => {
+        // Demora: si viene de una reapertura (reopened_from), conta desde inicio original
         const dias = b.ingreso ? daysDiff(b.inicio, b.ingreso) : daysDiff(b.inicio);
         const dClass = demoraClass(dias, b.nivel);
         const limite = DEMORA_LIMITE[b.nivel] || 15;
         const isLocked = locked(b);
-        const dis = isLocked ? 'disabled style="opacity:.5;pointer-events:none"' : '';
- 
+        const diasEnEmpresa = b.ingreso ? daysDiff(b.ingreso) : 0;
+
         // PSICO
         const psicoHtml = b.psicotecnicos.length > 0
             ? b.psicotecnicos.map(p => `
@@ -562,7 +586,7 @@ function renderTable() {
                     </span>
                 </div>`).join('')
             : `<span class="tip">Sin psicotécnicos</span>`;
- 
+
         // CANDIDATOS
         const candHtml = b.candidatos.length > 0
             ? b.candidatos.map(c => {
@@ -602,7 +626,7 @@ function renderTable() {
                 </div>`;
               }).join('')
             : `<span class="tip">Sin candidatos enviados</span>`;
- 
+
         // ARCHIVOS
         const archivosHtml = b.archivos.length > 0
             ? b.archivos.map(a => `
@@ -611,9 +635,21 @@ function renderTable() {
                     ${!isLocked ? `<button onclick="eliminarPDF(${a.id},'${a.url}')" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:10px">✕</button>` : ''}
                 </div>`).join('')
             : `<span class="tip">Sin archivos</span>`;
- 
+
+        // PERMANENCIA (días en empresa, con hitos)
+        let permHtml = '';
+        if (b.ingreso && b.ingreso_nombre) {
+            const milestone = diasEnEmpresa >= 180 ? '🏆 6 meses' : diasEnEmpresa >= 90 ? '✓ 3 meses' : diasEnEmpresa >= 30 ? '📌 1 mes' : '';
+            permHtml = `<div class="perm-box">
+                <div class="perm-box-num">${diasEnEmpresa}d</div>
+                <div class="perm-box-lbl">En empresa</div>
+                ${milestone ? `<div class="perm-box-milestone">${milestone}</div>` : ''}
+            </div>`;
+        }
+
         return `
         <tr id="row-${b.id}" class="${isLocked?'row-locked':''}">
+            <!-- Col 1: N°/Motivo -->
             <td>
                 <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--muted)">${b.numero}</div>
                 <span class="motivo-chip ${motivoClass(b.motivo)}">${b.motivo}</span>
@@ -622,16 +658,28 @@ function renderTable() {
                     <span class="demora-badge ${dClass}" title="Límite: ${limite}d">${dias}d</span>
                 </div>
                 <div style="margin-top:4px;font-size:11px;color:var(--muted)">Inicio: ${b.inicio}</div>
+                ${b.reopened_from ? `<div style="margin-top:3px;font-size:10px;color:var(--blue);font-weight:600"><i class="fas fa-redo" style="font-size:8px"></i> Reapertura de ${b.reopened_from}</div>` : ''}
             </td>
+            <!-- Col 2: Puesto / Dpto / Selector / Nivel -->
             <td>
-                <div style="font-weight:700;font-size:13px">${b.puesto}</div>
+                ${isLocked
+                    ? `<div style="font-weight:700;font-size:13px">${b.puesto}</div>`
+                    : `<input class="inline-input" value="${b.puesto||''}" placeholder="Puesto/Cargo"
+                           onchange="updateField(${b.id},'puesto',this.value)"
+                           style="font-weight:700;font-size:13px;width:100%">`}
                 <div style="font-size:11px;color:var(--muted);margin-top:2px">${b.depto} · <span style="padding:1px 5px;border-radius:3px;background:${b.tipo==='Staff'?'#cfe2ff':'#d1e7dd'};color:${b.tipo==='Staff'?'#0a367a':'#0a3622'};font-weight:700">${b.tipo}</span></div>
                 <div style="margin-top:6px;font-size:12px">
                     Selector:
                     ${isLocked ? `<strong>${b.selector}</strong>` : `<select class="inline-select" onchange="updateField(${b.id},'selector',this.value)">${['Vagioleth','Juan','Magali','Silvina','Soledad'].map(s=>`<option ${b.selector===s?'selected':''}>${s}</option>`).join('')}</select>`}
                 </div>
-                <div style="margin-top:4px;font-size:11px;color:var(--muted)">Nivel: <strong>${b.nivel}</strong></div>
+                <div style="margin-top:4px;font-size:12px">
+                    Nivel:
+                    ${isLocked
+                        ? `<strong>${b.nivel}</strong>`
+                        : `<select class="inline-select" onchange="updateField(${b.id},'nivel',this.value)">${['Otros','Jefe/Encargado','Gerente/Director'].map(n=>`<option ${b.nivel===n?'selected':''}>${n}</option>`).join('')}</select>`}
+                </div>
             </td>
+            <!-- Col 3: Sueldo / Jornada -->
             <td>
                 ${isLocked
                     ? `<div style="font-weight:700;font-size:13px;color:var(--green)">${fmtMoney(b.sueldo)}</div>`
@@ -643,6 +691,7 @@ function renderTable() {
                     : `<input class="inline-input" value="${b.jornada||''}" placeholder="Jornada…" onchange="updateField(${b.id},'jornada',this.value)" style="font-size:12px;font-weight:700;background:#ece9e3;border-radius:4px;padding:2px 6px;width:100%;margin-top:2px">`}
                 <div><span class="ubic-pill">📍 ${b.ubicacion}</span></div>
             </td>
+            <!-- Col 4: Estado de búsqueda + Psicotécnicos (SIN historial) -->
             <td>
                 <div class="section-hdr">Estado de búsqueda</div>
                 <div class="estado-log cell-scroll" style="max-height:130px">
@@ -656,25 +705,31 @@ function renderTable() {
                                     <div class="estado-entry-meta">
                                         <i class="fas fa-clock" style="font-size:9px"></i>
                                         ${daysDiff(e.fecha)===0?'Hoy':'hace '+daysDiff(e.fecha)+'d'} · ${e.fecha}
-                                        ${isAdmin()?`<button onclick="removeEstadoEntry(${e.id})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:10px;margin-left:4px" title="Solo admin puede eliminar">✕</button>`:''}
+                                        ${isAdmin()?`<button onclick="removeEstadoEntry(${e.id})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:10px;margin-left:4px" title="Solo admin">✕</button>`:''}
                                     </div>
                                 </div>
                             </div>`).join('')}
                 </div>
-                ${!isLocked ? `<div class="estado-add-row">
-                    <input class="estado-add-input" id="estado-input-${b.id}" placeholder="Nuevo comentario…" onkeydown="if(event.key==='Enter')addEstadoEntry(${b.id})">
-                    <button class="estado-add-btn" onclick="addEstadoEntry(${b.id})"><i class="fas fa-plus" style="font-size:10px"></i></button>
-                </div>` : ''}
-                <div class="sep"></div>
-                <details>
-                    <summary><i class="fas fa-chevron-right"></i> Historial (${b.historial.length})</summary>
-                    <div style="padding-top:5px" class="cell-scroll">
-                        <ul class="hist-list">
-                            ${b.historial.map(h=>`<li>${h.texto} ${!isLocked?`<button onclick="removeHist(${h.id})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:11px;margin-left:auto">✕</button>`:''}</li>`).join('')}
-                        </ul>
-                        ${!isLocked?`<button class="btn-sm" style="margin-top:5px" onclick="openHistModal(${b.id})"><i class="fas fa-plus" style="font-size:8px"></i> Agregar</button>`:''}
+                ${!isLocked ? `
+                <div class="estado-add-wrap">
+                    <select class="estado-preset-select" onchange="setEstadoPreset(${b.id},this)">
+                        <option value="">⚡ Preset rápido...</option>
+                        <option>Publicada en portales</option>
+                        <option>CV en revisión</option>
+                        <option>Entrevistas telefónicas</option>
+                        <option>Entrevistas presenciales</option>
+                        <option>Candidatos enviados al área</option>
+                        <option>Evaluación técnica pendiente</option>
+                        <option>Oferta enviada</option>
+                        <option>Negociación salarial</option>
+                        <option>Esperando feedback del área</option>
+                        <option>En pausa por decisión del área</option>
+                    </select>
+                    <div class="estado-add-row">
+                        <input class="estado-add-input" id="estado-input-${b.id}" placeholder="O escribí comentario…" onkeydown="if(event.key==='Enter')addEstadoEntry(${b.id})">
+                        <button class="estado-add-btn" onclick="addEstadoEntry(${b.id})"><i class="fas fa-plus" style="font-size:10px"></i></button>
                     </div>
-                </details>
+                </div>` : ''}
                 <div class="sep"></div>
                 <details>
                     <summary><i class="fas fa-chevron-right"></i> Psicotécnicos (${b.psicotecnicos.length})</summary>
@@ -684,12 +739,14 @@ function renderTable() {
                     </div>
                 </details>
             </td>
+            <!-- Col 5: Candidatos -->
             <td>
                 <div class="section-hdr">Candidatos enviados al área</div>
                 <div class="cand-count" style="margin-bottom:5px">Total: <strong>${b.candidatos.length}</strong></div>
                 <div class="cell-scroll">${candHtml}</div>
                 ${!isLocked?`<button class="btn-sm" style="margin-top:6px" onclick="openCandModal(${b.id})"><i class="fas fa-user-plus" style="font-size:8px"></i> Agregar</button>`:''}
             </td>
+            <!-- Col 6: Archivos -->
             <td>
                 <div class="section-hdr">Archivos PDF</div>
                 <div class="cell-scroll" style="max-height:120px">${archivosHtml}</div>
@@ -699,6 +756,7 @@ function renderTable() {
                     <input type="file" accept=".pdf,.doc,.docx" class="pdf-file-input" onchange="subirPDF(${b.id},this)">
                 </label>`:''}
             </td>
+            <!-- Col 7: Ingreso + permanencia -->
             <td>
                 <div class="section-hdr">Candidato que ingresó</div>
                 ${isLocked
@@ -708,16 +766,17 @@ function renderTable() {
                         <label style="font-size:11px;color:var(--muted)">Fecha de ingreso</label>
                         <input type="date" class="inline-input" value="${b.ingreso||''}" onchange="updateField(${b.id},'ingreso',this.value)">
                     </div>`}
-                ${b.ingreso?`<div style="margin-top:5px;font-size:11px;color:var(--green)"><i class="fas fa-calendar-check"></i> ${daysDiff(b.ingreso)}d en empresa</div>`:''}
+                ${permHtml}
             </td>
+            <!-- Col 8: Acciones -->
             <td style="vertical-align:middle">
                 <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
                     ${isLocked
-                        ? `<span class="tag tag-cerrada">Cerrada</span>`
+                        ? `<span class="tag ${tagClass(b.status)}">${b.status}</span>`
                         : `<select class="inline-select" onchange="updateField(${b.id},'status',this.value)">
-                            ${['Proceso','Cerrada','Pausada'].map(s=>`<option ${b.status===s?'selected':''}>${s}</option>`).join('')}
+                            ${['Proceso','Cerrada','Pausada','Finalizada'].map(s=>`<option ${b.status===s?'selected':''}>${s}</option>`).join('')}
                            </select>`}
-                    ${b.status==='Cerrada' ? `<button class="btn-sm" style="font-size:11px" onclick="reabrir(${b.id})"><i class="fas fa-undo" style="font-size:8px"></i> Reabrir</button>` : ''}
+                    ${(b.status==='Cerrada'||b.status==='Finalizada') ? `<button class="btn-sm" style="font-size:11px" onclick="reabrir(${b.id})"><i class="fas fa-redo" style="font-size:8px"></i> Reabrir</button>` : ''}
                     ${isAdmin() ? `<button class="btn-sm btn-danger" onclick="eliminar(${b.id})"><i class="fas fa-trash" style="font-size:8px"></i></button>` : ''}
                 </div>
             </td>
@@ -726,23 +785,34 @@ function renderTable() {
     renderKPIs();
     updateDeptoFilter();
 }
- 
+
 function renderKPIs() {
-    const total = busquedas.length;
-    const proceso = busquedas.filter(b=>b.status==='Proceso').length;
-    const cerradas = busquedas.filter(b=>b.status==='Cerrada').length;
-    const vencidas = busquedas.filter(b=>{ const d=daysDiff(b.inicio); return d>(DEMORA_LIMITE[b.nivel]||15)&&b.status==='Proceso'; }).length;
+    const total      = busquedas.length;
+    const proceso    = busquedas.filter(b=>b.status==='Proceso').length;
+    const cerradas   = busquedas.filter(b=>b.status==='Cerrada').length;
+    const finalizadas= busquedas.filter(b=>b.status==='Finalizada').length;
+    const vencidas   = busquedas.filter(b=>{ const d=daysDiff(b.inicio); return d>(DEMORA_LIMITE[b.nivel]||15)&&b.status==='Proceso'; }).length;
+
+    // KPI row en main
     document.getElementById('kpi-row').innerHTML = `
         <div class="kpi"><div class="kpi-num">${total}</div><div class="kpi-lbl">Total búsquedas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--blue)">${proceso}</div><div class="kpi-lbl">En proceso</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--green)">${cerradas}</div><div class="kpi-lbl">Cerradas</div></div>
+        <div class="kpi"><div class="kpi-num" style="color:#92400e">${finalizadas}</div><div class="kpi-lbl">Finalizadas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--red)">${vencidas}</div><div class="kpi-lbl">Fuera de plazo</div></div>`;
+
+    // KPI en sidebar (entre logo y nav)
+    document.getElementById('sidebar-kpis').innerHTML = `
+        <div class="sidebar-kpi"><div class="sidebar-kpi-num">${total}</div><div class="sidebar-kpi-lbl">Total</div></div>
+        <div class="sidebar-kpi"><div class="sidebar-kpi-num blue">${proceso}</div><div class="sidebar-kpi-lbl">En curso</div></div>
+        <div class="sidebar-kpi"><div class="sidebar-kpi-num green">${cerradas + finalizadas}</div><div class="sidebar-kpi-lbl">Cerradas</div></div>
+        <div class="sidebar-kpi"><div class="sidebar-kpi-num red">${vencidas}</div><div class="sidebar-kpi-lbl">Vencidas</div></div>`;
 }
- 
+
 function applyFilters() {
-    const sel = document.getElementById('f-selector').value;
-    const tipo = document.getElementById('f-tipo').value;
-    const depto = document.getElementById('f-depto').value;
+    const sel    = document.getElementById('f-selector').value;
+    const tipo   = document.getElementById('f-tipo').value;
+    const depto  = document.getElementById('f-depto').value;
     const status = document.getElementById('f-status').value;
     const search = document.getElementById('f-search').value.toLowerCase();
     filteredIds = busquedas.filter(b => {
@@ -755,22 +825,26 @@ function applyFilters() {
     }).map(b => b.id);
     renderTable();
 }
- 
+
 function updateDeptoFilter() {
     const deptos = [...new Set(busquedas.map(b=>b.depto))];
     const sel = document.getElementById('f-depto');
     const cur = sel.value;
     sel.innerHTML = '<option value="">Todos los dptos.</option>' + deptos.map(d=>`<option ${d===cur?'selected':''}>${d}</option>`).join('');
 }
- 
+
 async function updateField(id, field, val) {
     const update = { [field]: val };
     if (field === 'ingreso' && val) update.status = 'Cerrada';
     const { error } = await sb.from('busquedas').update(update).eq('id', id);
     if (error) { toast('Error al guardar', true); return; }
-    await loadData(); renderTable(); toast('Guardado ✓');
+    await loadData();
+    // Re-chequear finalizaciones si cambió el ingreso
+    if (field === 'ingreso') await checkAndFinalizeSearches();
+    renderTable();
+    toast('Guardado ✓');
 }
- 
+
 async function addEstadoEntry(id) {
     const input = document.getElementById('estado-input-' + id);
     const texto = input?.value.trim();
@@ -780,27 +854,13 @@ async function addEstadoEntry(id) {
     input.value = '';
     await loadData(); renderTable(); toast('Comentario agregado ✓');
 }
- 
+
 async function removeEstadoEntry(entryId) {
     if (!isAdmin()) { toast('Solo un administrador puede eliminar comentarios', true); return; }
     await sb.from('estado_log').delete().eq('id', entryId);
     await loadData(); renderTable(); toast('Eliminado');
 }
- 
-function openHistModal(id) { document.getElementById('hist-bid').value = id; document.getElementById('hist-texto').value = ''; openModal('modal-hist'); }
-async function saveHist() {
-    const id = +document.getElementById('hist-bid').value;
-    const texto = document.getElementById('hist-texto').value.trim();
-    if (!texto) return;
-    const { error } = await sb.from('historial').insert({ busqueda_id: id, texto, fecha: new Date().toISOString() });
-    if (error) { toast('Error al guardar', true); return; }
-    closeModal('modal-hist'); await loadData(); renderTable(); toast('Historial actualizado ✓');
-}
-async function removeHist(histId) {
-    await sb.from('historial').delete().eq('id', histId);
-    await loadData(); renderTable(); toast('Eliminado');
-}
- 
+
 function openCandModal(id) { document.getElementById('cand-bid').value = id; document.getElementById('cand-nombre').value = ''; openModal('modal-cand'); }
 async function saveCand() {
     const id = +document.getElementById('cand-bid').value;
@@ -828,7 +888,7 @@ async function updateCandEstado(candId, estado) {
     await sb.from('candidatos').update(update).eq('id', candId);
     await loadData(); renderTable(); toast('Estado actualizado ✓');
 }
- 
+
 function openPsicoModal(id) {
     document.getElementById('psico-bid').value = id;
     ['psico-nombre','psico-realizado','psico-auth'].forEach(i => document.getElementById(i).value = '');
@@ -851,7 +911,7 @@ async function removePsico(psicoId) {
     await sb.from('psicotecnicos').delete().eq('id', psicoId);
     await loadData(); renderTable(); toast('Eliminado');
 }
- 
+
 async function addNew() {
     const puesto = document.getElementById('n-puesto').value.trim();
     if (!puesto) { toast('Ingresá el puesto', true); return; }
@@ -873,18 +933,30 @@ async function addNew() {
     await sb.from('historial').insert({ busqueda_id: data.id, texto: 'Apertura de vacante', fecha: new Date().toISOString() });
     closeModal('modal-nueva'); await loadData(); renderTable(); toast('Búsqueda creada ✓');
 }
- 
+
+// REABRIR: usa el inicio original para que el contador acumule días históricos
 async function reabrir(id) {
     const orig = busquedas.find(x=>x.id===id);
     if (!orig || !confirm(`¿Reabrir búsqueda "${orig.puesto}"?`)) return;
     const { data: nueva, error } = await sb.from('busquedas').insert({
-        numero: nextNro(), puesto: orig.puesto, selector: orig.selector,
-        depto: orig.depto, tipo: orig.tipo, motivo: orig.motivo,
-        nivel: orig.nivel, sueldo: orig.sueldo, jornada: orig.jornada,
-        ubicacion: orig.ubicacion, inicio: today(), status: 'Proceso',
-        ingreso: null, ingreso_nombre: ''
+        numero: nextNro(),
+        puesto: orig.puesto,
+        selector: orig.selector,
+        depto: orig.depto,
+        tipo: orig.tipo,
+        motivo: orig.motivo,
+        nivel: orig.nivel,
+        sueldo: orig.sueldo,
+        jornada: orig.jornada,
+        ubicacion: orig.ubicacion,
+        inicio: orig.inicio,          // ← hereda el inicio original (suma demora acumulada)
+        status: 'Proceso',
+        ingreso: null,
+        ingreso_nombre: '',
+        reopened_from: orig.numero    // ← referencia al número original
     }).select().single();
-    if (error) { toast('Error', true); return; }
+    if (error) { toast('Error al reabrir', true); return; }
+    // Historial previo + nota de reapertura
     const historialAnterior = orig.historial.map(h => ({
         busqueda_id: nueva.id,
         texto: h.texto,
@@ -892,21 +964,21 @@ async function reabrir(id) {
     }));
     historialAnterior.push({
         busqueda_id: nueva.id,
-        texto: `Reapertura. Anterior ingresó: ${orig.ingreso_nombre||'N/D'} (${orig.ingreso||'sin fecha'})`,
+        texto: `Reapertura de ${orig.numero}. Anterior ingresado: ${orig.ingreso_nombre||'N/D'} (${orig.ingreso||'sin fecha'})`,
         fecha: new Date().toISOString()
     });
     await sb.from('historial').insert(historialAnterior);
     await sb.from('busquedas').update({ status: 'Cerrada' }).eq('id', id);
     await loadData(); renderTable(); toast('Búsqueda reabierta ✓');
 }
- 
+
 async function eliminar(id) {
     if (!isAdmin()) { toast('Solo un administrador puede eliminar búsquedas', true); return; }
     if (!confirm('¿Eliminar esta búsqueda?')) return;
     await sb.from('busquedas').delete().eq('id', id);
     await loadData(); renderTable(); toast('Búsqueda eliminada');
 }
- 
+
 async function subirPDF(busquedaId, input) {
     const file = input.files[0];
     if (!file) return;
@@ -931,17 +1003,20 @@ async function eliminarPDF(archivoId, storagePath) {
     await sb.from('archivos').delete().eq('id', archivoId);
     await loadData(); renderTable(); toast('Archivo eliminado');
 }
- 
+
 function showView(v, btn) {
     if ((v === 'stats' || v === 'charts') && !isAdmin()) {
-        toast('Acceso restringido a administradores', true);
-        return;
+        toast('Acceso restringido a administradores', true); return;
     }
     ['pipeline','stats','charts'].forEach(id => document.getElementById('view-'+id).classList.toggle('hidden', id!==v));
     document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     window.scrollTo({top:0,behavior:'smooth'});
-    const titles = { pipeline:['Pipeline de Selección','Control de búsquedas, seguimiento y feedback'], stats:['Estadísticas','Análisis de rendimiento y métricas'], charts:['Gráficos','Visualizaciones interactivas del pipeline'] };
+    const titles = {
+        pipeline:['Pipeline de Selección','Control de búsquedas, seguimiento y feedback'],
+        stats:   ['Estadísticas','Análisis de rendimiento y métricas'],
+        charts:  ['Gráficos','Visualizaciones interactivas del pipeline']
+    };
     document.getElementById('main-title').textContent = titles[v][0];
     document.getElementById('main-sub').textContent   = titles[v][1];
     if (v==='stats')  renderStats('general');
@@ -950,7 +1025,8 @@ function showView(v, btn) {
 function openModal(id='modal-nueva') { document.getElementById(id).classList.remove('hidden'); }
 function closeModal(id='modal-nueva') { document.getElementById(id).classList.add('hidden'); }
 document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.add('hidden'); }));
- 
+
+// ── STATS ──
 function switchStatsTab(tab, btn) {
     document.querySelectorAll('#view-stats .page-tab').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active'); renderStats(tab);
@@ -962,7 +1038,7 @@ function renderStats(tab) {
     subset.forEach(b => {
         if (!bySelector[b.selector]) bySelector[b.selector] = {total:0,cerradas:0,dias:[]};
         bySelector[b.selector].total++;
-        if (b.status==='Cerrada') bySelector[b.selector].cerradas++;
+        if (b.status==='Cerrada'||b.status==='Finalizada') bySelector[b.selector].cerradas++;
         bySelector[b.selector].dias.push(b.ingreso ? daysDiff(b.inicio,b.ingreso) : daysDiff(b.inicio));
     });
     const byDepto = {}; subset.forEach(b => { byDepto[b.depto]=(byDepto[b.depto]||0)+1; });
@@ -1005,75 +1081,136 @@ function renderStats(tab) {
             <div class="stat-card"><div class="stat-card-title">Resumen General</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
                     <div style="text-align:center;padding:14px;background:var(--bg);border-radius:8px"><div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800">${subset.length}</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:2px">Búsquedas</div></div>
-                    <div style="text-align:center;padding:14px;background:var(--bg);border-radius:8px"><div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--green)">${subset.filter(b=>b.status==='Cerrada').length}</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:2px">Cerradas</div></div>
+                    <div style="text-align:center;padding:14px;background:var(--bg);border-radius:8px"><div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--green)">${subset.filter(b=>b.status==='Cerrada'||b.status==='Finalizada').length}</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:2px">Cerradas/Fin.</div></div>
                     <div style="text-align:center;padding:14px;background:var(--bg);border-radius:8px"><div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--orange)">${subset.reduce((a,b)=>a+b.candidatos.length,0)}</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:2px">Candidatos</div></div>
                     <div style="text-align:center;padding:14px;background:var(--bg);border-radius:8px"><div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--blue)">${subset.reduce((a,b)=>a+b.psicotecnicos.length,0)}</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:2px">Psicotécnicos</div></div>
                 </div>
             </div>
         </div>`;
 }
- 
+
+// ── GRÁFICOS ──
 let chartInstances = {};
 function destroyCharts() { Object.values(chartInstances).forEach(c=>{try{c.destroy();}catch(e){}}); chartInstances={}; }
 function switchChartsTab(tab,btn) { document.querySelectorAll('#view-charts .page-tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderCharts(tab); }
 function renderCharts(tab) { destroyCharts(); if(tab==='general') renderChartsGeneral(); else if(tab==='tiempo') renderChartsTiempo(); else if(tab==='selectores') renderChartsSelectores(); }
- 
+
 function renderChartsGeneral() {
-    const cerradas=busquedas.filter(b=>b.status==='Cerrada').length;
-    const proceso=busquedas.filter(b=>b.status==='Proceso').length;
-    const pausadas=busquedas.filter(b=>b.status==='Pausada').length;
-    const tasaCierre=Math.round((cerradas/Math.max(busquedas.length,1))*100);
-    const totalCands=busquedas.reduce((a,b)=>a+b.candidatos.length,0);
-    const totalPsico=busquedas.reduce((a,b)=>a+b.psicotecnicos.length,0);
-    const byStatus={}; busquedas.forEach(b=>{byStatus[b.status]=(byStatus[b.status]||0)+1;});
-    const staff=busquedas.filter(b=>b.tipo==='Staff').length;
-    const fabrica=busquedas.filter(b=>b.tipo==='Fábrica').length;
-    const byMotivo={}; busquedas.forEach(b=>{byMotivo[b.motivo]=(byMotivo[b.motivo]||0)+1;});
-    const byDepto={}; busquedas.forEach(b=>{byDepto[b.depto]=(byDepto[b.depto]||0)+1;});
-    const byUbic={}; busquedas.forEach(b=>{byUbic[b.ubicacion]=(byUbic[b.ubicacion]||0)+1;});
-    const byNivel={}; busquedas.forEach(b=>{byNivel[b.nivel]=(byNivel[b.nivel]||0)+1;});
+    const cerradas   = busquedas.filter(b=>b.status==='Cerrada'||b.status==='Finalizada').length;
+    const proceso    = busquedas.filter(b=>b.status==='Proceso').length;
+    const pausadas   = busquedas.filter(b=>b.status==='Pausada').length;
+    const finalizadas= busquedas.filter(b=>b.status==='Finalizada').length;
+    const tasaCierre = Math.round((cerradas/Math.max(busquedas.length,1))*100);
+    const totalCands = busquedas.reduce((a,b)=>a+b.candidatos.length,0);
+    const totalPsico = busquedas.reduce((a,b)=>a+b.psicotecnicos.length,0);
+    const byStatus   = {}; busquedas.forEach(b=>{byStatus[b.status]=(byStatus[b.status]||0)+1;});
+    const staff      = busquedas.filter(b=>b.tipo==='Staff').length;
+    const fabrica    = busquedas.filter(b=>b.tipo==='Fábrica').length;
+    const byMotivo   = {}; busquedas.forEach(b=>{byMotivo[b.motivo]=(byMotivo[b.motivo]||0)+1;});
+    const byDepto    = {}; busquedas.forEach(b=>{byDepto[b.depto]=(byDepto[b.depto]||0)+1;});
+    const byNivel    = {}; busquedas.forEach(b=>{byNivel[b.nivel]=(byNivel[b.nivel]||0)+1;});
+
+    // PERMANENCIA POR PERSONA (reemplaza gráfico de ubicación)
+    const permData = busquedas
+        .filter(b => b.ingreso_nombre && b.ingreso)
+        .map(b => ({ nombre: b.ingreso_nombre, dias: daysDiff(b.ingreso), puesto: b.puesto }))
+        .sort((a,b) => b.dias - a.dias)
+        .slice(0, 20);
+
     document.getElementById('charts-content').innerHTML = `
     <div class="mini-kpi-row">
         <div class="mini-kpi"><div class="mini-kpi-num">${busquedas.length}</div><div class="mini-kpi-lbl">Total</div><div class="mini-kpi-sub">${proceso} en curso · ${pausadas} pausadas</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${tasaCierre}%</div><div class="mini-kpi-lbl">Tasa de Cierre</div><div class="mini-kpi-sub">${cerradas} de ${busquedas.length}</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--orange)">${totalCands}</div><div class="mini-kpi-lbl">Candidatos</div><div class="mini-kpi-sub">⌀ ${(totalCands/Math.max(busquedas.length,1)).toFixed(1)} por búsqueda</div></div>
-        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--blue)">${totalPsico}</div><div class="mini-kpi-lbl">Psicotécnicos</div><div class="mini-kpi-sub">⌀ ${(totalPsico/Math.max(cerradas,1)).toFixed(1)} por ingreso</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:#92400e">${finalizadas}</div><div class="mini-kpi-lbl">Finalizadas</div><div class="mini-kpi-sub">≥ 90 días en empresa</div></div>
     </div>
     <div class="charts-grid">
         <div class="chart-card"><div class="chart-card-title"><i class="fas fa-circle-half-stroke"></i> Estado del Pipeline</div><div class="chart-wrap"><canvas id="ch-status"></canvas></div></div>
         <div class="chart-card"><div class="chart-card-title"><i class="fas fa-industry"></i> Staff vs Fábrica</div><div class="chart-wrap"><canvas id="ch-tipo"></canvas></div></div>
         <div class="chart-card full"><div class="chart-card-title"><i class="fas fa-building"></i> Por Departamento</div><div class="chart-wrap-lg"><canvas id="ch-depto"></canvas></div></div>
     </div>
-    <div class="charts-grid-3">
+    <div class="charts-grid-2" style="margin-top:20px">
         <div class="chart-card"><div class="chart-card-title"><i class="fas fa-tag"></i> Por Motivo</div><div class="chart-wrap-sm"><canvas id="ch-motivo"></canvas></div></div>
-        <div class="chart-card"><div class="chart-card-title"><i class="fas fa-map-marker-alt"></i> Por Ubicación</div><div class="chart-wrap-sm"><canvas id="ch-ubic"></canvas></div></div>
         <div class="chart-card"><div class="chart-card-title"><i class="fas fa-layer-group"></i> Por Nivel</div><div class="chart-wrap-sm"><canvas id="ch-nivel"></canvas></div></div>
+    </div>
+    <div style="margin-top:20px">
+        <div class="chart-card">
+            <div class="chart-card-title"><i class="fas fa-user-clock"></i> Permanencia por Persona (días en empresa)</div>
+            ${permData.length > 0
+                ? `<div style="position:relative;height:${Math.max(180, permData.length * 28)}px"><canvas id="ch-perm"></canvas></div>`
+                : `<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Sin ingresos registrados aún</div>`}
+        </div>
     </div>`;
-    const palette=['#1a1714','#005f73','#2d6a4f','#ca6702','#9b2226','#b5a300','#4a1272','#0a367a'];
-    const cd={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'DM Sans',size:11},color:'#1a1714'}}}};
-    chartInstances['status']=new Chart(document.getElementById('ch-status'),{type:'doughnut',data:{labels:Object.keys(byStatus),datasets:[{data:Object.values(byStatus),backgroundColor:['#cfe2ff','#d1e7dd','#fff3cd','#f0d9ff'],borderColor:['#0a367a','#0a3622','#664d03','#4a1272'],borderWidth:2}]},options:{...cd,cutout:'65%'}});
-    chartInstances['tipo']=new Chart(document.getElementById('ch-tipo'),{type:'pie',data:{labels:['Staff','Fábrica'],datasets:[{data:[staff,fabrica],backgroundColor:['#005f73','#2d6a4f'],borderColor:['#fff','#fff'],borderWidth:3}]},options:{...cd}});
-    const dl=Object.keys(byDepto).sort((a,b)=>byDepto[b]-byDepto[a]);
-    chartInstances['depto']=new Chart(document.getElementById('ch-depto'),{type:'bar',data:{labels:dl,datasets:[{label:'Búsquedas',data:dl.map(d=>byDepto[d]),backgroundColor:dl.map((_,i)=>palette[i%palette.length]+'cc'),borderColor:dl.map((_,i)=>palette[i%palette.length]),borderWidth:2,borderRadius:6}]},options:{...cd,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}});
-    chartInstances['motivo']=new Chart(document.getElementById('ch-motivo'),{type:'doughnut',data:{labels:Object.keys(byMotivo),datasets:[{data:Object.values(byMotivo),backgroundColor:['#cfe2ff','#ffd6a5','#d8f3dc'],borderWidth:2}]},options:{...cd,cutout:'55%'}});
-    chartInstances['ubic']=new Chart(document.getElementById('ch-ubic'),{type:'polarArea',data:{labels:Object.keys(byUbic),datasets:[{data:Object.values(byUbic),backgroundColor:palette.map(c=>c+'99')}]},options:{...cd,scales:{r:{ticks:{font:{family:'DM Mono',size:9}}}}}});
-    chartInstances['nivel']=new Chart(document.getElementById('ch-nivel'),{type:'bar',data:{labels:Object.keys(byNivel),datasets:[{label:'Cantidad',data:Object.values(byNivel),backgroundColor:['#ca6702cc','#005f73cc','#9b2226cc'],borderRadius:6}]},options:{...cd,plugins:{legend:{display:false}},indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{precision:0}},y:{grid:{display:false}}}}});
+
+    const palette = ['#1a1714','#005f73','#2d6a4f','#ca6702','#9b2226','#b5a300','#4a1272','#0a367a'];
+    const cd = { responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{font:{family:'DM Sans',size:11},color:'#1a1714'}}} };
+
+    chartInstances['status'] = new Chart(document.getElementById('ch-status'),{type:'doughnut',data:{labels:Object.keys(byStatus),datasets:[{data:Object.values(byStatus),backgroundColor:['#cfe2ff','#d1e7dd','#fff3cd','#fef3c7','#f0d9ff'],borderColor:['#0a367a','#0a3622','#664d03','#92400e','#4a1272'],borderWidth:2}]},options:{...cd,cutout:'65%'}});
+    chartInstances['tipo']   = new Chart(document.getElementById('ch-tipo'),{type:'pie',data:{labels:['Staff','Fábrica'],datasets:[{data:[staff,fabrica],backgroundColor:['#005f73','#2d6a4f'],borderColor:['#fff','#fff'],borderWidth:3}]},options:{...cd}});
+    const dl = Object.keys(byDepto).sort((a,b)=>byDepto[b]-byDepto[a]);
+    chartInstances['depto']  = new Chart(document.getElementById('ch-depto'),{type:'bar',data:{labels:dl,datasets:[{label:'Búsquedas',data:dl.map(d=>byDepto[d]),backgroundColor:dl.map((_,i)=>palette[i%palette.length]+'cc'),borderColor:dl.map((_,i)=>palette[i%palette.length]),borderWidth:2,borderRadius:6}]},options:{...cd,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}});
+    chartInstances['motivo'] = new Chart(document.getElementById('ch-motivo'),{type:'doughnut',data:{labels:Object.keys(byMotivo),datasets:[{data:Object.values(byMotivo),backgroundColor:['#cfe2ff','#ffd6a5','#d8f3dc'],borderWidth:2}]},options:{...cd,cutout:'55%'}});
+    chartInstances['nivel']  = new Chart(document.getElementById('ch-nivel'),{type:'bar',data:{labels:Object.keys(byNivel),datasets:[{label:'Cantidad',data:Object.values(byNivel),backgroundColor:['#ca6702cc','#005f73cc','#9b2226cc'],borderRadius:6}]},options:{...cd,plugins:{legend:{display:false}},indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{precision:0}},y:{grid:{display:false}}}}});
+
+    // Gráfico de permanencia (horizontal bar)
+    if (permData.length > 0) {
+        const permColors = permData.map(p =>
+            p.dias >= 180 ? '#2d6a4f' :
+            p.dias >= 90  ? '#005f73' :
+            p.dias >= 30  ? '#ca6702' : '#9b2226'
+        );
+        chartInstances['perm'] = new Chart(document.getElementById('ch-perm'), {
+            type: 'bar',
+            data: {
+                labels: permData.map(p => p.nombre),
+                datasets: [{
+                    label: 'Días en empresa',
+                    data: permData.map(p => p.dias),
+                    backgroundColor: permColors.map(c => c + 'cc'),
+                    borderColor: permColors,
+                    borderWidth: 2,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => {
+                                const p = permData[ctx.dataIndex];
+                                const m = p.dias >= 180 ? ' 🏆 6m+' : p.dias >= 90 ? ' ✓ 3m+' : p.dias >= 30 ? ' 1m+' : '';
+                                return ` ${p.dias} días en empresa${m}`;
+                            },
+                            afterLabel: ctx => ` Puesto: ${permData[ctx.dataIndex].puesto}`
+                        }
+                    }
+                },
+                scales: {
+                    x: { beginAtZero: true, ticks: { precision: 0, font:{family:'DM Mono',size:10} }, grid: { color: '#e5e0d8' } },
+                    y: { ticks: { font: { family: 'DM Sans', size: 11 } }, grid: { display: false } }
+                }
+            }
+        });
+    }
 }
- 
+
 function renderChartsTiempo() {
-    const cerradas=busquedas.filter(b=>b.status==='Cerrada'&&b.ingreso);
-    const diasList=cerradas.map(b=>daysDiff(b.inicio,b.ingreso));
-    const avgDias=diasList.length?Math.round(diasList.reduce((a,c)=>a+c,0)/diasList.length):0;
-    const minDias=diasList.length?Math.min(...diasList):0;
-    const maxDias=diasList.length?Math.max(...diasList):0;
-    const rangos={'0–10d':0,'11–20d':0,'21–30d':0,'31–45d':0,'+45d':0};
+    const cerradas = busquedas.filter(b=>(b.status==='Cerrada'||b.status==='Finalizada')&&b.ingreso);
+    const diasList = cerradas.map(b=>daysDiff(b.inicio,b.ingreso));
+    const avgDias  = diasList.length?Math.round(diasList.reduce((a,c)=>a+c,0)/diasList.length):0;
+    const minDias  = diasList.length?Math.min(...diasList):0;
+    const maxDias  = diasList.length?Math.max(...diasList):0;
+    const rangos   = {'0–10d':0,'11–20d':0,'21–30d':0,'31–45d':0,'+45d':0};
     diasList.forEach(d=>{if(d<=10)rangos['0–10d']++;else if(d<=20)rangos['11–20d']++;else if(d<=30)rangos['21–30d']++;else if(d<=45)rangos['31–45d']++;else rangos['+45d']++;});
-    const bySel={};
+    const bySel = {};
     cerradas.forEach(b=>{if(!bySel[b.selector])bySel[b.selector]=[];bySel[b.selector].push(daysDiff(b.inicio,b.ingreso));});
-    const selAvg=Object.entries(bySel).map(([s,d])=>({sel:s,avg:Math.round(d.reduce((a,c)=>a+c,0)/d.length)})).sort((a,b)=>a.avg-b.avg);
-    const byNivel={};
+    const selAvg = Object.entries(bySel).map(([s,d])=>({sel:s,avg:Math.round(d.reduce((a,c)=>a+c,0)/d.length)})).sort((a,b)=>a.avg-b.avg);
+    const byNivel = {};
     cerradas.forEach(b=>{if(!byNivel[b.nivel])byNivel[b.nivel]=[];byNivel[b.nivel].push(daysDiff(b.inicio,b.ingreso));});
-    const nivelAvg=Object.entries(byNivel).map(([n,d])=>({nivel:n,avg:Math.round(d.reduce((a,c)=>a+c,0)/d.length),limite:DEMORA_LIMITE[n]||15}));
+    const nivelAvg = Object.entries(byNivel).map(([n,d])=>({nivel:n,avg:Math.round(d.reduce((a,c)=>a+c,0)/d.length),limite:DEMORA_LIMITE[n]||15}));
     document.getElementById('charts-content').innerHTML=`
     <div class="mini-kpi-row">
         <div class="mini-kpi"><div class="mini-kpi-num">${avgDias}d</div><div class="mini-kpi-lbl">Tiempo promedio</div><div class="mini-kpi-sub">${cerradas.length} búsquedas cerradas</div></div>
@@ -1089,26 +1226,26 @@ function renderChartsTiempo() {
     <div style="margin-top:20px"><div class="chart-card"><div class="chart-card-title"><i class="fas fa-list-ol"></i> Ranking más rápidas</div>
     <div>${cerradas.sort((a,b)=>daysDiff(a.inicio,a.ingreso)-daysDiff(b.inicio,b.ingreso)).slice(0,6).map((b,i)=>{const d=daysDiff(b.inicio,b.ingreso);const lim=DEMORA_LIMITE[b.nivel]||15;return`<div class="rank-row"><span class="rank-pos">#${i+1}</span><span class="rank-name">${b.puesto} <span style="font-size:11px;color:var(--muted)">· ${b.selector}</span></span><span class="rank-stat" style="color:${d<=lim?'var(--green)':'var(--red)'}">${d}d</span><span style="font-size:11px;color:var(--muted);margin-left:6px">lim. ${lim}d</span></div>`;}).join('')}</div>
     </div></div>`;
-    chartInstances['dist']=new Chart(document.getElementById('ch-dist'),{type:'bar',data:{labels:Object.keys(rangos),datasets:[{label:'Búsquedas',data:Object.values(rangos),backgroundColor:['#d1e7dd','#cfe2ff','#fff3cd','#ffd6a5','#f8d7da'],borderColor:['#0a3622','#0a367a','#664d03','#7c3d00','#721c24'],borderWidth:2,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}});
-    chartInstances['seltime']=new Chart(document.getElementById('ch-seltime'),{type:'bar',data:{labels:selAvg.map(s=>s.sel),datasets:[{label:'Días promedio',data:selAvg.map(s=>s.avg),backgroundColor:selAvg.map(s=>s.avg>20?'#f8d7da':'#d1e7dd'),borderColor:selAvg.map(s=>s.avg>20?'#721c24':'#0a3622'),borderWidth:2,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}});
-    chartInstances['nivellib']=new Chart(document.getElementById('ch-nivellib'),{type:'bar',data:{labels:nivelAvg.map(n=>n.nivel),datasets:[{label:'Tiempo real (días)',data:nivelAvg.map(n=>n.avg),backgroundColor:'#005f73cc',borderRadius:4},{label:'Límite establecido',data:nivelAvg.map(n=>n.limite),backgroundColor:'#9b222633',borderColor:'#9b2226',borderWidth:2,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}});
+    chartInstances['dist']     = new Chart(document.getElementById('ch-dist'),{type:'bar',data:{labels:Object.keys(rangos),datasets:[{label:'Búsquedas',data:Object.values(rangos),backgroundColor:['#d1e7dd','#cfe2ff','#fff3cd','#ffd6a5','#f8d7da'],borderColor:['#0a3622','#0a367a','#664d03','#7c3d00','#721c24'],borderWidth:2,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}});
+    chartInstances['seltime']  = new Chart(document.getElementById('ch-seltime'),{type:'bar',data:{labels:selAvg.map(s=>s.sel),datasets:[{label:'Días promedio',data:selAvg.map(s=>s.avg),backgroundColor:selAvg.map(s=>s.avg>20?'#f8d7da':'#d1e7dd'),borderColor:selAvg.map(s=>s.avg>20?'#721c24':'#0a3622'),borderWidth:2,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}});
+    chartInstances['nivellib'] = new Chart(document.getElementById('ch-nivellib'),{type:'bar',data:{labels:nivelAvg.map(n=>n.nivel),datasets:[{label:'Tiempo real (días)',data:nivelAvg.map(n=>n.avg),backgroundColor:'#005f73cc',borderRadius:4},{label:'Límite establecido',data:nivelAvg.map(n=>n.limite),backgroundColor:'#9b222633',borderColor:'#9b2226',borderWidth:2,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}});
 }
- 
+
 function renderChartsSelectores() {
-    const data={};
-    const selectores=['Vagioleth','Juan','Magali','Silvina','Soledad'];
+    const data = {};
+    const selectores = ['Vagioleth','Juan','Magali','Silvina','Soledad'];
     selectores.forEach(s=>{data[s]={total:0,cerradas:0,proceso:0,candidatos:0,psico:0,psico_realizado:0,dias:[]};});
     busquedas.forEach(b=>{
         if(!data[b.selector])return;
         data[b.selector].total++;
-        if(b.status==='Cerrada'){data[b.selector].cerradas++;if(b.ingreso)data[b.selector].dias.push(daysDiff(b.inicio,b.ingreso));}
+        if(b.status==='Cerrada'||b.status==='Finalizada'){data[b.selector].cerradas++;if(b.ingreso)data[b.selector].dias.push(daysDiff(b.inicio,b.ingreso));}
         if(b.status==='Proceso')data[b.selector].proceso++;
         data[b.selector].candidatos+=b.candidatos.length;
         data[b.selector].psico+=b.psicotecnicos.length;
         b.psicotecnicos.forEach(p=>{if(p.selector_psico&&data[p.selector_psico])data[p.selector_psico].psico_realizado++;});
     });
-    const activos=selectores.filter(s=>data[s].total>0);
-    const avgDiasPerSel=activos.map(s=>data[s].dias.length?Math.round(data[s].dias.reduce((a,c)=>a+c,0)/data[s].dias.length):0);
+    const activos = selectores.filter(s=>data[s].total>0);
+    const avgDiasPerSel = activos.map(s=>data[s].dias.length?Math.round(data[s].dias.reduce((a,c)=>a+c,0)/data[s].dias.length):0);
     document.getElementById('charts-content').innerHTML=`
     <div class="mini-kpi-row">${activos.map(s=>`<div class="mini-kpi"><div class="mini-kpi-num">${data[s].total}</div><div class="mini-kpi-lbl">${s}</div><div class="mini-kpi-sub">${data[s].cerradas} cerradas · ${data[s].proceso} en curso</div></div>`).join('')}</div>
     <div class="charts-grid">
@@ -1132,12 +1269,12 @@ function renderChartsSelectores() {
             </tr>`).join('')}</tbody>
         </table></div>
     </div></div>`;
-    const colors=['#1a1714','#005f73','#2d6a4f','#ca6702','#9b2226'];
-    const cOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0,font:{family:'DM Mono',size:10}},grid:{color:'#e5e0d8'}},x:{ticks:{font:{family:'DM Sans',size:11}},grid:{display:false}}}};
-    chartInstances['seltotal']=new Chart(document.getElementById('ch-seltotal'),{type:'bar',data:{labels:activos,datasets:[{label:'Total',data:activos.map(s=>data[s].total),backgroundColor:colors.map(c=>c+'cc'),borderColor:colors,borderWidth:2,borderRadius:6}]},options:cOpts});
-    chartInstances['seltasa']=new Chart(document.getElementById('ch-seltasa'),{type:'bar',data:{labels:activos,datasets:[{label:'Tasa %',data:activos.map(s=>Math.round((data[s].cerradas/Math.max(data[s].total,1))*100)),backgroundColor:activos.map(s=>Math.round((data[s].cerradas/Math.max(data[s].total,1))*100)>50?'#d1e7ddcc':'#fff3cdcc'),borderColor:activos.map(s=>Math.round((data[s].cerradas/Math.max(data[s].total,1))*100)>50?'#0a3622':'#664d03'),borderWidth:2,borderRadius:6}]},options:{...cOpts,scales:{...cOpts.scales,y:{...cOpts.scales.y,max:100}}}});
-    chartInstances['selcand']=new Chart(document.getElementById('ch-selcand'),{type:'bar',data:{labels:activos,datasets:[{label:'Candidatos',data:activos.map(s=>data[s].candidatos),backgroundColor:'#ca6702cc',borderColor:'#ca6702',borderWidth:2,borderRadius:6}]},options:cOpts});
-    chartInstances['selpsico']=new Chart(document.getElementById('ch-selpsico'),{type:'bar',data:{labels:activos,datasets:[{label:'Psico realizados',data:activos.map(s=>data[s].psico_realizado),backgroundColor:'#005f73cc',borderColor:'#005f73',borderWidth:2,borderRadius:6}]},options:cOpts});
+    const colors = ['#1a1714','#005f73','#2d6a4f','#ca6702','#9b2226'];
+    const cOpts = {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0,font:{family:'DM Mono',size:10}},grid:{color:'#e5e0d8'}},x:{ticks:{font:{family:'DM Sans',size:11}},grid:{display:false}}}};
+    chartInstances['seltotal'] = new Chart(document.getElementById('ch-seltotal'),{type:'bar',data:{labels:activos,datasets:[{label:'Total',data:activos.map(s=>data[s].total),backgroundColor:colors.map(c=>c+'cc'),borderColor:colors,borderWidth:2,borderRadius:6}]},options:cOpts});
+    chartInstances['seltasa']  = new Chart(document.getElementById('ch-seltasa'),{type:'bar',data:{labels:activos,datasets:[{label:'Tasa %',data:activos.map(s=>Math.round((data[s].cerradas/Math.max(data[s].total,1))*100)),backgroundColor:activos.map(s=>Math.round((data[s].cerradas/Math.max(data[s].total,1))*100)>50?'#d1e7ddcc':'#fff3cdcc'),borderColor:activos.map(s=>Math.round((data[s].cerradas/Math.max(data[s].total,1))*100)>50?'#0a3622':'#664d03'),borderWidth:2,borderRadius:6}]},options:{...cOpts,scales:{...cOpts.scales,y:{...cOpts.scales.y,max:100}}}});
+    chartInstances['selcand']  = new Chart(document.getElementById('ch-selcand'),{type:'bar',data:{labels:activos,datasets:[{label:'Candidatos',data:activos.map(s=>data[s].candidatos),backgroundColor:'#ca6702cc',borderColor:'#ca6702',borderWidth:2,borderRadius:6}]},options:cOpts});
+    chartInstances['selpsico'] = new Chart(document.getElementById('ch-selpsico'),{type:'bar',data:{labels:activos,datasets:[{label:'Psico realizados',data:activos.map(s=>data[s].psico_realizado),backgroundColor:'#005f73cc',borderColor:'#005f73',borderWidth:2,borderRadius:6}]},options:cOpts});
 }
 </script>
 </body>
