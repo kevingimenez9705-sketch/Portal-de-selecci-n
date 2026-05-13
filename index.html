@@ -164,11 +164,9 @@
         .estado-entry-body { flex: 1; }
         .estado-entry-text { font-size: 12px; font-weight: 600; }
         .estado-entry-meta { font-size: 10px; color: var(--muted); margin-top: 1px; }
-        /* Input comentario simplificado */
         .estado-add-row { display: flex; gap: 5px; margin-top: 6px; }
         .estado-add-input { flex: 1; font-family: 'DM Sans', sans-serif; font-size: 12px; border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; background: #fff; color: var(--text); outline: none; }
         .estado-add-btn { background: var(--text); color: #fff; border: none; border-radius: 6px; padding: 5px 10px; font-size: 11px; cursor: pointer; font-weight: 700; white-space: nowrap; }
-        /* Toggle comentarios */
         .estado-toggle { font-size: 11px; color: var(--blue); background: none; border: none; cursor: pointer; padding: 0; font-weight: 600; display: flex; align-items: center; gap: 4px; margin-top: 4px; }
         .estado-toggle:hover { text-decoration: underline; }
 
@@ -446,6 +444,33 @@ function toast(msg, isError = false) {
     toastTimer = setTimeout(() => t.className = '', 3000);
 }
 
+// ══════════════════════════════════════════════
+//  DÍAS HÁBILES (lunes a viernes, sin fines de semana)
+//  Nota: no descuenta feriados nacionales (se pueden agregar si se necesita)
+// ══════════════════════════════════════════════
+function workingDaysDiff(from, to = null) {
+    if (!from) return 0;
+    const start = new Date(from + 'T00:00:00');
+    const end   = to ? new Date(to + 'T00:00:00') : new Date();
+    // Normalizar a medianoche local para evitar problemas de timezone
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+    if (end <= start) return 0;
+    let count = 0;
+    const cur = new Date(start);
+    cur.setDate(cur.getDate() + 1); // empezar desde el día siguiente
+    while (cur <= end) {
+        const dow = cur.getDay();
+        if (dow !== 0 && dow !== 6) count++; // 0=dom, 6=sáb
+        cur.setDate(cur.getDate() + 1);
+    }
+    return count;
+}
+// Alias para mantener compatibilidad con todos los usos anteriores de daysDiff
+function daysDiff(from, to = null) {
+    return workingDaysDiff(from, to);
+}
+
 async function login() {
     const email = document.getElementById('login-email').value.trim();
     const pass  = document.getElementById('login-pass').value;
@@ -490,6 +515,7 @@ function mapRow(b) {
 function nextNro() { return 'SEL-' + String(nroSeq++).padStart(3, '0'); }
 
 async function checkAndFinalizeSearches() {
+    // Usa días hábiles: 90 días hábiles ≈ ~4.5 meses calendario
     const toFinalize = busquedas.filter(b =>
         b.status === 'Cerrada' && b.ingreso && daysDiff(b.ingreso) >= 90
     );
@@ -525,18 +551,6 @@ async function initApp() {
 }
 initApp();
 
-function daysDiff(from, to = null) {
-    if (!from) return 0;
-    const s = new Date(from), e = to ? new Date(to) : new Date();
-    return Math.max(0, Math.floor((e - s) / 86400000));
-}
-
-// ── Formato moneda con signo $ ──
-function fmtMoney(n) {
-    if (!n || n === 0) return '$ —';
-    return '$ ' + new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(n);
-}
-
 function demoraClass(dias, nivel) {
     const lim = DEMORA_LIMITE[nivel] || 15;
     if (dias <= lim * 0.6) return 'demora-ok';
@@ -560,6 +574,12 @@ function tagClass(s) {
     if (s === 'Sustituida') return 'tag-sustituida';
     if (s === 'Finalizada') return 'tag-finalizada';
     return 'tag-pausada';
+}
+
+// ── Formato moneda con signo $ ──
+function fmtMoney(n) {
+    if (!n || n === 0) return '$ —';
+    return '$ ' + new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(n);
 }
 
 // ══════════════════════════════════════════════
@@ -603,7 +623,7 @@ function renderTable() {
                         tlHtml = `<div class="cand-timeline">
                             <span class="cand-tl-dot cand-tl-dot-blue"></span>
                             <div class="cand-tl-line"></div>
-                            <span class="cand-tl-badge cand-tl-badge-wait">⏳ ${d===0?'Hoy':d+'d esperando'}</span>
+                            <span class="cand-tl-badge cand-tl-badge-wait">⏳ ${d===0?'Hoy':d+'hd esperando'}</span>
                             <div class="cand-tl-line"></div>
                             <span class="cand-tl-dot cand-tl-dot-green" style="opacity:.3"></span>
                         </div>`;
@@ -612,7 +632,7 @@ function renderTable() {
                         tlHtml = `<div class="cand-timeline">
                             <span class="cand-tl-dot cand-tl-dot-blue"></span>
                             <div class="cand-tl-line"></div>
-                            <span class="cand-tl-badge cand-tl-badge-done">✓ ${d===0?'mismo día':d+'d hasta entrevista'}</span>
+                            <span class="cand-tl-badge cand-tl-badge-done">✓ ${d===0?'mismo día':d+'hd hasta entrevista'}</span>
                             <div class="cand-tl-line"></div>
                             <span class="cand-tl-dot cand-tl-dot-green"></span>
                         </div>`;
@@ -642,18 +662,18 @@ function renderTable() {
                 </div>`).join('')
             : `<span class="tip">Sin archivos</span>`;
 
-        // PERMANENCIA
+        // PERMANENCIA (en días hábiles)
         let permHtml = '';
         if (b.ingreso && b.ingreso_nombre) {
-            const milestone = diasEnEmpresa >= 180 ? '🏆 6 meses' : diasEnEmpresa >= 90 ? '✓ 3 meses' : diasEnEmpresa >= 30 ? '📌 1 mes' : '';
+            const milestone = diasEnEmpresa >= 130 ? '🏆 6 meses' : diasEnEmpresa >= 65 ? '✓ 3 meses' : diasEnEmpresa >= 22 ? '📌 1 mes' : '';
             permHtml = `<div class="perm-box">
-                <div class="perm-box-num">${diasEnEmpresa}d</div>
-                <div class="perm-box-lbl">En empresa</div>
+                <div class="perm-box-num">${diasEnEmpresa}hd</div>
+                <div class="perm-box-lbl">Días háb. en empresa</div>
                 ${milestone ? `<div class="perm-box-milestone">${milestone}</div>` : ''}
             </div>`;
         }
 
-        // ESTADO DE BÚSQUEDA (simplificado: solo comentarios con toggle)
+        // ESTADO DE BÚSQUEDA
         const estadoEntriesHtml = (b.estado_busqueda || []).length === 0
             ? `<span class="tip">Sin comentarios</span>`
             : b.estado_busqueda.map((e, idx) => `
@@ -663,7 +683,7 @@ function renderTable() {
                         <div class="estado-entry-text">${e.texto}</div>
                         <div class="estado-entry-meta">
                             <i class="fas fa-clock" style="font-size:9px"></i>
-                            ${daysDiff(e.fecha)===0?'Hoy':'hace '+daysDiff(e.fecha)+'d'} · ${e.fecha}
+                            ${daysDiff(e.fecha)===0?'Hoy':'hace '+daysDiff(e.fecha)+'hd'} · ${e.fecha}
                             ${isAdmin()?`<button onclick="removeEstadoEntry(${e.id})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:10px;margin-left:4px" title="Solo admin">✕</button>`:''}
                         </div>
                     </div>
@@ -685,6 +705,11 @@ function renderTable() {
                 <button class="estado-add-btn" onclick="addEstadoEntry(${b.id})"><i class="fas fa-plus" style="font-size:10px"></i></button>
             </div>` : ''}`;
 
+        // Indicador de reapertura (se guarda en estado_log)
+        const reopenedTag = b.reopened_from
+            ? `<div style="margin-top:3px;font-size:10px;color:var(--blue);font-weight:600"><i class="fas fa-redo" style="font-size:8px"></i> Reapertura de ${b.reopened_from}</div>`
+            : '';
+
         return `
         <tr id="row-${b.id}" class="${isLocked?'row-locked':''}">
             <!-- Col 1: N°/Motivo -->
@@ -693,10 +718,10 @@ function renderTable() {
                 <span class="motivo-chip ${motivoClass(b.motivo)}">${b.motivo}</span>
                 <div style="margin-top:5px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
                     <span class="tag ${tagClass(b.status)}">${b.status}</span>
-                    <span class="demora-badge ${dClass}" title="Límite: ${limite}d">${dias}d</span>
+                    <span class="demora-badge ${dClass}" title="Límite: ${limite}hd (días hábiles)">${dias}hd</span>
                 </div>
                 <div style="margin-top:4px;font-size:11px;color:var(--muted)">Inicio: ${b.inicio}</div>
-                ${b.reopened_from ? `<div style="margin-top:3px;font-size:10px;color:var(--blue);font-weight:600"><i class="fas fa-redo" style="font-size:8px"></i> Reapertura de ${b.reopened_from}</div>` : ''}
+                ${reopenedTag}
             </td>
             <!-- Col 2: Puesto / Dpto / Selector / Nivel (nivel editable) -->
             <td>
@@ -796,7 +821,6 @@ function renderTable() {
                     ${isAdmin() ? `<button class="btn-sm btn-danger" onclick="eliminar(${b.id})"><i class="fas fa-trash" style="font-size:8px"></i></button>` : ''}
                 </div>
             </td>
-            <!-- FIN FILA -->
         </tr>`;
     }).join('');
     renderKPIs();
@@ -953,48 +977,85 @@ async function addNew() {
     closeModal('modal-nueva'); await loadData(); renderTable(); toast('Búsqueda creada ✓');
 }
 
+// ══════════════════════════════════════════════
+//  REABRIR — versión corregida
+//  Problema anterior: la columna "reopened_from" puede no existir en la tabla
+//  o generar conflicto. Ahora se omite del INSERT y se registra el origen
+//  únicamente en estado_log (que sí existe) y en historial.
+// ══════════════════════════════════════════════
 async function reabrir(id) {
-    const orig = busquedas.find(x=>x.id===id);
+    const orig = busquedas.find(x => x.id === id);
     if (!orig) { toast('No se encontró la búsqueda', true); return; }
-    if (!confirm('¿Reabrir búsqueda "' + orig.puesto + '"?')) return;
+    if (!confirm('¿Reabrir búsqueda "' + orig.puesto + '"? Se creará una nueva entrada en Proceso.')) return;
 
-    // 1. Crear nueva búsqueda
-    const { data: nueva, error } = await sb.from('busquedas').insert({
-        numero: nextNro(),
-        puesto: orig.puesto, selector: orig.selector, depto: orig.depto,
-        tipo: orig.tipo, motivo: orig.motivo, nivel: orig.nivel,
-        sueldo: orig.sueldo, jornada: orig.jornada, ubicacion: orig.ubicacion,
-        inicio: orig.inicio, status: 'Proceso', ingreso: null, ingreso_nombre: '',
-        reopened_from: orig.numero
-    }).select().single();
+    // 1. Armar el objeto de inserción SIN reopened_from para evitar error de columna inexistente.
+    //    Si la columna existe en tu tabla puedes descomentarla abajo.
+    const nuevaRow = {
+        numero:       nextNro(),
+        puesto:       orig.puesto,
+        selector:     orig.selector,
+        depto:        orig.depto,
+        tipo:         orig.tipo,
+        motivo:       orig.motivo,
+        nivel:        orig.nivel,
+        sueldo:       orig.sueldo,
+        jornada:      orig.jornada,
+        ubicacion:    orig.ubicacion,
+        inicio:       today(),   // la reapertura empieza hoy
+        status:       'Proceso',
+        ingreso:      null,
+        ingreso_nombre: '',
+        // reopened_from: orig.numero,  // ← descomentar si la columna existe en Supabase
+    };
 
-    if (error) {
-        console.error('Error al crear reapertura:', error);
-        toast('Error al reabrir: ' + (error.message || 'verificar permisos'), true);
+    const { data: nueva, error: errInsert } = await sb
+        .from('busquedas')
+        .insert(nuevaRow)
+        .select()
+        .single();
+
+    if (errInsert) {
+        console.error('Error al reabrir:', errInsert);
+        toast('Error al reabrir: ' + (errInsert.message || 'verificar permisos en Supabase'), true);
         return;
     }
 
-    // 2. Copiar historial (no bloquea si falla)
+    // 2. Registrar el origen en estado_log de la nueva búsqueda (siempre funciona)
+    const textoOrigen = `Reapertura de ${orig.numero} — "${orig.puesto}". Anterior ingresado: ${orig.ingreso_nombre || 'N/D'} (${orig.ingreso || 'sin fecha'})`;
+    await sb.from('estado_log').insert({
+        busqueda_id: nueva.id,
+        texto: textoOrigen,
+        fecha: today()
+    });
+
+    // 3. Registrar en historial de la nueva búsqueda
     try {
         const histEntries = [
-            ...(orig.historial||[]).map(h => ({
-                busqueda_id: nueva.id, texto: h.texto, fecha: new Date().toISOString()
-            })),
             {
                 busqueda_id: nueva.id,
-                texto: 'Reapertura de ' + orig.numero + '. Anterior ingresado: ' + (orig.ingreso_nombre||'N/D') + ' (' + (orig.ingreso||'sin fecha') + ')',
+                texto: textoOrigen,
                 fecha: new Date().toISOString()
             }
         ];
+        // Copiar historial anterior si existe
+        if (orig.historial && orig.historial.length > 0) {
+            orig.historial.forEach(h => histEntries.push({
+                busqueda_id: nueva.id,
+                texto: '[Historial copiado] ' + h.texto,
+                fecha: new Date().toISOString()
+            }));
+        }
         await sb.from('historial').insert(histEntries);
-    } catch(e) {
-        console.warn('No se pudo copiar historial:', e);
+    } catch (e) {
+        console.warn('No se pudo copiar historial (no crítico):', e);
     }
 
-    // 3. Marcar la original como cerrada
+    // 4. Marcar la original como Cerrada
     await sb.from('busquedas').update({ status: 'Cerrada' }).eq('id', id);
 
-    await loadData(); renderTable(); toast('Búsqueda reabierta ✓');
+    await loadData();
+    renderTable();
+    toast('Búsqueda reabierta como ' + nueva.numero + ' ✓');
 }
 
 async function eliminar(id) {
@@ -1080,7 +1141,7 @@ function renderStats(tab) {
     const selectorHtml = Object.entries(bySelector).map(([name,d]) => {
         const p = Math.round((d.cerradas/Math.max(d.total,1))*100);
         const avg = d.dias.length ? Math.round(d.dias.reduce((a,b)=>a+b,0)/d.dias.length) : 0;
-        return `<div class="bar-row"><div class="bar-row-top"><span>${name}</span><span>${d.cerradas}/${d.total} cerradas · ⌀ ${avg}d</span></div><div class="bar-track"><div class="bar-fill ${tab==='staff'?'bar-fill-staff':tab==='fabrica'?'bar-fill-fab':''}" style="width:${p}%"></div></div></div>`;
+        return `<div class="bar-row"><div class="bar-row-top"><span>${name}</span><span>${d.cerradas}/${d.total} cerradas · ⌀ ${avg}hd</span></div><div class="bar-track"><div class="bar-fill ${tab==='staff'?'bar-fill-staff':tab==='fabrica'?'bar-fill-fab':''}" style="width:${p}%"></div></div></div>`;
     }).join('');
     const deptoHtml = Object.entries(byDepto).map(([name,c]) => {
         const p = Math.round((c/total)*100);
@@ -1141,7 +1202,7 @@ function renderChartsGeneral() {
         <div class="mini-kpi"><div class="mini-kpi-num">${busquedas.length}</div><div class="mini-kpi-lbl">Total</div><div class="mini-kpi-sub">${proceso} en curso · ${pausadas} pausadas</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${tasaCierre}%</div><div class="mini-kpi-lbl">Tasa de Cierre</div><div class="mini-kpi-sub">${cerradas} de ${busquedas.length}</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--orange)">${totalCands}</div><div class="mini-kpi-lbl">Candidatos</div><div class="mini-kpi-sub">⌀ ${(totalCands/Math.max(busquedas.length,1)).toFixed(1)} por búsqueda</div></div>
-        <div class="mini-kpi"><div class="mini-kpi-num" style="color:#92400e">${finalizadas}</div><div class="mini-kpi-lbl">Finalizadas</div><div class="mini-kpi-sub">≥ 90 días en empresa</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:#92400e">${finalizadas}</div><div class="mini-kpi-lbl">Finalizadas</div><div class="mini-kpi-sub">≥ 90 días háb. en empresa</div></div>
     </div>
     <div class="charts-grid">
         <div class="chart-card"><div class="chart-card-title"><i class="fas fa-circle-half-stroke"></i> Estado del Pipeline</div><div class="chart-wrap"><canvas id="ch-status"></canvas></div></div>
@@ -1154,7 +1215,7 @@ function renderChartsGeneral() {
     </div>
     <div style="margin-top:20px">
         <div class="chart-card">
-            <div class="chart-card-title"><i class="fas fa-user-clock"></i> Permanencia por Persona (días en empresa)</div>
+            <div class="chart-card-title"><i class="fas fa-user-clock"></i> Permanencia por Persona (días hábiles en empresa)</div>
             ${permData.length>0
                 ? `<div style="position:relative;height:${Math.max(180,permData.length*28)}px"><canvas id="ch-perm"></canvas></div>`
                 : `<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Sin ingresos registrados aún</div>`}
@@ -1172,8 +1233,9 @@ function renderChartsGeneral() {
     chartInstances['nivel']  = new Chart(document.getElementById('ch-nivel'),{type:'bar',data:{labels:Object.keys(byNivel),datasets:[{label:'Cantidad',data:Object.values(byNivel),backgroundColor:['#ca6702cc','#005f73cc','#9b2226cc'],borderRadius:6}]},options:{...cd,plugins:{legend:{display:false}},indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{precision:0}},y:{grid:{display:false}}}}});
 
     if (permData.length>0) {
-        const permColors = permData.map(p=>p.dias>=180?'#2d6a4f':p.dias>=90?'#005f73':p.dias>=30?'#ca6702':'#9b2226');
-        chartInstances['perm'] = new Chart(document.getElementById('ch-perm'),{type:'bar',data:{labels:permData.map(p=>p.nombre),datasets:[{label:'Días en empresa',data:permData.map(p=>p.dias),backgroundColor:permColors.map(c=>c+'cc'),borderColor:permColors,borderWidth:2,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const p=permData[ctx.dataIndex];const m=p.dias>=180?' 🏆 6m+':p.dias>=90?' ✓ 3m+':p.dias>=30?' 1m+':'';return ` ${p.dias} días en empresa${m}`;},afterLabel:ctx=>` Puesto: ${permData[ctx.dataIndex].puesto}`}}},scales:{x:{beginAtZero:true,ticks:{precision:0,font:{family:'DM Mono',size:10}},grid:{color:'#e5e0d8'}},y:{ticks:{font:{family:'DM Sans',size:11}},grid:{display:false}}}}});
+        // Milestones en días hábiles: 1 mes ≈ 22hd, 3 meses ≈ 65hd, 6 meses ≈ 130hd
+        const permColors = permData.map(p=>p.dias>=130?'#2d6a4f':p.dias>=65?'#005f73':p.dias>=22?'#ca6702':'#9b2226');
+        chartInstances['perm'] = new Chart(document.getElementById('ch-perm'),{type:'bar',data:{labels:permData.map(p=>p.nombre),datasets:[{label:'Días hábiles en empresa',data:permData.map(p=>p.dias),backgroundColor:permColors.map(c=>c+'cc'),borderColor:permColors,borderWidth:2,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const p=permData[ctx.dataIndex];const m=p.dias>=130?' 🏆 6m+':p.dias>=65?' ✓ 3m+':p.dias>=22?' 1m+':'';return ` ${p.dias} días háb. en empresa${m}`;},afterLabel:ctx=>` Puesto: ${permData[ctx.dataIndex].puesto}`}}},scales:{x:{beginAtZero:true,ticks:{precision:0,font:{family:'DM Mono',size:10}},grid:{color:'#e5e0d8'}},y:{ticks:{font:{family:'DM Sans',size:11}},grid:{display:false}}}}});
     }
 }
 
@@ -1183,8 +1245,9 @@ function renderChartsTiempo() {
     const avgDias  = diasList.length?Math.round(diasList.reduce((a,c)=>a+c,0)/diasList.length):0;
     const minDias  = diasList.length?Math.min(...diasList):0;
     const maxDias  = diasList.length?Math.max(...diasList):0;
-    const rangos   = {'0–10d':0,'11–20d':0,'21–30d':0,'31–45d':0,'+45d':0};
-    diasList.forEach(d=>{if(d<=10)rangos['0–10d']++;else if(d<=20)rangos['11–20d']++;else if(d<=30)rangos['21–30d']++;else if(d<=45)rangos['31–45d']++;else rangos['+45d']++;});
+    // Rangos en días hábiles (ajustados: 0-7, 8-14, 15-22, 23-30, +30)
+    const rangos   = {'0–7hd':0,'8–14hd':0,'15–22hd':0,'23–30hd':0,'+30hd':0};
+    diasList.forEach(d=>{if(d<=7)rangos['0–7hd']++;else if(d<=14)rangos['8–14hd']++;else if(d<=22)rangos['15–22hd']++;else if(d<=30)rangos['23–30hd']++;else rangos['+30hd']++;});
     const bySel = {};
     cerradas.forEach(b=>{if(!bySel[b.selector])bySel[b.selector]=[];bySel[b.selector].push(daysDiff(b.inicio,b.ingreso));});
     const selAvg = Object.entries(bySel).map(([s,d])=>({sel:s,avg:Math.round(d.reduce((a,c)=>a+c,0)/d.length)})).sort((a,b)=>a.avg-b.avg);
@@ -1193,22 +1256,25 @@ function renderChartsTiempo() {
     const nivelAvg = Object.entries(byNivel).map(([n,d])=>({nivel:n,avg:Math.round(d.reduce((a,c)=>a+c,0)/d.length),limite:DEMORA_LIMITE[n]||15}));
     document.getElementById('charts-content').innerHTML=`
     <div class="mini-kpi-row">
-        <div class="mini-kpi"><div class="mini-kpi-num">${avgDias}d</div><div class="mini-kpi-lbl">Tiempo promedio</div><div class="mini-kpi-sub">${cerradas.length} búsquedas cerradas</div></div>
-        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${minDias}d</div><div class="mini-kpi-lbl">Más rápida</div></div>
-        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--red)">${maxDias}d</div><div class="mini-kpi-lbl">Más lenta</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num">${avgDias}hd</div><div class="mini-kpi-lbl">Tiempo promedio</div><div class="mini-kpi-sub">${cerradas.length} búsquedas cerradas</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${minDias}hd</div><div class="mini-kpi-lbl">Más rápida</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--red)">${maxDias}hd</div><div class="mini-kpi-lbl">Más lenta</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--orange)">${busquedas.filter(b=>{const d=daysDiff(b.inicio);return d>(DEMORA_LIMITE[b.nivel]||15)&&b.status==='Proceso';}).length}</div><div class="mini-kpi-lbl">Fuera de plazo</div></div>
     </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px;padding:6px 12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;display:inline-block">
+        <i class="fas fa-info-circle"></i> Todos los tiempos expresados en <strong>días hábiles (hd)</strong> — lunes a viernes
+    </div>
     <div class="charts-grid">
-        <div class="chart-card"><div class="chart-card-title"><i class="fas fa-clock"></i> Distribución de Tiempos de Cierre</div><div class="chart-wrap"><canvas id="ch-dist"></canvas></div></div>
-        <div class="chart-card"><div class="chart-card-title"><i class="fas fa-user-clock"></i> Tiempo Prom. por Selector (días)</div><div class="chart-wrap"><canvas id="ch-seltime"></canvas></div></div>
-        <div class="chart-card full"><div class="chart-card-title"><i class="fas fa-layer-group"></i> Tiempo Real vs Límite por Nivel</div><div class="chart-wrap"><canvas id="ch-nivellib"></canvas></div></div>
+        <div class="chart-card"><div class="chart-card-title"><i class="fas fa-clock"></i> Distribución de Tiempos de Cierre (días hábiles)</div><div class="chart-wrap"><canvas id="ch-dist"></canvas></div></div>
+        <div class="chart-card"><div class="chart-card-title"><i class="fas fa-user-clock"></i> Tiempo Prom. por Selector (días hábiles)</div><div class="chart-wrap"><canvas id="ch-seltime"></canvas></div></div>
+        <div class="chart-card full"><div class="chart-card-title"><i class="fas fa-layer-group"></i> Tiempo Real vs Límite por Nivel (días hábiles)</div><div class="chart-wrap"><canvas id="ch-nivellib"></canvas></div></div>
     </div>
     <div style="margin-top:20px"><div class="chart-card"><div class="chart-card-title"><i class="fas fa-list-ol"></i> Ranking más rápidas</div>
-    <div>${cerradas.sort((a,b)=>daysDiff(a.inicio,a.ingreso)-daysDiff(b.inicio,b.ingreso)).slice(0,6).map((b,i)=>{const d=daysDiff(b.inicio,b.ingreso);const lim=DEMORA_LIMITE[b.nivel]||15;return`<div class="rank-row"><span class="rank-pos">#${i+1}</span><span class="rank-name">${b.puesto} <span style="font-size:11px;color:var(--muted)">· ${b.selector}</span></span><span class="rank-stat" style="color:${d<=lim?'var(--green)':'var(--red)'}">${d}d</span><span style="font-size:11px;color:var(--muted);margin-left:6px">lim. ${lim}d</span></div>`;}).join('')}</div>
+    <div>${cerradas.sort((a,b)=>daysDiff(a.inicio,a.ingreso)-daysDiff(b.inicio,b.ingreso)).slice(0,6).map((b,i)=>{const d=daysDiff(b.inicio,b.ingreso);const lim=DEMORA_LIMITE[b.nivel]||15;return`<div class="rank-row"><span class="rank-pos">#${i+1}</span><span class="rank-name">${b.puesto} <span style="font-size:11px;color:var(--muted)">· ${b.selector}</span></span><span class="rank-stat" style="color:${d<=lim?'var(--green)':'var(--red)'}">${d}hd</span><span style="font-size:11px;color:var(--muted);margin-left:6px">lim. ${lim}hd</span></div>`;}).join('')}</div>
     </div></div>`;
     chartInstances['dist']     = new Chart(document.getElementById('ch-dist'),{type:'bar',data:{labels:Object.keys(rangos),datasets:[{label:'Búsquedas',data:Object.values(rangos),backgroundColor:['#d1e7dd','#cfe2ff','#fff3cd','#ffd6a5','#f8d7da'],borderColor:['#0a3622','#0a367a','#664d03','#7c3d00','#721c24'],borderWidth:2,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}});
-    chartInstances['seltime']  = new Chart(document.getElementById('ch-seltime'),{type:'bar',data:{labels:selAvg.map(s=>s.sel),datasets:[{label:'Días promedio',data:selAvg.map(s=>s.avg),backgroundColor:selAvg.map(s=>s.avg>20?'#f8d7da':'#d1e7dd'),borderColor:selAvg.map(s=>s.avg>20?'#721c24':'#0a3622'),borderWidth:2,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}});
-    chartInstances['nivellib'] = new Chart(document.getElementById('ch-nivellib'),{type:'bar',data:{labels:nivelAvg.map(n=>n.nivel),datasets:[{label:'Tiempo real (días)',data:nivelAvg.map(n=>n.avg),backgroundColor:'#005f73cc',borderRadius:4},{label:'Límite establecido',data:nivelAvg.map(n=>n.limite),backgroundColor:'#9b222633',borderColor:'#9b2226',borderWidth:2,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}});
+    chartInstances['seltime']  = new Chart(document.getElementById('ch-seltime'),{type:'bar',data:{labels:selAvg.map(s=>s.sel),datasets:[{label:'Días háb. promedio',data:selAvg.map(s=>s.avg),backgroundColor:selAvg.map(s=>s.avg>14?'#f8d7da':'#d1e7dd'),borderColor:selAvg.map(s=>s.avg>14?'#721c24':'#0a3622'),borderWidth:2,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}});
+    chartInstances['nivellib'] = new Chart(document.getElementById('ch-nivellib'),{type:'bar',data:{labels:nivelAvg.map(n=>n.nivel),datasets:[{label:'Tiempo real (hd)',data:nivelAvg.map(n=>n.avg),backgroundColor:'#005f73cc',borderRadius:4},{label:'Límite establecido (hd)',data:nivelAvg.map(n=>n.limite),backgroundColor:'#9b222633',borderColor:'#9b2226',borderWidth:2,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}});
 }
 
 function renderChartsSelectores() {
@@ -1236,7 +1302,7 @@ function renderChartsSelectores() {
     </div>
     <div style="margin-top:20px"><div class="chart-card full"><div class="chart-card-title"><i class="fas fa-table"></i> Panel comparativo</div>
         <div style="overflow-x:auto"><table style="width:100%;min-width:700px;border-collapse:collapse">
-            <thead><tr>${['Selector','Total','Cerradas','En proceso','Candidatos','Psico en búsqueda','Psico realizados','⌀ días cierre'].map(h=>`<th style="padding:10px 14px;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);text-align:left">${h}</th>`).join('')}</tr></thead>
+            <thead><tr>${['Selector','Total','Cerradas','En proceso','Candidatos','Psico en búsqueda','Psico realizados','⌀ días háb. cierre'].map(h=>`<th style="padding:10px 14px;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);text-align:left">${h}</th>`).join('')}</tr></thead>
             <tbody>${activos.map((s,i)=>`<tr style="background:${i%2===0?'var(--bg)':'transparent'}">
                 <td style="padding:10px 14px;font-weight:700">${s}</td>
                 <td style="padding:10px 14px;font-family:'DM Mono',monospace">${data[s].total}</td>
@@ -1245,7 +1311,7 @@ function renderChartsSelectores() {
                 <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:var(--orange)">${data[s].candidatos}</td>
                 <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:var(--blue)">${data[s].psico}</td>
                 <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:var(--blue);font-weight:700">${data[s].psico_realizado||'—'}</td>
-                <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:${avgDiasPerSel[i]>25?'var(--red)':'var(--green)'};font-weight:700">${avgDiasPerSel[i]||'—'}d</td>
+                <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:${avgDiasPerSel[i]>20?'var(--red)':'var(--green)'};font-weight:700">${avgDiasPerSel[i]||'—'}hd</td>
             </tr>`).join('')}</tbody>
         </table></div>
     </div></div>`;
