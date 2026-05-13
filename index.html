@@ -22,6 +22,8 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--text); font-size: 14px; }
         .hidden { display: none !important; }
+
+        /* ── LOGIN ── */
         #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--text); }
         .login-box { background: var(--surface); border-radius: 16px; padding: 40px; width: 100%; max-width: 380px; box-shadow: 0 30px 80px rgba(0,0,0,.35); }
         .login-logo { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; letter-spacing: -1px; margin-bottom: 6px; }
@@ -32,36 +34,44 @@
         .login-btn { width: 100%; background: var(--text); color: #fff; border: none; padding: 12px; border-radius: 8px; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 8px; transition: opacity .15s; }
         .login-btn:hover { opacity: .85; }
         .login-error { font-size: 12px; color: var(--red); background: var(--danger); border-radius: 6px; padding: 8px 12px; margin-top: 12px; display: none; }
+
+        /* ── LOADING ── */
         #loading-screen { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; gap: 16px; }
         .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--text); border-radius: 50%; animation: spin .7s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .loading-txt { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+
+        /* ── TOAST ── */
         #toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; z-index: 9999; opacity: 0; transform: translateY(10px); transition: all .25s; pointer-events: none; }
         #toast.show { opacity: 1; transform: translateY(0); }
         #toast.error { background: var(--red); }
-        .shell { display: flex; min-height: 100vh; }
-        /* ── SIDEBAR ── */
-        .sidebar { width: 220px; background: var(--text); color: #fff; padding: 24px 16px 28px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; height: 100vh; flex-shrink: 0; overflow-y: auto; }
-        .sidebar-logo { font-family: 'Syne', sans-serif; font-size: 21px; font-weight: 800; letter-spacing: -0.8px; margin-bottom: 14px; line-height: 1.15; color: #fff; }
-        /* KPIs en sidebar – entre logo y nav */
-        .sidebar-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,.1); }
-        .sidebar-kpi { background: rgba(255,255,255,.08); border-radius: 8px; padding: 9px 7px; text-align: center; }
-        .sidebar-kpi-num { font-family: 'Syne', sans-serif; font-size: 19px; font-weight: 800; color: #fff; line-height: 1; }
-        .sidebar-kpi-num.blue  { color: #90e0ef; }
-        .sidebar-kpi-num.green { color: #95d5b2; }
-        .sidebar-kpi-num.red   { color: #ff9b9b; }
-        .sidebar-kpi-num.amber { color: #ffd166; }
-        .sidebar-kpi-lbl { font-size: 9px; color: rgba(255,255,255,.45); text-transform: uppercase; letter-spacing: .7px; margin-top: 3px; }
-        .sidebar-user { font-size: 11px; color: rgba(255,255,255,.45); margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.08); }
-        .sidebar-user strong { display: block; color: rgba(255,255,255,.8); font-size: 12px; }
-        .nav-btn { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; background: transparent; border: none; color: rgba(255,255,255,.5); cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; text-align: left; transition: all .15s; width: 100%; }
-        .nav-btn i { width: 14px; text-align: center; }
-        .nav-btn:hover { background: rgba(255,255,255,.08); color: #fff; }
-        .nav-btn.active { background: rgba(255,255,255,.13); color: #fff; font-weight: 700; }
-        .sidebar-sep { height: 1px; background: rgba(255,255,255,.08); margin: 8px 0; }
+
+        /* ── APP SHELL (sin sidebar) ── */
+        .shell { display: flex; flex-direction: column; min-height: 100vh; }
+
+        /* ── TOP NAV BAR ── */
+        .topnav { background: var(--text); color: #fff; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 56px; position: sticky; top: 0; z-index: 50; flex-shrink: 0; }
+        .topnav-logo { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; letter-spacing: -0.5px; color: #fff; white-space: nowrap; }
+        .topnav-right { display: flex; align-items: center; gap: 8px; }
+        .topnav-user { font-size: 12px; color: rgba(255,255,255,.5); margin-right: 8px; }
+        .topnav-btn { display: flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 7px; background: transparent; border: 1px solid rgba(255,255,255,.15); color: rgba(255,255,255,.7); cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; transition: all .15s; white-space: nowrap; }
+        .topnav-btn i { font-size: 11px; }
+        .topnav-btn:hover { background: rgba(255,255,255,.1); color: #fff; border-color: rgba(255,255,255,.3); }
+        .topnav-btn.active { background: rgba(255,255,255,.15); color: #fff; border-color: rgba(255,255,255,.4); }
+        .topnav-sep { width: 1px; height: 24px; background: rgba(255,255,255,.12); }
+
         /* ── MAIN ── */
-        .main { flex: 1; padding: 32px; overflow-x: auto; }
-        .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+        .main { flex: 1; padding: 28px 32px; overflow-x: auto; }
+        
+        /* ── INLINE NAV (debajo del título) ── */
+        .inline-nav { display: flex; align-items: center; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+        .inline-nav-btn { display: flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; transition: all .15s; white-space: nowrap; }
+        .inline-nav-btn i { font-size: 11px; }
+        .inline-nav-btn:hover { background: var(--text); color: #fff; border-color: var(--text); }
+        .inline-nav-btn.active { background: var(--text); color: #fff; border-color: var(--text); }
+        .inline-nav-sep { width: 1px; height: 28px; background: var(--border); margin: 0 4px; }
+
+        .top-bar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
         .page-title { font-family: 'Syne', sans-serif; font-size: 25px; font-weight: 800; letter-spacing: -1px; }
         .page-subtitle { font-size: 12px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
         .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; align-items: center; }
@@ -146,18 +156,22 @@
         .sep { height: 1px; background: var(--border); margin: 6px 0; }
         .tip { font-size: 11px; color: var(--muted); font-style: italic; }
         .cell-scroll { max-height: 200px; overflow-y: auto; }
+
+        /* ── ESTADO LOG (simplificado) ── */
         .estado-log { display: flex; flex-direction: column; gap: 4px; }
         .estado-entry { display: flex; align-items: flex-start; gap: 7px; }
         .d-badge { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 700; background: var(--text); color: #fff; border-radius: 4px; padding: 2px 5px; flex-shrink: 0; margin-top: 1px; }
         .estado-entry-body { flex: 1; }
         .estado-entry-text { font-size: 12px; font-weight: 600; }
         .estado-entry-meta { font-size: 10px; color: var(--muted); margin-top: 1px; }
-        /* Estado add row – dropdown + input */
-        .estado-add-wrap { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
-        .estado-preset-select { font-family: 'DM Sans', sans-serif; font-size: 11px; border: 1px solid var(--border); border-radius: 6px; padding: 4px 7px; background: #fff; color: var(--text); outline: none; cursor: pointer; width: 100%; }
-        .estado-add-row { display: flex; gap: 5px; }
+        /* Input comentario simplificado */
+        .estado-add-row { display: flex; gap: 5px; margin-top: 6px; }
         .estado-add-input { flex: 1; font-family: 'DM Sans', sans-serif; font-size: 12px; border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; background: #fff; color: var(--text); outline: none; }
         .estado-add-btn { background: var(--text); color: #fff; border: none; border-radius: 6px; padding: 5px 10px; font-size: 11px; cursor: pointer; font-weight: 700; white-space: nowrap; }
+        /* Toggle comentarios */
+        .estado-toggle { font-size: 11px; color: var(--blue); background: none; border: none; cursor: pointer; padding: 0; font-weight: 600; display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+        .estado-toggle:hover { text-decoration: underline; }
+
         .pdf-item { display: flex; align-items: center; gap: 6px; padding: 4px 6px; background: #e5e0d822; border-radius: 5px; margin-bottom: 3px; }
         .pdf-item-name { font-size: 11px; font-weight: 600; color: var(--muted); flex: 1; cursor: pointer; }
         .pdf-item-name:hover { text-decoration: underline; }
@@ -187,16 +201,17 @@
         .rank-pos { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); width: 20px; }
         .rank-name { flex: 1; font-size: 13px; font-weight: 600; }
         .rank-stat { font-family: 'DM Mono', monospace; font-size: 12px; }
-        /* Permanencia badge */
         .perm-box { margin-top: 8px; background: var(--ok); border-radius: 8px; padding: 8px 10px; text-align: center; }
         .perm-box-num { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: var(--green); line-height: 1; }
         .perm-box-lbl { font-size: 9px; color: var(--ok-text); text-transform: uppercase; letter-spacing: .8px; margin-top: 2px; }
         .perm-box-milestone { font-size: 10px; color: var(--green); font-weight: 700; margin-top: 3px; }
         @media(max-width:900px) {
-            .sidebar { display: none; } .main { padding: 16px; }
+            .topnav { padding: 0 16px; } .main { padding: 16px; }
             .charts-grid, .charts-grid-2 { grid-template-columns: 1fr; }
             .chart-card.full { grid-column: span 1; }
             .mini-kpi-row { grid-template-columns: repeat(2,1fr); }
+            .inline-nav { gap: 4px; }
+            .inline-nav-btn { padding: 6px 12px; font-size: 12px; }
         }
     </style>
 </head>
@@ -224,29 +239,16 @@
 
 <!-- ══ APP ══ -->
 <div id="app" class="shell hidden">
-    <aside class="sidebar">
-        <div class="sidebar-logo">Panel de<br>Selección</div>
 
-        <!-- KPIs entre logo y nav (se renderizan por JS) -->
-        <div class="sidebar-kpis" id="sidebar-kpis">
-            <div class="sidebar-kpi"><div class="sidebar-kpi-num">—</div><div class="sidebar-kpi-lbl">Total</div></div>
-            <div class="sidebar-kpi"><div class="sidebar-kpi-num blue">—</div><div class="sidebar-kpi-lbl">En curso</div></div>
-            <div class="sidebar-kpi"><div class="sidebar-kpi-num green">—</div><div class="sidebar-kpi-lbl">Cerradas</div></div>
-            <div class="sidebar-kpi"><div class="sidebar-kpi-num red">—</div><div class="sidebar-kpi-lbl">Vencidas</div></div>
+    <!-- TOP NAV BAR -->
+    <nav class="topnav">
+        <div class="topnav-logo">Panel de Selección</div>
+        <div class="topnav-right">
+            <span class="topnav-user"><strong id="topnav-nombre">—</strong> · <span id="topnav-rol">—</span></span>
+            <div class="topnav-sep"></div>
+            <button class="topnav-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Salir</button>
         </div>
-
-        <button class="nav-btn active" id="nav-pipeline" onclick="showView('pipeline',this)"><i class="fas fa-table"></i> Pipeline</button>
-        <button class="nav-btn" id="nav-stats" onclick="showView('stats',this)"><i class="fas fa-chart-bar"></i> Estadísticas</button>
-        <button class="nav-btn" id="nav-charts" onclick="showView('charts',this)"><i class="fas fa-chart-pie"></i> Gráficos</button>
-        <div class="sidebar-sep"></div>
-        <button class="nav-btn" onclick="openModal()"><i class="fas fa-plus"></i> Nueva Búsqueda</button>
-        <div class="sidebar-sep"></div>
-        <button class="nav-btn" onclick="logout()" style="margin-top:auto"><i class="fas fa-sign-out-alt"></i> Salir</button>
-        <div class="sidebar-user">
-            <strong id="sidebar-nombre">—</strong>
-            <span id="sidebar-rol">—</span>
-        </div>
-    </aside>
+    </nav>
 
     <main class="main">
         <div class="top-bar">
@@ -255,6 +257,15 @@
                 <div class="page-subtitle" id="main-sub">Control de búsquedas, seguimiento y feedback</div>
             </div>
             <button class="btn-primary" onclick="openModal()"><i class="fas fa-plus"></i> Nueva Búsqueda</button>
+        </div>
+
+        <!-- INLINE NAV (debajo del título) -->
+        <div class="inline-nav">
+            <button class="inline-nav-btn active" id="nav-pipeline" onclick="showView('pipeline',this)"><i class="fas fa-table"></i> Pipeline</button>
+            <button class="inline-nav-btn" id="nav-stats" onclick="showView('stats',this)"><i class="fas fa-chart-bar"></i> Estadísticas</button>
+            <button class="inline-nav-btn" id="nav-charts" onclick="showView('charts',this)"><i class="fas fa-chart-pie"></i> Gráficos</button>
+            <div class="inline-nav-sep"></div>
+            <button class="inline-nav-btn" onclick="openModal()"><i class="fas fa-plus"></i> Nueva Búsqueda</button>
         </div>
 
         <!-- PIPELINE -->
@@ -335,7 +346,12 @@
                 <select class="form-input" id="n-motivo"><option>Expansión</option><option>Rotación</option><option>Reemplazo</option></select>
             </div>
             <div class="form-group"><label>Nivel</label>
-                <select class="form-input" id="n-nivel"><option>Otros</option><option>Jefe/Encargado</option><option>Gerente/Director</option></select>
+                <input class="form-input" id="n-nivel" placeholder="Ej: Otros, Jefe/Encargado, Gerente..." list="nivel-datalist">
+                <datalist id="nivel-datalist">
+                    <option>Otros</option>
+                    <option>Jefe/Encargado</option>
+                    <option>Gerente/Director</option>
+                </datalist>
             </div>
             <div class="form-group"><label>Sueldo bruto (ARS)</label><input class="form-input" id="n-sueldo" type="number" placeholder="Ej: 800000"></div>
             <div class="form-group"><label>Jornada</label><input class="form-input" id="n-jornada" placeholder="Ej: Full Time, Por turnos…"></div>
@@ -450,7 +466,6 @@ async function loadProfile() {
 }
 
 async function loadData() {
-    // Nuevas búsquedas primero (orden DESC)
     const { data, error } = await sb
         .from('busquedas')
         .select('*, historial(*), estado_log(*), candidatos(*), psicotecnicos(*), archivos(*)')
@@ -474,12 +489,9 @@ function mapRow(b) {
 
 function nextNro() { return 'SEL-' + String(nroSeq++).padStart(3, '0'); }
 
-// ── Auto-finalizar búsquedas con ingresado ≥ 90 días ──
 async function checkAndFinalizeSearches() {
     const toFinalize = busquedas.filter(b =>
-        b.status === 'Cerrada' &&
-        b.ingreso &&
-        daysDiff(b.ingreso) >= 90
+        b.status === 'Cerrada' && b.ingreso && daysDiff(b.ingreso) >= 90
     );
     if (toFinalize.length === 0) return;
     for (const b of toFinalize) {
@@ -497,8 +509,9 @@ async function initDashboard() {
     document.getElementById('loading-screen').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
     const esAdmin = isAdmin();
-    document.getElementById('sidebar-nombre').textContent = esAdmin ? '🔑 Administrador' : '👤 ' + (currentProfile?.nombre || 'Selector');
-    document.getElementById('sidebar-rol').textContent = esAdmin ? (currentProfile?.nombre || '') : 'Selector';
+    const nombre = esAdmin ? '🔑 ' + (currentProfile?.nombre || 'Administrador') : '👤 ' + (currentProfile?.nombre || 'Selector');
+    document.getElementById('topnav-nombre').textContent = nombre;
+    document.getElementById('topnav-rol').textContent = esAdmin ? 'admin' : 'selector';
     if (!esAdmin) {
         document.getElementById('nav-stats').classList.add('hidden');
         document.getElementById('nav-charts').classList.add('hidden');
@@ -517,9 +530,13 @@ function daysDiff(from, to = null) {
     const s = new Date(from), e = to ? new Date(to) : new Date();
     return Math.max(0, Math.floor((e - s) / 86400000));
 }
+
+// ── Formato moneda con signo $ ──
 function fmtMoney(n) {
-    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n || 0);
+    if (!n || n === 0) return '$ —';
+    return '$ ' + new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(n);
 }
+
 function demoraClass(dias, nivel) {
     const lim = DEMORA_LIMITE[nivel] || 15;
     if (dias <= lim * 0.6) return 'demora-ok';
@@ -545,32 +562,21 @@ function tagClass(s) {
     return 'tag-pausada';
 }
 
-// Preset de estado de búsqueda
-function setEstadoPreset(id, selectEl) {
-    const val = selectEl.value;
-    if (val) {
-        const input = document.getElementById('estado-input-' + id);
-        if (input) input.value = val;
-    }
-    selectEl.value = '';
-}
-
 // ══════════════════════════════════════════════
 //  RENDER TABLE
 // ══════════════════════════════════════════════
 function renderTable() {
     const body = document.getElementById('table-body');
     const list = filteredIds ? busquedas.filter(b => filteredIds.includes(b.id)) : busquedas;
-    // Bloqueado para no-admin si está cerrada o finalizada
     const locked = (b) => (b.status === 'Cerrada' || b.status === 'Finalizada') && !isAdmin();
 
     body.innerHTML = list.map(b => {
-        // Demora: si viene de una reapertura (reopened_from), conta desde inicio original
         const dias = b.ingreso ? daysDiff(b.inicio, b.ingreso) : daysDiff(b.inicio);
         const dClass = demoraClass(dias, b.nivel);
         const limite = DEMORA_LIMITE[b.nivel] || 15;
         const isLocked = locked(b);
         const diasEnEmpresa = b.ingreso ? daysDiff(b.ingreso) : 0;
+        const cantComentarios = (b.estado_busqueda || []).length;
 
         // PSICO
         const psicoHtml = b.psicotecnicos.length > 0
@@ -636,7 +642,7 @@ function renderTable() {
                 </div>`).join('')
             : `<span class="tip">Sin archivos</span>`;
 
-        // PERMANENCIA (días en empresa, con hitos)
+        // PERMANENCIA
         let permHtml = '';
         if (b.ingreso && b.ingreso_nombre) {
             const milestone = diasEnEmpresa >= 180 ? '🏆 6 meses' : diasEnEmpresa >= 90 ? '✓ 3 meses' : diasEnEmpresa >= 30 ? '📌 1 mes' : '';
@@ -646,6 +652,38 @@ function renderTable() {
                 ${milestone ? `<div class="perm-box-milestone">${milestone}</div>` : ''}
             </div>`;
         }
+
+        // ESTADO DE BÚSQUEDA (simplificado: solo comentarios con toggle)
+        const estadoEntriesHtml = (b.estado_busqueda || []).length === 0
+            ? `<span class="tip">Sin comentarios</span>`
+            : b.estado_busqueda.map((e, idx) => `
+                <div class="estado-entry">
+                    <span class="d-badge">D${idx+1}</span>
+                    <div class="estado-entry-body">
+                        <div class="estado-entry-text">${e.texto}</div>
+                        <div class="estado-entry-meta">
+                            <i class="fas fa-clock" style="font-size:9px"></i>
+                            ${daysDiff(e.fecha)===0?'Hoy':'hace '+daysDiff(e.fecha)+'d'} · ${e.fecha}
+                            ${isAdmin()?`<button onclick="removeEstadoEntry(${e.id})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:10px;margin-left:4px" title="Solo admin">✕</button>`:''}
+                        </div>
+                    </div>
+                </div>`).join('');
+
+        const estadoHtml = `
+            <div class="section-hdr">Estado de búsqueda</div>
+            ${cantComentarios > 0 ? `
+            <button class="estado-toggle" onclick="toggleComentarios(${b.id}, this)">
+                <i class="fas fa-chevron-right" id="est-icon-${b.id}" style="font-size:8px;transition:transform .2s"></i>
+                ${cantComentarios} comentario${cantComentarios !== 1 ? 's' : ''}
+            </button>
+            <div class="estado-log cell-scroll" id="est-log-${b.id}" style="max-height:130px;display:none;margin-top:5px">
+                ${estadoEntriesHtml}
+            </div>` : `<span class="tip" style="font-size:11px">Sin comentarios aún</span>`}
+            ${!isLocked ? `
+            <div class="estado-add-row">
+                <input class="estado-add-input" id="estado-input-${b.id}" placeholder="Agregar comentario…" onkeydown="if(event.key==='Enter')addEstadoEntry(${b.id})">
+                <button class="estado-add-btn" onclick="addEstadoEntry(${b.id})"><i class="fas fa-plus" style="font-size:10px"></i></button>
+            </div>` : ''}`;
 
         return `
         <tr id="row-${b.id}" class="${isLocked?'row-locked':''}">
@@ -660,7 +698,7 @@ function renderTable() {
                 <div style="margin-top:4px;font-size:11px;color:var(--muted)">Inicio: ${b.inicio}</div>
                 ${b.reopened_from ? `<div style="margin-top:3px;font-size:10px;color:var(--blue);font-weight:600"><i class="fas fa-redo" style="font-size:8px"></i> Reapertura de ${b.reopened_from}</div>` : ''}
             </td>
-            <!-- Col 2: Puesto / Dpto / Selector / Nivel -->
+            <!-- Col 2: Puesto / Dpto / Selector / Nivel (nivel editable) -->
             <td>
                 ${isLocked
                     ? `<div style="font-weight:700;font-size:13px">${b.puesto}</div>`
@@ -672,64 +710,42 @@ function renderTable() {
                     Selector:
                     ${isLocked ? `<strong>${b.selector}</strong>` : `<select class="inline-select" onchange="updateField(${b.id},'selector',this.value)">${['Vagioleth','Juan','Magali','Silvina','Soledad'].map(s=>`<option ${b.selector===s?'selected':''}>${s}</option>`).join('')}</select>`}
                 </div>
-                <div style="margin-top:4px;font-size:12px">
-                    Nivel:
+                <div style="margin-top:4px;font-size:12px;display:flex;align-items:center;gap:4px">
+                    <span style="color:var(--muted)">Nivel:</span>
                     ${isLocked
                         ? `<strong>${b.nivel}</strong>`
-                        : `<select class="inline-select" onchange="updateField(${b.id},'nivel',this.value)">${['Otros','Jefe/Encargado','Gerente/Director'].map(n=>`<option ${b.nivel===n?'selected':''}>${n}</option>`).join('')}</select>`}
+                        : `<input class="inline-input"
+                               value="${b.nivel||''}"
+                               placeholder="Nivel del cargo…"
+                               list="nivel-datalist-inline"
+                               onchange="updateField(${b.id},'nivel',this.value)"
+                               style="font-size:12px;font-weight:600;flex:1">
+                           <datalist id="nivel-datalist-inline">
+                               <option>Otros</option>
+                               <option>Jefe/Encargado</option>
+                               <option>Gerente/Director</option>
+                           </datalist>`
+                    }
                 </div>
             </td>
             <!-- Col 3: Sueldo / Jornada -->
             <td>
                 ${isLocked
                     ? `<div style="font-weight:700;font-size:13px;color:var(--green)">${fmtMoney(b.sueldo)}</div>`
-                    : `<input class="inline-input" type="number" value="${b.sueldo||''}" placeholder="Sueldo ARS…"
-                           onchange="updateField(${b.id},'sueldo', parseFloat(this.value)||0)"
-                           style="font-weight:700;font-size:13px;color:var(--green);width:100%;margin-bottom:2px">`}
+                    : `<div style="display:flex;align-items:center;gap:3px;margin-bottom:2px">
+                           <span style="font-weight:700;font-size:13px;color:var(--green);flex-shrink:0">$</span>
+                           <input class="inline-input" type="number" value="${b.sueldo||''}" placeholder="Monto ARS…"
+                               onchange="updateField(${b.id},'sueldo', parseFloat(this.value)||0)"
+                               style="font-weight:700;font-size:13px;color:var(--green);width:100%">
+                       </div>`}
                 ${isLocked
                     ? `<div style="font-size:11px;font-weight:700;background:#ece9e3;border-radius:4px;padding:2px 6px;display:inline-block;margin-top:2px">${b.jornada||'—'}</div>`
                     : `<input class="inline-input" value="${b.jornada||''}" placeholder="Jornada…" onchange="updateField(${b.id},'jornada',this.value)" style="font-size:12px;font-weight:700;background:#ece9e3;border-radius:4px;padding:2px 6px;width:100%;margin-top:2px">`}
                 <div><span class="ubic-pill">📍 ${b.ubicacion}</span></div>
             </td>
-            <!-- Col 4: Estado de búsqueda + Psicotécnicos (SIN historial) -->
+            <!-- Col 4: Estado (simplificado) + Psicotécnicos -->
             <td>
-                <div class="section-hdr">Estado de búsqueda</div>
-                <div class="estado-log cell-scroll" style="max-height:130px">
-                    ${(b.estado_busqueda||[]).length===0
-                        ? `<span class="tip">Sin comentarios</span>`
-                        : b.estado_busqueda.map((e,idx)=>`
-                            <div class="estado-entry">
-                                <span class="d-badge">D${idx+1}</span>
-                                <div class="estado-entry-body">
-                                    <div class="estado-entry-text">${e.texto}</div>
-                                    <div class="estado-entry-meta">
-                                        <i class="fas fa-clock" style="font-size:9px"></i>
-                                        ${daysDiff(e.fecha)===0?'Hoy':'hace '+daysDiff(e.fecha)+'d'} · ${e.fecha}
-                                        ${isAdmin()?`<button onclick="removeEstadoEntry(${e.id})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:10px;margin-left:4px" title="Solo admin">✕</button>`:''}
-                                    </div>
-                                </div>
-                            </div>`).join('')}
-                </div>
-                ${!isLocked ? `
-                <div class="estado-add-wrap">
-                    <select class="estado-preset-select" onchange="setEstadoPreset(${b.id},this)">
-                        <option value="">⚡ Preset rápido...</option>
-                        <option>Publicada en portales</option>
-                        <option>CV en revisión</option>
-                        <option>Entrevistas telefónicas</option>
-                        <option>Entrevistas presenciales</option>
-                        <option>Candidatos enviados al área</option>
-                        <option>Evaluación técnica pendiente</option>
-                        <option>Oferta enviada</option>
-                        <option>Negociación salarial</option>
-                        <option>Esperando feedback del área</option>
-                        <option>En pausa por decisión del área</option>
-                    </select>
-                    <div class="estado-add-row">
-                        <input class="estado-add-input" id="estado-input-${b.id}" placeholder="O escribí comentario…" onkeydown="if(event.key==='Enter')addEstadoEntry(${b.id})">
-                        <button class="estado-add-btn" onclick="addEstadoEntry(${b.id})"><i class="fas fa-plus" style="font-size:10px"></i></button>
-                    </div>
-                </div>` : ''}
+                ${estadoHtml}
                 <div class="sep"></div>
                 <details>
                     <summary><i class="fas fa-chevron-right"></i> Psicotécnicos (${b.psicotecnicos.length})</summary>
@@ -786,6 +802,16 @@ function renderTable() {
     updateDeptoFilter();
 }
 
+// ── Toggle comentarios estado ──
+function toggleComentarios(id, btn) {
+    const log = document.getElementById('est-log-' + id);
+    const icon = document.getElementById('est-icon-' + id);
+    const isVisible = log.style.display !== 'none';
+    log.style.display = isVisible ? 'none' : 'flex';
+    log.style.flexDirection = 'column';
+    icon.style.transform = isVisible ? '' : 'rotate(90deg)';
+}
+
 function renderKPIs() {
     const total      = busquedas.length;
     const proceso    = busquedas.filter(b=>b.status==='Proceso').length;
@@ -793,20 +819,12 @@ function renderKPIs() {
     const finalizadas= busquedas.filter(b=>b.status==='Finalizada').length;
     const vencidas   = busquedas.filter(b=>{ const d=daysDiff(b.inicio); return d>(DEMORA_LIMITE[b.nivel]||15)&&b.status==='Proceso'; }).length;
 
-    // KPI row en main
     document.getElementById('kpi-row').innerHTML = `
         <div class="kpi"><div class="kpi-num">${total}</div><div class="kpi-lbl">Total búsquedas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--blue)">${proceso}</div><div class="kpi-lbl">En proceso</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--green)">${cerradas}</div><div class="kpi-lbl">Cerradas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:#92400e">${finalizadas}</div><div class="kpi-lbl">Finalizadas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--red)">${vencidas}</div><div class="kpi-lbl">Fuera de plazo</div></div>`;
-
-    // KPI en sidebar (entre logo y nav)
-    document.getElementById('sidebar-kpis').innerHTML = `
-        <div class="sidebar-kpi"><div class="sidebar-kpi-num">${total}</div><div class="sidebar-kpi-lbl">Total</div></div>
-        <div class="sidebar-kpi"><div class="sidebar-kpi-num blue">${proceso}</div><div class="sidebar-kpi-lbl">En curso</div></div>
-        <div class="sidebar-kpi"><div class="sidebar-kpi-num green">${cerradas + finalizadas}</div><div class="sidebar-kpi-lbl">Cerradas</div></div>
-        <div class="sidebar-kpi"><div class="sidebar-kpi-num red">${vencidas}</div><div class="sidebar-kpi-lbl">Vencidas</div></div>`;
 }
 
 function applyFilters() {
@@ -839,7 +857,6 @@ async function updateField(id, field, val) {
     const { error } = await sb.from('busquedas').update(update).eq('id', id);
     if (error) { toast('Error al guardar', true); return; }
     await loadData();
-    // Re-chequear finalizaciones si cambió el ingreso
     if (field === 'ingreso') await checkAndFinalizeSearches();
     renderTable();
     toast('Guardado ✓');
@@ -915,13 +932,14 @@ async function removePsico(psicoId) {
 async function addNew() {
     const puesto = document.getElementById('n-puesto').value.trim();
     if (!puesto) { toast('Ingresá el puesto', true); return; }
+    const nivel = document.getElementById('n-nivel').value.trim() || 'Otros';
     const row = {
         numero: nextNro(), puesto,
         selector: document.getElementById('n-selector').value,
         depto: document.getElementById('n-depto').value || 'Sin definir',
         tipo: document.getElementById('n-tipo').value,
         motivo: document.getElementById('n-motivo').value,
-        nivel: document.getElementById('n-nivel').value,
+        nivel,
         sueldo: parseFloat(document.getElementById('n-sueldo').value) || 0,
         jornada: document.getElementById('n-jornada').value,
         ubicacion: document.getElementById('n-ubicacion').value,
@@ -934,33 +952,20 @@ async function addNew() {
     closeModal('modal-nueva'); await loadData(); renderTable(); toast('Búsqueda creada ✓');
 }
 
-// REABRIR: usa el inicio original para que el contador acumule días históricos
 async function reabrir(id) {
     const orig = busquedas.find(x=>x.id===id);
     if (!orig || !confirm(`¿Reabrir búsqueda "${orig.puesto}"?`)) return;
     const { data: nueva, error } = await sb.from('busquedas').insert({
         numero: nextNro(),
-        puesto: orig.puesto,
-        selector: orig.selector,
-        depto: orig.depto,
-        tipo: orig.tipo,
-        motivo: orig.motivo,
-        nivel: orig.nivel,
-        sueldo: orig.sueldo,
-        jornada: orig.jornada,
-        ubicacion: orig.ubicacion,
-        inicio: orig.inicio,          // ← hereda el inicio original (suma demora acumulada)
-        status: 'Proceso',
-        ingreso: null,
-        ingreso_nombre: '',
-        reopened_from: orig.numero    // ← referencia al número original
+        puesto: orig.puesto, selector: orig.selector, depto: orig.depto,
+        tipo: orig.tipo, motivo: orig.motivo, nivel: orig.nivel,
+        sueldo: orig.sueldo, jornada: orig.jornada, ubicacion: orig.ubicacion,
+        inicio: orig.inicio, status: 'Proceso', ingreso: null, ingreso_nombre: '',
+        reopened_from: orig.numero
     }).select().single();
     if (error) { toast('Error al reabrir', true); return; }
-    // Historial previo + nota de reapertura
     const historialAnterior = orig.historial.map(h => ({
-        busqueda_id: nueva.id,
-        texto: h.texto,
-        fecha: new Date().toISOString()
+        busqueda_id: nueva.id, texto: h.texto, fecha: new Date().toISOString()
     }));
     historialAnterior.push({
         busqueda_id: nueva.id,
@@ -1009,7 +1014,7 @@ function showView(v, btn) {
         toast('Acceso restringido a administradores', true); return;
     }
     ['pipeline','stats','charts'].forEach(id => document.getElementById('view-'+id).classList.toggle('hidden', id!==v));
-    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.inline-nav-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     window.scrollTo({top:0,behavior:'smooth'});
     const titles = {
@@ -1109,13 +1114,7 @@ function renderChartsGeneral() {
     const byMotivo   = {}; busquedas.forEach(b=>{byMotivo[b.motivo]=(byMotivo[b.motivo]||0)+1;});
     const byDepto    = {}; busquedas.forEach(b=>{byDepto[b.depto]=(byDepto[b.depto]||0)+1;});
     const byNivel    = {}; busquedas.forEach(b=>{byNivel[b.nivel]=(byNivel[b.nivel]||0)+1;});
-
-    // PERMANENCIA POR PERSONA (reemplaza gráfico de ubicación)
-    const permData = busquedas
-        .filter(b => b.ingreso_nombre && b.ingreso)
-        .map(b => ({ nombre: b.ingreso_nombre, dias: daysDiff(b.ingreso), puesto: b.puesto }))
-        .sort((a,b) => b.dias - a.dias)
-        .slice(0, 20);
+    const permData   = busquedas.filter(b=>b.ingreso_nombre&&b.ingreso).map(b=>({nombre:b.ingreso_nombre,dias:daysDiff(b.ingreso),puesto:b.puesto})).sort((a,b)=>b.dias-a.dias).slice(0,20);
 
     document.getElementById('charts-content').innerHTML = `
     <div class="mini-kpi-row">
@@ -1129,15 +1128,15 @@ function renderChartsGeneral() {
         <div class="chart-card"><div class="chart-card-title"><i class="fas fa-industry"></i> Staff vs Fábrica</div><div class="chart-wrap"><canvas id="ch-tipo"></canvas></div></div>
         <div class="chart-card full"><div class="chart-card-title"><i class="fas fa-building"></i> Por Departamento</div><div class="chart-wrap-lg"><canvas id="ch-depto"></canvas></div></div>
     </div>
-    <div class="charts-grid-2" style="margin-top:20px">
+    <div class="charts-grid-2">
         <div class="chart-card"><div class="chart-card-title"><i class="fas fa-tag"></i> Por Motivo</div><div class="chart-wrap-sm"><canvas id="ch-motivo"></canvas></div></div>
         <div class="chart-card"><div class="chart-card-title"><i class="fas fa-layer-group"></i> Por Nivel</div><div class="chart-wrap-sm"><canvas id="ch-nivel"></canvas></div></div>
     </div>
     <div style="margin-top:20px">
         <div class="chart-card">
             <div class="chart-card-title"><i class="fas fa-user-clock"></i> Permanencia por Persona (días en empresa)</div>
-            ${permData.length > 0
-                ? `<div style="position:relative;height:${Math.max(180, permData.length * 28)}px"><canvas id="ch-perm"></canvas></div>`
+            ${permData.length>0
+                ? `<div style="position:relative;height:${Math.max(180,permData.length*28)}px"><canvas id="ch-perm"></canvas></div>`
                 : `<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Sin ingresos registrados aún</div>`}
         </div>
     </div>`;
@@ -1152,48 +1151,9 @@ function renderChartsGeneral() {
     chartInstances['motivo'] = new Chart(document.getElementById('ch-motivo'),{type:'doughnut',data:{labels:Object.keys(byMotivo),datasets:[{data:Object.values(byMotivo),backgroundColor:['#cfe2ff','#ffd6a5','#d8f3dc'],borderWidth:2}]},options:{...cd,cutout:'55%'}});
     chartInstances['nivel']  = new Chart(document.getElementById('ch-nivel'),{type:'bar',data:{labels:Object.keys(byNivel),datasets:[{label:'Cantidad',data:Object.values(byNivel),backgroundColor:['#ca6702cc','#005f73cc','#9b2226cc'],borderRadius:6}]},options:{...cd,plugins:{legend:{display:false}},indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{precision:0}},y:{grid:{display:false}}}}});
 
-    // Gráfico de permanencia (horizontal bar)
-    if (permData.length > 0) {
-        const permColors = permData.map(p =>
-            p.dias >= 180 ? '#2d6a4f' :
-            p.dias >= 90  ? '#005f73' :
-            p.dias >= 30  ? '#ca6702' : '#9b2226'
-        );
-        chartInstances['perm'] = new Chart(document.getElementById('ch-perm'), {
-            type: 'bar',
-            data: {
-                labels: permData.map(p => p.nombre),
-                datasets: [{
-                    label: 'Días en empresa',
-                    data: permData.map(p => p.dias),
-                    backgroundColor: permColors.map(c => c + 'cc'),
-                    borderColor: permColors,
-                    borderWidth: 2,
-                    borderRadius: 5
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                indexAxis: 'y',
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: ctx => {
-                                const p = permData[ctx.dataIndex];
-                                const m = p.dias >= 180 ? ' 🏆 6m+' : p.dias >= 90 ? ' ✓ 3m+' : p.dias >= 30 ? ' 1m+' : '';
-                                return ` ${p.dias} días en empresa${m}`;
-                            },
-                            afterLabel: ctx => ` Puesto: ${permData[ctx.dataIndex].puesto}`
-                        }
-                    }
-                },
-                scales: {
-                    x: { beginAtZero: true, ticks: { precision: 0, font:{family:'DM Mono',size:10} }, grid: { color: '#e5e0d8' } },
-                    y: { ticks: { font: { family: 'DM Sans', size: 11 } }, grid: { display: false } }
-                }
-            }
-        });
+    if (permData.length>0) {
+        const permColors = permData.map(p=>p.dias>=180?'#2d6a4f':p.dias>=90?'#005f73':p.dias>=30?'#ca6702':'#9b2226');
+        chartInstances['perm'] = new Chart(document.getElementById('ch-perm'),{type:'bar',data:{labels:permData.map(p=>p.nombre),datasets:[{label:'Días en empresa',data:permData.map(p=>p.dias),backgroundColor:permColors.map(c=>c+'cc'),borderColor:permColors,borderWidth:2,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const p=permData[ctx.dataIndex];const m=p.dias>=180?' 🏆 6m+':p.dias>=90?' ✓ 3m+':p.dias>=30?' 1m+':'';return ` ${p.dias} días en empresa${m}`;},afterLabel:ctx=>` Puesto: ${permData[ctx.dataIndex].puesto}`}}},scales:{x:{beginAtZero:true,ticks:{precision:0,font:{family:'DM Mono',size:10}},grid:{color:'#e5e0d8'}},y:{ticks:{font:{family:'DM Sans',size:11}},grid:{display:false}}}}});
     }
 }
 
