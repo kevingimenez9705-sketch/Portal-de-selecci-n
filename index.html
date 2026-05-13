@@ -796,6 +796,7 @@ function renderTable() {
                     ${isAdmin() ? `<button class="btn-sm btn-danger" onclick="eliminar(${b.id})"><i class="fas fa-trash" style="font-size:8px"></i></button>` : ''}
                 </div>
             </td>
+            <!-- FIN FILA -->
         </tr>`;
     }).join('');
     renderKPIs();
@@ -954,7 +955,10 @@ async function addNew() {
 
 async function reabrir(id) {
     const orig = busquedas.find(x=>x.id===id);
-    if (!orig || !confirm(`¿Reabrir búsqueda "${orig.puesto}"?`)) return;
+    if (!orig) { toast('No se encontró la búsqueda', true); return; }
+    if (!confirm('¿Reabrir búsqueda "' + orig.puesto + '"?')) return;
+
+    // 1. Crear nueva búsqueda
     const { data: nueva, error } = await sb.from('busquedas').insert({
         numero: nextNro(),
         puesto: orig.puesto, selector: orig.selector, depto: orig.depto,
@@ -963,17 +967,33 @@ async function reabrir(id) {
         inicio: orig.inicio, status: 'Proceso', ingreso: null, ingreso_nombre: '',
         reopened_from: orig.numero
     }).select().single();
-    if (error) { toast('Error al reabrir', true); return; }
-    const historialAnterior = orig.historial.map(h => ({
-        busqueda_id: nueva.id, texto: h.texto, fecha: new Date().toISOString()
-    }));
-    historialAnterior.push({
-        busqueda_id: nueva.id,
-        texto: `Reapertura de ${orig.numero}. Anterior ingresado: ${orig.ingreso_nombre||'N/D'} (${orig.ingreso||'sin fecha'})`,
-        fecha: new Date().toISOString()
-    });
-    await sb.from('historial').insert(historialAnterior);
+
+    if (error) {
+        console.error('Error al crear reapertura:', error);
+        toast('Error al reabrir: ' + (error.message || 'verificar permisos'), true);
+        return;
+    }
+
+    // 2. Copiar historial (no bloquea si falla)
+    try {
+        const histEntries = [
+            ...(orig.historial||[]).map(h => ({
+                busqueda_id: nueva.id, texto: h.texto, fecha: new Date().toISOString()
+            })),
+            {
+                busqueda_id: nueva.id,
+                texto: 'Reapertura de ' + orig.numero + '. Anterior ingresado: ' + (orig.ingreso_nombre||'N/D') + ' (' + (orig.ingreso||'sin fecha') + ')',
+                fecha: new Date().toISOString()
+            }
+        ];
+        await sb.from('historial').insert(histEntries);
+    } catch(e) {
+        console.warn('No se pudo copiar historial:', e);
+    }
+
+    // 3. Marcar la original como cerrada
     await sb.from('busquedas').update({ status: 'Cerrada' }).eq('id', id);
+
     await loadData(); renderTable(); toast('Búsqueda reabierta ✓');
 }
 
