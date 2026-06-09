@@ -273,7 +273,7 @@
                 <span class="filter-label">Filtrar:</span>
                 <select class="filter-select" id="f-selector" onchange="applyFilters()">
                     <option value="">Todos los selectores</option>
-                    <option>Vagioleth</option><option>Juan</option><option>Magali</option><option>Silvina</option><option>Soledad</option>
+                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Luca</option>
                 </select>
                 <select class="filter-select" id="f-tipo" onchange="applyFilters()">
                     <option value="">Fábrica y Staff</option>
@@ -333,7 +333,7 @@
             <div class="form-group form-full"><label>Puesto / Cargo</label><input class="form-input" id="n-puesto" placeholder="Ej: Analista Contable"></div>
             <div class="form-group"><label>Selector a cargo</label>
                 <select class="form-input" id="n-selector">
-                    <option>Vagioleth</option><option>Juan</option><option>Magali</option><option>Silvina</option><option>Soledad</option>
+                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Luca</option>
                 </select>
             </div>
             <div class="form-group"><label>Departamento</label><input class="form-input" id="n-depto" placeholder="Ej: Administración"></div>
@@ -361,6 +361,8 @@
                     <option>Congelados</option><option>Panificados</option><option>San Miguel Empanadas</option>
                     <option>San Miguel Pizzas</option><option>Taller Mantenimiento</option><option>Oficina San Lorenzo</option>
                     <option>Paralelo 50</option><option>Caamaño</option><option>Office Park</option>
+                    <option>Centro de Logistica - Malvinas</option><option>Sabores - OP</option>
+                    <option>Extremas - OP</option><option>Tesoreria Nuñez</option>
                 </select>
             </div>
             <div class="form-group"><label>Fecha de apertura</label><input class="form-input" id="n-inicio" type="date"></div>
@@ -406,7 +408,7 @@
             <div class="form-group"><label>Selector que lo realiza</label>
                 <select class="form-input" id="psico-selector">
                     <option value="">— Sin asignar —</option>
-                    <option>Vagioleth</option><option>Juan</option><option>Magali</option><option>Silvina</option><option>Soledad</option>
+                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Luca</option>
                 </select>
             </div>
             <div class="form-group"><label>¿Quién lo realizó? (evaluador externo)</label><input class="form-input" id="psico-realizado" placeholder="Nombre del evaluador"></div>
@@ -425,6 +427,8 @@
 const SUPABASE_URL = 'https://nhlkndwwsuybnejbyigk.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5obGtuZHd3c3V5Ym5lamJ5aWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNzY5ODYsImV4cCI6MjA5Mzc1Mjk4Nn0.Xdli4VzqAKuYLkU5q8m8G6UTNda_BAaJlibROm9tGhw';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const SELECTORES = ['Silvina','Romina','Claudia','Luca'];
 
 const DEMORA_LIMITE = { 'Gerente/Director': 45, 'Jefe/Encargado': 30, 'Otros': 15 };
 let busquedas = [];
@@ -662,13 +666,13 @@ function renderTable() {
                 </div>`).join('')
             : `<span class="tip">Sin archivos</span>`;
 
-        // PERMANENCIA (en días hábiles)
+        // PERMANENCIA (en días hábiles) — se muestra siempre que haya fecha de ingreso
         let permHtml = '';
-        if (b.ingreso && b.ingreso_nombre) {
+        if (b.ingreso) {
             const milestone = diasEnEmpresa >= 130 ? '🏆 6 meses' : diasEnEmpresa >= 65 ? '✓ 3 meses' : diasEnEmpresa >= 22 ? '📌 1 mes' : '';
             permHtml = `<div class="perm-box">
                 <div class="perm-box-num">${diasEnEmpresa}</div>
-                <div class="perm-box-lbl">Días háb. en empresa</div>
+                <div class="perm-box-lbl">Días háb. trabajando en empresa</div>
                 ${milestone ? `<div class="perm-box-milestone">${milestone}</div>` : ''}
             </div>`;
         }
@@ -733,7 +737,7 @@ function renderTable() {
                 <div style="font-size:11px;color:var(--muted);margin-top:2px">${b.depto} · <span style="padding:1px 5px;border-radius:3px;background:${b.tipo==='Staff'?'#cfe2ff':'#d1e7dd'};color:${b.tipo==='Staff'?'#0a367a':'#0a3622'};font-weight:700">${b.tipo}</span></div>
                 <div style="margin-top:6px;font-size:12px">
                     Selector:
-                    ${isLocked ? `<strong>${b.selector}</strong>` : `<select class="inline-select" onchange="updateField(${b.id},'selector',this.value)">${['Vagioleth','Juan','Magali','Silvina','Soledad'].map(s=>`<option ${b.selector===s?'selected':''}>${s}</option>`).join('')}</select>`}
+                    ${isLocked ? `<strong>${b.selector}</strong>` : `<select class="inline-select" onchange="updateField(${b.id},'selector',this.value)">${SELECTORES.map(s=>`<option ${b.selector===s?'selected':''}>${s}</option>`).join('')}</select>`}
                 </div>
                 <div style="margin-top:4px;font-size:12px;display:flex;align-items:center;gap:4px">
                     <span style="color:var(--muted)">Nivel:</span>
@@ -1279,7 +1283,7 @@ function renderChartsTiempo() {
 
 function renderChartsSelectores() {
     const data = {};
-    const selectores = ['Vagioleth','Juan','Magali','Silvina','Soledad'];
+    const selectores = SELECTORES;
     selectores.forEach(s=>{data[s]={total:0,cerradas:0,proceso:0,candidatos:0,psico:0,psico_realizado:0,dias:[]};});
     busquedas.forEach(b=>{
         if(!data[b.selector])return;
@@ -1315,7 +1319,7 @@ function renderChartsSelectores() {
             </tr>`).join('')}</tbody>
         </table></div>
     </div></div>`;
-    const colors = ['#1a1714','#005f73','#2d6a4f','#ca6702','#9b2226'];
+    const colors = ['#1a1714','#005f73','#2d6a4f','#ca6702'];
     const cOpts = {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0,font:{family:'DM Mono',size:10}},grid:{color:'#e5e0d8'}},x:{ticks:{font:{family:'DM Sans',size:11}},grid:{display:false}}}};
     chartInstances['seltotal'] = new Chart(document.getElementById('ch-seltotal'),{type:'bar',data:{labels:activos,datasets:[{label:'Total',data:activos.map(s=>data[s].total),backgroundColor:colors.map(c=>c+'cc'),borderColor:colors,borderWidth:2,borderRadius:6}]},options:cOpts});
     chartInstances['seltasa']  = new Chart(document.getElementById('ch-seltasa'),{type:'bar',data:{labels:activos,datasets:[{label:'Tasa %',data:activos.map(s=>Math.round((data[s].cerradas/Math.max(data[s].total,1))*100)),backgroundColor:activos.map(s=>Math.round((data[s].cerradas/Math.max(data[s].total,1))*100)>50?'#d1e7ddcc':'#fff3cdcc'),borderColor:activos.map(s=>Math.round((data[s].cerradas/Math.max(data[s].total,1))*100)>50?'#0a3622':'#664d03'),borderWidth:2,borderRadius:6}]},options:{...cOpts,scales:{...cOpts.scales,y:{...cOpts.scales.y,max:100}}}});
