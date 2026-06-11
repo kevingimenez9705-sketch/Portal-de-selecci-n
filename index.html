@@ -273,7 +273,7 @@
                 <span class="filter-label">Filtrar:</span>
                 <select class="filter-select" id="f-selector" onchange="applyFilters()">
                     <option value="">Todos los selectores</option>
-                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Luca</option>
+                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Luca</option><option>Soledad</option>
                 </select>
                 <select class="filter-select" id="f-tipo" onchange="applyFilters()">
                     <option value="">Fábrica y Staff</option>
@@ -333,7 +333,7 @@
             <div class="form-group form-full"><label>Puesto / Cargo</label><input class="form-input" id="n-puesto" placeholder="Ej: Analista Contable"></div>
             <div class="form-group"><label>Selector a cargo</label>
                 <select class="form-input" id="n-selector">
-                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Luca</option>
+                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Luca</option><option>Soledad</option>
                 </select>
             </div>
             <div class="form-group"><label>Departamento</label><input class="form-input" id="n-depto" placeholder="Ej: Administración"></div>
@@ -362,7 +362,7 @@
                     <option>San Miguel Pizzas</option><option>Taller Mantenimiento</option><option>Oficina San Lorenzo</option>
                     <option>Paralelo 50</option><option>Caamaño</option><option>Office Park</option>
                     <option>Centro de Logistica - Malvinas</option><option>Sabores - OP</option>
-                    <option>Extremas - OP</option><option>Tesoreria Nuñez</option>
+                    <option>Extremas - OP</option><option>Tesoreria Nuñez</option><option>Fabricas</option>
                 </select>
             </div>
             <div class="form-group"><label>Fecha de apertura</label><input class="form-input" id="n-inicio" type="date"></div>
@@ -408,7 +408,7 @@
             <div class="form-group"><label>Selector que lo realiza</label>
                 <select class="form-input" id="psico-selector">
                     <option value="">— Sin asignar —</option>
-                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Luca</option>
+                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Luca</option><option>Soledad</option>
                 </select>
             </div>
             <div class="form-group"><label>¿Quién lo realizó? (evaluador externo)</label><input class="form-input" id="psico-realizado" placeholder="Nombre del evaluador"></div>
@@ -428,7 +428,7 @@ const SUPABASE_URL = 'https://nhlkndwwsuybnejbyigk.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5obGtuZHd3c3V5Ym5lamJ5aWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNzY5ODYsImV4cCI6MjA5Mzc1Mjk4Nn0.Xdli4VzqAKuYLkU5q8m8G6UTNda_BAaJlibROm9tGhw';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const SELECTORES = ['Silvina','Romina','Claudia','Luca'];
+const SELECTORES = ['Silvina','Romina','Claudia','Luca','Soledad'];
 
 const DEMORA_LIMITE = { 'Gerente/Director': 45, 'Jefe/Encargado': 30, 'Otros': 15 };
 let busquedas = [];
@@ -725,6 +725,12 @@ function renderTable() {
                     <span class="demora-badge ${dClass}" title="Límite: ${limite}hd (días hábiles)">${dias}hd</span>
                 </div>
                 <div style="margin-top:4px;font-size:11px;color:var(--muted)">Inicio: ${b.inicio}</div>
+                <div style="margin-top:3px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px">
+                    <span style="font-weight:700">CP:</span>
+                    ${isLocked
+                        ? `<strong>${b.cp || '—'}</strong>`
+                        : `<input type="date" class="inline-input" value="${b.cp||''}" onchange="updateField(${b.id},'cp',this.value)" style="font-size:11px;width:auto">`}
+                </div>
                 ${reopenedTag}
             </td>
             <!-- Col 2: Puesto / Dpto / Selector / Nivel (nivel editable) -->
@@ -1319,7 +1325,7 @@ function renderChartsSelectores() {
             </tr>`).join('')}</tbody>
         </table></div>
     </div></div>`;
-    const colors = ['#1a1714','#005f73','#2d6a4f','#ca6702'];
+    const colors = ['#1a1714','#005f73','#2d6a4f','#ca6702','#9b2226'];
     const cOpts = {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0,font:{family:'DM Mono',size:10}},grid:{color:'#e5e0d8'}},x:{ticks:{font:{family:'DM Sans',size:11}},grid:{display:false}}}};
     chartInstances['seltotal'] = new Chart(document.getElementById('ch-seltotal'),{type:'bar',data:{labels:activos,datasets:[{label:'Total',data:activos.map(s=>data[s].total),backgroundColor:colors.map(c=>c+'cc'),borderColor:colors,borderWidth:2,borderRadius:6}]},options:cOpts});
     chartInstances['seltasa']  = new Chart(document.getElementById('ch-seltasa'),{type:'bar',data:{labels:activos,datasets:[{label:'Tasa %',data:activos.map(s=>Math.round((data[s].cerradas/Math.max(data[s].total,1))*100)),backgroundColor:activos.map(s=>Math.round((data[s].cerradas/Math.max(data[s].total,1))*100)>50?'#d1e7ddcc':'#fff3cdcc'),borderColor:activos.map(s=>Math.round((data[s].cerradas/Math.max(data[s].total,1))*100)>50?'#0a3622':'#664d03'),borderWidth:2,borderRadius:6}]},options:{...cOpts,scales:{...cOpts.scales,y:{...cOpts.scales.y,max:100}}}});
