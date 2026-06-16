@@ -651,7 +651,7 @@ function renderTable() {
         const dClass = demoraClass(dias, b.nivel);
         const limite = DEMORA_LIMITE[b.nivel] || 15;
         const isLocked = locked(b);
-        const diasEnEmpresa = b.ingreso ? daysDiff(b.ingreso) : 0;
+        const diasEnEmpresa = b.ingreso ? daysDiff(b.ingreso, b.fecha_baja || null) : 0;
         const cantComentarios = (b.estado_busqueda || []).length;
 
         // PSICO
@@ -773,7 +773,7 @@ function renderTable() {
             const milestone = diasEnEmpresa >= 130 ? '🏆 6 meses' : diasEnEmpresa >= 65 ? '✓ 3 meses' : diasEnEmpresa >= 22 ? '📌 1 mes' : '';
             permHtml = `<div class="perm-box">
                 <div class="perm-box-num">${diasEnEmpresa}</div>
-                <div class="perm-box-lbl">Días háb. trabajando en empresa</div>
+                <div class="perm-box-lbl">${b.fecha_baja ? 'Días háb. hasta la baja' : 'Días háb. trabajando en empresa'}</div>
                 ${milestone ? `<div class="perm-box-milestone">${milestone}</div>` : ''}
             </div>`;
         }
@@ -924,6 +924,10 @@ function renderTable() {
                     <div style="margin-top:5px">
                         <label style="font-size:11px;color:var(--muted)">Fecha de ingreso</label>
                         <input type="date" class="inline-input" value="${b.ingreso||''}" onchange="updateField(${b.id},'ingreso',this.value)">
+                    </div>
+                    <div style="margin-top:5px">
+                        <label style="font-size:11px;color:var(--muted)">Fecha de baja <span style="font-style:italic">(si dejó la empresa)</span></label>
+                        <input type="date" class="inline-input" value="${b.fecha_baja||''}" onchange="updateField(${b.id},'fecha_baja',this.value)">
                     </div>`}
                 ${permHtml}
             </td>
@@ -1226,8 +1230,12 @@ async function reabrir(id) {
         console.warn('No se pudo copiar historial (no crítico):', e);
     }
 
-    // 4. Marcar la original como Cerrada
-    await sb.from('busquedas').update({ status: 'Cerrada' }).eq('id', id);
+    // 4. Marcar la original como Cerrada y registrar la fecha de baja
+    //    (congela el contador de permanencia en la fecha real en que dejó la empresa)
+    let fechaBaja = prompt('Fecha de baja del que ingresó (AAAA-MM-DD). Dejá vacío si seguía hasta hoy:', today());
+    const updOrig = { status: 'Cerrada' };
+    if (fechaBaja && /^\d{4}-\d{2}-\d{2}$/.test(fechaBaja.trim())) updOrig.fecha_baja = fechaBaja.trim();
+    await sb.from('busquedas').update(updOrig).eq('id', id);
 
     await loadData();
     renderTable();
@@ -1373,7 +1381,7 @@ function renderChartsGeneral() {
     const byNivel    = {}; busquedas.forEach(b=>{byNivel[b.nivel]=(byNivel[b.nivel]||0)+1;});
     // FIX: contar TODAS las búsquedas con fecha de ingreso (no requiere ingreso_nombre).
     //      Si no hay nombre, se usa el puesto como etiqueta. Se quitó el límite de 20.
-    const permData   = busquedas.filter(b=>b.ingreso).map(b=>({nombre:(b.ingreso_nombre&&b.ingreso_nombre.trim())?b.ingreso_nombre:(b.puesto||'(sin nombre)'),dias:daysDiff(b.ingreso),puesto:b.puesto})).sort((a,b)=>b.dias-a.dias);
+    const permData   = busquedas.filter(b=>b.ingreso).map(b=>({nombre:(b.ingreso_nombre&&b.ingreso_nombre.trim())?b.ingreso_nombre:(b.puesto||'(sin nombre)'),dias:daysDiff(b.ingreso, b.fecha_baja || null),puesto:b.puesto})).sort((a,b)=>b.dias-a.dias);
 
     document.getElementById('charts-content').innerHTML = `
     <div class="mini-kpi-row">
