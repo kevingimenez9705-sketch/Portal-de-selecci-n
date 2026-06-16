@@ -110,6 +110,8 @@
         .cand-item { padding: 5px 8px; background: #f5f2ed; border-radius: 7px; margin-bottom: 4px; position: relative; }
         .cand-nombre { font-size: 12px; font-weight: 700; }
         .cand-count { font-size: 12px; color: var(--muted); }
+        .cand-fecha-row { display: flex; flex-direction: column; gap: 2px; margin-top: 5px; }
+        .cand-fecha-lbl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; font-weight: 700; }
         .cand-timeline { display: flex; align-items: center; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
         .cand-tl-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
         .cand-tl-dot-blue { background: var(--blue); } .cand-tl-dot-green { background: var(--green); } .cand-tl-dot-red { background: var(--red); }
@@ -382,10 +384,15 @@
         <div class="form-row" style="grid-template-columns:1fr;">
             <div class="form-group"><label>Nombre del candidato</label><input class="form-input" id="cand-nombre" placeholder="Nombre Apellido"></div>
             <div class="form-group"><label>Estado</label>
-                <select class="form-input" id="cand-estado">
-                    <option value="Enviado">Enviado al área</option><option value="Entrevista">En entrevista</option>
+                <select class="form-input" id="cand-estado" onchange="toggleCandModalFechas()">
+                    <option value="Enviado">Enviado al área</option>
+                    <option value="Entrevista">En entrevista</option>
+                    <option value="Rechazado">Rechazado</option>
                 </select>
             </div>
+            <div class="form-group"><label>Fecha de envío</label><input class="form-input" id="cand-fecha-envio" type="date"></div>
+            <div class="form-group hidden" id="cand-grp-entrevista"><label>Fecha de entrevista</label><input class="form-input" id="cand-fecha-entrevista" type="date"></div>
+            <div class="form-group hidden" id="cand-grp-rechazo"><label>Fecha de rechazo</label><input class="form-input" id="cand-fecha-rechazo" type="date"></div>
         </div>
         <div class="modal-footer">
             <button class="btn-cancel" onclick="closeModal('modal-cand')">Cancelar</button>
@@ -422,6 +429,40 @@
     </div>
 </div>
 
+<div id="modal-verif" class="modal-bg hidden">
+    <div class="modal-box" style="max-width:420px">
+        <div class="modal-title">Agregar Verificación</div>
+        <input type="hidden" id="verif-bid">
+        <div class="form-row" style="grid-template-columns:1fr;">
+            <div class="form-group"><label>Tipo de verificación</label>
+                <select class="form-input" id="verif-tipo">
+                    <option>Nosis</option><option>Antecedentes Penales</option><option>Ambiental</option><option>Preocupacional</option><option>Curso de Manipulación</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Resultado</label>
+                <select class="form-input" id="verif-resultado">
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="En proceso">En proceso</option>
+                    <option value="OK">OK / Apto</option>
+                    <option value="Observado">Observado</option>
+                    <option value="No Apto">No Apto</option>
+                </select>
+            </div>
+            <div class="form-group"><label>¿Quién lo realiza?</label>
+                <select class="form-input" id="verif-selector">
+                    <option value="">— Sin asignar —</option>
+                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Luca</option><option>Soledad</option><option>Angel</option><option>Noelia</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Observaciones (opcional)</label><input class="form-input" id="verif-obs" placeholder="Detalle…"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal('modal-verif')">Cancelar</button>
+            <button class="btn-primary" onclick="saveVerif()">Guardar</button>
+        </div>
+    </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -430,6 +471,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const SELECTORES = ['Silvina','Romina','Claudia','Luca','Soledad','Angel','Noelia'];
+const TIPOS_VERIF = ['Nosis','Antecedentes Penales','Ambiental','Preocupacional','Curso de Manipulación'];
 
 const DEMORA_LIMITE = { 'Gerente/Director': 45, 'Jefe/Encargado': 30, 'Otros': 15 };
 let busquedas = [];
@@ -498,7 +540,7 @@ async function loadProfile() {
 async function loadData() {
     const { data, error } = await sb
         .from('busquedas')
-        .select('*, historial(*), estado_log(*), candidatos(*), psicotecnicos(*), archivos(*)')
+        .select('*, historial(*), estado_log(*), candidatos(*), psicotecnicos(*), verificaciones(*), archivos(*)')
         .order('id', { ascending: false });
     if (error) { toast('Error al cargar datos', true); return; }
     busquedas = (data || []).map(mapRow);
@@ -513,6 +555,7 @@ function mapRow(b) {
         estado_busqueda: (b.estado_log  || []).sort((a,x)=>a.id-x.id),
         candidatos:      (b.candidatos  || []).sort((a,x)=>a.id-x.id),
         psicotecnicos:   (b.psicotecnicos || []).map(p => ({...p, auth: p.auth_por})).sort((a,x)=>a.id-x.id),
+        verificaciones:  (b.verificaciones || []).sort((a,x)=>a.id-x.id),
         archivos:        (b.archivos    || []).sort((a,x)=>a.id-x.id),
     };
 }
@@ -573,6 +616,12 @@ function psicoClass(r) {
     if (r === 'Apto con reservas') return 'res-reservas';
     return 'res-noapto';
 }
+function verifClass(r) {
+    if (r === 'OK' || r === 'Apto') return 'res-apto';
+    if (r === 'Observado') return 'res-reservas';
+    if (r === 'No Apto' || r === 'Rechazado') return 'res-noapto';
+    return 'res-obs'; // Pendiente / En proceso
+}
 function tagClass(s) {
     if (s === 'Proceso') return 'tag-proceso';
     if (s === 'Cerrada') return 'tag-cerrada';
@@ -620,6 +669,20 @@ function renderTable() {
                 </div>`).join('')
             : `<span class="tip">Sin psicotécnicos</span>`;
 
+        // VERIFICACIONES (mismo formato que psicotécnicos)
+        const verifHtml = b.verificaciones.length > 0
+            ? b.verificaciones.map(v => `
+                <div class="psico-item">
+                    <span class="psico-nombre">${v.tipo}</span>
+                    <span>
+                        <span class="psico-result ${verifClass(v.resultado)}">${v.resultado}</span>
+                        ${v.selector_verif ? `<span class="psico-quien"><i class="fas fa-user" style="font-size:8px"></i> Realizó: <strong>${v.selector_verif}</strong></span>` : ''}
+                        ${v.observaciones ? `<span class="psico-quien">Obs: ${v.observaciones}</span>` : ''}
+                        ${!isLocked ? `<button onclick="removeVerif(${v.id})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:9px">✕</button>` : ''}
+                    </span>
+                </div>`).join('')
+            : `<span class="tip">Sin verificaciones</span>`;
+
         // CANDIDATOS
         const candHtml = b.candidatos.length > 0
             ? b.candidatos.map(c => {
@@ -654,6 +717,31 @@ function renderTable() {
                         </div>`;
                     }
                 }
+
+                // ── Fechas editables (envío / entrevista / rechazo) ──
+                let fechasHtml = '';
+                if (!isLocked) {
+                    fechasHtml = `
+                    <div class="cand-fecha-row">
+                        <span class="cand-fecha-lbl">Enviado</span>
+                        <input type="date" class="inline-input" style="font-size:11px" value="${c.fecha_envio||''}" onchange="updateCandFecha(${c.id},'fecha_envio',this.value)">
+                    </div>`;
+                    if (c.estado === 'Entrevista') {
+                        fechasHtml += `
+                        <div class="cand-fecha-row">
+                            <span class="cand-fecha-lbl">Entrevistado</span>
+                            <input type="date" class="inline-input" style="font-size:11px" value="${c.fecha_entrevista||''}" onchange="updateCandFecha(${c.id},'fecha_entrevista',this.value)">
+                        </div>`;
+                    }
+                    if (c.estado === 'Rechazado') {
+                        fechasHtml += `
+                        <div class="cand-fecha-row">
+                            <span class="cand-fecha-lbl">Rechazado</span>
+                            <input type="date" class="inline-input" style="font-size:11px" value="${c.fecha_rechazo||''}" onchange="updateCandFecha(${c.id},'fecha_rechazo',this.value)">
+                        </div>`;
+                    }
+                }
+
                 return `<div class="cand-item">
                     <div class="cand-nombre">${c.nombre}</div>
                     ${isLocked ? `<div style="font-size:11px;color:var(--muted)">${c.estado}</div>` : `
@@ -664,6 +752,7 @@ function renderTable() {
                         <option value="Rechazado" ${c.estado==='Rechazado'?'selected':''}>✗ Rechazado</option>
                     </select>
                     <button onclick="removeCand(${c.id})" style="position:absolute;top:4px;right:6px;background:none;border:none;cursor:pointer;color:#bbb;font-size:11px">✕</button>`}
+                    ${fechasHtml}
                     ${tlHtml}
                 </div>`;
               }).join('')
@@ -801,6 +890,13 @@ function renderTable() {
                         ${!isLocked?`<button class="btn-sm" style="margin-top:5px" onclick="openPsicoModal(${b.id})"><i class="fas fa-plus" style="font-size:8px"></i> Agregar</button>`:''}
                     </div>
                 </details>
+                <details>
+                    <summary><i class="fas fa-chevron-right"></i> Verificaciones (${b.verificaciones.length})</summary>
+                    <div style="padding-top:5px" class="cell-scroll">
+                        ${verifHtml}
+                        ${!isLocked?`<button class="btn-sm" style="margin-top:5px" onclick="openVerifModal(${b.id})"><i class="fas fa-plus" style="font-size:8px"></i> Agregar</button>`:''}
+                    </div>
+                </details>
             </td>
             <!-- Col 5: Candidatos -->
             <td>
@@ -926,18 +1022,38 @@ async function removeEstadoEntry(entryId) {
     await loadData(); renderTable(); toast('Eliminado');
 }
 
-function openCandModal(id) { document.getElementById('cand-bid').value = id; document.getElementById('cand-nombre').value = ''; openModal('modal-cand'); }
+// ── Modal candidato: mostrar/ocultar campos de fecha según estado ──
+function toggleCandModalFechas() {
+    const estado = document.getElementById('cand-estado').value;
+    document.getElementById('cand-grp-entrevista').classList.toggle('hidden', estado !== 'Entrevista');
+    document.getElementById('cand-grp-rechazo').classList.toggle('hidden', estado !== 'Rechazado');
+}
+
+function openCandModal(id) {
+    document.getElementById('cand-bid').value = id;
+    document.getElementById('cand-nombre').value = '';
+    document.getElementById('cand-estado').value = 'Enviado';
+    document.getElementById('cand-fecha-envio').value = today();
+    document.getElementById('cand-fecha-entrevista').value = '';
+    document.getElementById('cand-fecha-rechazo').value = '';
+    toggleCandModalFechas();
+    openModal('modal-cand');
+}
 async function saveCand() {
     const id = +document.getElementById('cand-bid').value;
     const nombre = document.getElementById('cand-nombre').value.trim();
     const estado = document.getElementById('cand-estado').value;
     if (!nombre) return;
-    const hoy = today();
-    const { error } = await sb.from('candidatos').insert({
+    const fEnvio      = document.getElementById('cand-fecha-envio').value || today();
+    const fEntrevista = document.getElementById('cand-fecha-entrevista').value || null;
+    const fRechazo    = document.getElementById('cand-fecha-rechazo').value || null;
+    const row = {
         busqueda_id: id, nombre, estado,
-        fecha_envio: hoy,
-        fecha_entrevista: estado === 'Entrevista' ? hoy : null
-    });
+        fecha_envio: fEnvio,
+        fecha_entrevista: estado === 'Entrevista' ? (fEntrevista || fEnvio) : null,
+        fecha_rechazo:    estado === 'Rechazado'  ? (fRechazo || fEnvio)    : null
+    };
+    const { error } = await sb.from('candidatos').insert(row);
     if (error) { toast('Error al guardar', true); return; }
     closeModal('modal-cand'); await loadData(); renderTable(); toast('Candidato agregado ✓');
 }
@@ -949,12 +1065,20 @@ async function removeCand(candId) {
 async function updateCandEstado(candId, estado) {
     const hoy = today();
     const update = { estado };
-    if (estado === 'Entrevista') { update.fecha_entrevista = hoy; update.fecha_rechazo = null; }
-    if (estado === 'Rechazado') update.fecha_rechazo = hoy;
-    if (estado === 'Enviado') { update.fecha_entrevista = null; update.fecha_rechazo = null; }
-    if (estado === 'Oferta') update.fecha_rechazo = null;
+    // Si ya tiene fecha cargada, NO la pisamos; solo la inicializamos cuando falta.
+    const c = busquedas.flatMap(b=>b.candidatos).find(x=>x.id===candId) || {};
+    if (estado === 'Entrevista') { update.fecha_entrevista = c.fecha_entrevista || hoy; update.fecha_rechazo = null; }
+    if (estado === 'Rechazado')  { update.fecha_rechazo = c.fecha_rechazo || hoy; }
+    if (estado === 'Enviado')    { update.fecha_entrevista = null; update.fecha_rechazo = null; }
+    if (estado === 'Oferta')     { update.fecha_rechazo = null; }
     await sb.from('candidatos').update(update).eq('id', candId);
     await loadData(); renderTable(); toast('Estado actualizado ✓');
+}
+// ── Actualizar manualmente una fecha de candidato ──
+async function updateCandFecha(candId, field, val) {
+    const { error } = await sb.from('candidatos').update({ [field]: val || null }).eq('id', candId);
+    if (error) { toast('Error al guardar fecha', true); return; }
+    await loadData(); renderTable(); toast('Fecha actualizada ✓');
 }
 
 function openPsicoModal(id) {
@@ -978,6 +1102,31 @@ async function savePsico() {
 async function removePsico(psicoId) {
     if (!confirm('¿Eliminar este psicotécnico? Esta acción no se puede deshacer.')) return;
     await sb.from('psicotecnicos').delete().eq('id', psicoId);
+    await loadData(); renderTable(); toast('Eliminado');
+}
+
+// ── VERIFICACIONES (mismo patrón que psicotécnicos) ──
+function openVerifModal(id) {
+    document.getElementById('verif-bid').value = id;
+    document.getElementById('verif-tipo').value = 'Nosis';
+    document.getElementById('verif-resultado').value = 'Pendiente';
+    document.getElementById('verif-selector').value = '';
+    document.getElementById('verif-obs').value = '';
+    openModal('modal-verif');
+}
+async function saveVerif() {
+    const id = +document.getElementById('verif-bid').value;
+    const tipo = document.getElementById('verif-tipo').value;
+    const resultado = document.getElementById('verif-resultado').value;
+    const selector_verif = document.getElementById('verif-selector').value;
+    const observaciones = document.getElementById('verif-obs').value.trim();
+    const { error } = await sb.from('verificaciones').insert({ busqueda_id: id, tipo, resultado, selector_verif, observaciones });
+    if (error) { toast('Error al guardar', true); return; }
+    closeModal('modal-verif'); await loadData(); renderTable(); toast('Verificación agregada ✓');
+}
+async function removeVerif(verifId) {
+    if (!confirm('¿Eliminar esta verificación? Esta acción no se puede deshacer.')) return;
+    await sb.from('verificaciones').delete().eq('id', verifId);
     await loadData(); renderTable(); toast('Eliminado');
 }
 
@@ -1222,7 +1371,9 @@ function renderChartsGeneral() {
     const byMotivo   = {}; busquedas.forEach(b=>{byMotivo[b.motivo]=(byMotivo[b.motivo]||0)+1;});
     const byDepto    = {}; busquedas.forEach(b=>{byDepto[b.depto]=(byDepto[b.depto]||0)+1;});
     const byNivel    = {}; busquedas.forEach(b=>{byNivel[b.nivel]=(byNivel[b.nivel]||0)+1;});
-    const permData   = busquedas.filter(b=>b.ingreso_nombre&&b.ingreso).map(b=>({nombre:b.ingreso_nombre,dias:daysDiff(b.ingreso),puesto:b.puesto})).sort((a,b)=>b.dias-a.dias).slice(0,20);
+    // FIX: contar TODAS las búsquedas con fecha de ingreso (no requiere ingreso_nombre).
+    //      Si no hay nombre, se usa el puesto como etiqueta. Se quitó el límite de 20.
+    const permData   = busquedas.filter(b=>b.ingreso).map(b=>({nombre:(b.ingreso_nombre&&b.ingreso_nombre.trim())?b.ingreso_nombre:(b.puesto||'(sin nombre)'),dias:daysDiff(b.ingreso),puesto:b.puesto})).sort((a,b)=>b.dias-a.dias);
 
     document.getElementById('charts-content').innerHTML = `
     <div class="mini-kpi-row">
@@ -1242,7 +1393,7 @@ function renderChartsGeneral() {
     </div>
     <div style="margin-top:20px">
         <div class="chart-card">
-            <div class="chart-card-title"><i class="fas fa-user-clock"></i> Permanencia por Persona (días hábiles en empresa)</div>
+            <div class="chart-card-title"><i class="fas fa-user-clock"></i> Permanencia por Persona (días hábiles en empresa) · ${permData.length} ingresos</div>
             ${permData.length>0
                 ? `<div style="position:relative;height:${Math.max(180,permData.length*28)}px"><canvas id="ch-perm"></canvas></div>`
                 : `<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Sin ingresos registrados aún</div>`}
