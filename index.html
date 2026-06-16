@@ -46,7 +46,7 @@
         #toast.show { opacity: 1; transform: translateY(0); }
         #toast.error { background: var(--red); }
 
-        /* ── APP SHELL (sin sidebar) ── */
+        /* ── APP SHELL ── */
         .shell { display: flex; flex-direction: column; min-height: 100vh; }
 
         /* ── TOP NAV BAR ── */
@@ -62,8 +62,8 @@
 
         /* ── MAIN ── */
         .main { flex: 1; padding: 28px 32px; overflow-x: auto; }
-        
-        /* ── INLINE NAV (debajo del título) ── */
+
+        /* ── INLINE NAV ── */
         .inline-nav { display: flex; align-items: center; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
         .inline-nav-btn { display: flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; transition: all .15s; white-space: nowrap; }
         .inline-nav-btn i { font-size: 11px; }
@@ -159,8 +159,6 @@
         .sep { height: 1px; background: var(--border); margin: 6px 0; }
         .tip { font-size: 11px; color: var(--muted); font-style: italic; }
         .cell-scroll { max-height: 200px; overflow-y: auto; }
-
-        /* ── ESTADO LOG (simplificado) ── */
         .estado-log { display: flex; flex-direction: column; gap: 4px; }
         .estado-entry { display: flex; align-items: flex-start; gap: 7px; }
         .d-badge { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 700; background: var(--text); color: #fff; border-radius: 4px; padding: 2px 5px; flex-shrink: 0; margin-top: 1px; }
@@ -172,7 +170,6 @@
         .estado-add-btn { background: var(--text); color: #fff; border: none; border-radius: 6px; padding: 5px 10px; font-size: 11px; cursor: pointer; font-weight: 700; white-space: nowrap; }
         .estado-toggle { font-size: 11px; color: var(--blue); background: none; border: none; cursor: pointer; padding: 0; font-weight: 600; display: flex; align-items: center; gap: 4px; margin-top: 4px; }
         .estado-toggle:hover { text-decoration: underline; }
-
         .pdf-item { display: flex; align-items: center; gap: 6px; padding: 4px 6px; background: #e5e0d822; border-radius: 5px; margin-bottom: 3px; }
         .pdf-item-name { font-size: 11px; font-weight: 600; color: var(--muted); flex: 1; cursor: pointer; }
         .pdf-item-name:hover { text-decoration: underline; }
@@ -206,6 +203,8 @@
         .perm-box-num { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: var(--green); line-height: 1; }
         .perm-box-lbl { font-size: 9px; color: var(--ok-text); text-transform: uppercase; letter-spacing: .8px; margin-top: 2px; }
         .perm-box-milestone { font-size: 10px; color: var(--green); font-weight: 700; margin-top: 3px; }
+        /* Badge CP congelado */
+        .cp-frozen { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; color: var(--blue); background: #dbeafe; border-radius: 4px; padding: 1px 5px; margin-top: 2px; }
         @media(max-width:900px) {
             .topnav { padding: 0 16px; } .main { padding: 16px; }
             .charts-grid, .charts-grid-2 { grid-template-columns: 1fr; }
@@ -241,7 +240,6 @@
 <!-- ══ APP ══ -->
 <div id="app" class="shell hidden">
 
-    <!-- TOP NAV BAR -->
     <nav class="topnav">
         <div class="topnav-logo">Panel de Selección</div>
         <div class="topnav-right">
@@ -260,7 +258,6 @@
             <button class="btn-primary" onclick="openModal()"><i class="fas fa-plus"></i> Nueva Búsqueda</button>
         </div>
 
-        <!-- INLINE NAV (debajo del título) -->
         <div class="inline-nav">
             <button class="inline-nav-btn active" id="nav-pipeline" onclick="showView('pipeline',this)"><i class="fas fa-table"></i> Pipeline</button>
             <button class="inline-nav-btn" id="nav-stats" onclick="showView('stats',this)"><i class="fas fa-chart-bar"></i> Estadísticas</button>
@@ -492,31 +489,26 @@ function toast(msg, isError = false) {
 }
 
 // ══════════════════════════════════════════════
-//  DÍAS HÁBILES (lunes a viernes, sin fines de semana)
-//  Nota: no descuenta feriados nacionales (se pueden agregar si se necesita)
+//  DÍAS HÁBILES (lunes a viernes)
 // ══════════════════════════════════════════════
 function workingDaysDiff(from, to = null) {
     if (!from) return 0;
     const start = new Date(from + 'T00:00:00');
     const end   = to ? new Date(to + 'T00:00:00') : new Date();
-    // Normalizar a medianoche local para evitar problemas de timezone
     start.setHours(0, 0, 0, 0);
     end.setHours(0, 0, 0, 0);
     if (end <= start) return 0;
     let count = 0;
     const cur = new Date(start);
-    cur.setDate(cur.getDate() + 1); // empezar desde el día siguiente
+    cur.setDate(cur.getDate() + 1);
     while (cur <= end) {
         const dow = cur.getDay();
-        if (dow !== 0 && dow !== 6) count++; // 0=dom, 6=sáb
+        if (dow !== 0 && dow !== 6) count++;
         cur.setDate(cur.getDate() + 1);
     }
     return count;
 }
-// Alias para mantener compatibilidad con todos los usos anteriores de daysDiff
-function daysDiff(from, to = null) {
-    return workingDaysDiff(from, to);
-}
+function daysDiff(from, to = null) { return workingDaysDiff(from, to); }
 
 async function login() {
     const email = document.getElementById('login-email').value.trim();
@@ -563,7 +555,6 @@ function mapRow(b) {
 function nextNro() { return 'SEL-' + String(nroSeq++).padStart(3, '0'); }
 
 async function checkAndFinalizeSearches() {
-    // Usa días hábiles: 90 días hábiles ≈ ~4.5 meses calendario
     const toFinalize = busquedas.filter(b =>
         b.status === 'Cerrada' && b.ingreso && daysDiff(b.ingreso) >= 90
     );
@@ -620,7 +611,7 @@ function verifClass(r) {
     if (r === 'OK' || r === 'Apto') return 'res-apto';
     if (r === 'Observado') return 'res-reservas';
     if (r === 'No Apto' || r === 'Rechazado') return 'res-noapto';
-    return 'res-obs'; // Pendiente / En proceso
+    return 'res-obs';
 }
 function tagClass(s) {
     if (s === 'Proceso') return 'tag-proceso';
@@ -629,8 +620,6 @@ function tagClass(s) {
     if (s === 'Finalizada') return 'tag-finalizada';
     return 'tag-pausada';
 }
-
-// ── Formato moneda con signo $ ──
 function fmtMoney(n) {
     if (!n || n === 0) return '$ —';
     return '$ ' + new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(n);
@@ -645,14 +634,24 @@ function renderTable() {
     const locked = (b) => (b.status === 'Cerrada' || b.status === 'Finalizada') && !isAdmin();
 
     body.innerHTML = list.map(b => {
-        // HD: si hay fecha de ingreso, se congela ahí. Si no hay ingreso pero hay CP, se congela en la fecha de CP.
-        // Si no hay ninguna de las dos, sigue contando hasta hoy.
-        const dias = b.ingreso ? daysDiff(b.inicio, b.ingreso) : (b.cp ? daysDiff(b.inicio, b.cp) : daysDiff(b.inicio));
+        // ── LÓGICA HD:
+        // 1. Si hay fecha de ingreso → congela en inicio→ingreso
+        // 2. Si hay CP (pero no ingreso) → congela en inicio→CP (sin cerrar)
+        // 3. Si ninguno → cuenta hasta hoy
+        const dias = b.ingreso
+            ? daysDiff(b.inicio, b.ingreso)
+            : (b.cp ? daysDiff(b.inicio, b.cp) : daysDiff(b.inicio));
+
         const dClass = demoraClass(dias, b.nivel);
         const limite = DEMORA_LIMITE[b.nivel] || 15;
         const isLocked = locked(b);
         const diasEnEmpresa = b.ingreso ? daysDiff(b.ingreso, b.fecha_baja || null) : 0;
         const cantComentarios = (b.estado_busqueda || []).length;
+
+        // Badge que indica por qué está congelado el HD
+        const frozenBadge = b.ingreso
+            ? `<span class="cp-frozen"><i class="fas fa-lock" style="font-size:8px"></i> congelado al ingresar</span>`
+            : (b.cp ? `<span class="cp-frozen"><i class="fas fa-snowflake" style="font-size:8px"></i> HD congelado por CP</span>` : '');
 
         // PSICO
         const psicoHtml = b.psicotecnicos.length > 0
@@ -669,7 +668,7 @@ function renderTable() {
                 </div>`).join('')
             : `<span class="tip">Sin psicotécnicos</span>`;
 
-        // VERIFICACIONES (mismo formato que psicotécnicos)
+        // VERIFICACIONES
         const verifHtml = b.verificaciones.length > 0
             ? b.verificaciones.map(v => `
                 <div class="psico-item">
@@ -718,7 +717,6 @@ function renderTable() {
                     }
                 }
 
-                // ── Fechas editables (envío / entrevista / rechazo) ──
                 let fechasHtml = '';
                 if (!isLocked) {
                     fechasHtml = `
@@ -767,7 +765,7 @@ function renderTable() {
                 </div>`).join('')
             : `<span class="tip">Sin archivos</span>`;
 
-        // PERMANENCIA (en días hábiles) — se muestra siempre que haya fecha de ingreso
+        // PERMANENCIA
         let permHtml = '';
         if (b.ingreso) {
             const milestone = diasEnEmpresa >= 130 ? '🏆 6 meses' : diasEnEmpresa >= 65 ? '✓ 3 meses' : diasEnEmpresa >= 22 ? '📌 1 mes' : '';
@@ -810,7 +808,6 @@ function renderTable() {
                 <button class="estado-add-btn" onclick="addEstadoEntry(${b.id})"><i class="fas fa-plus" style="font-size:10px"></i></button>
             </div>` : ''}`;
 
-        // Indicador de reapertura (se guarda en estado_log)
         const reopenedTag = b.reopened_from
             ? `<div style="margin-top:3px;font-size:10px;color:var(--blue);font-weight:600"><i class="fas fa-redo" style="font-size:8px"></i> Reapertura de ${b.reopened_from}</div>`
             : '';
@@ -825,6 +822,7 @@ function renderTable() {
                     <span class="tag ${tagClass(b.status)}">${b.status}</span>
                     <span class="demora-badge ${dClass}" title="Límite: ${limite}hd (días hábiles)">${dias}hd</span>
                 </div>
+                ${frozenBadge}
                 <div style="margin-top:4px;font-size:11px;color:var(--muted)">Inicio: ${b.inicio}</div>
                 <div style="margin-top:3px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px">
                     <span style="font-weight:700">CP:</span>
@@ -834,7 +832,7 @@ function renderTable() {
                 </div>
                 ${reopenedTag}
             </td>
-            <!-- Col 2: Puesto / Dpto / Selector / Nivel (nivel editable) -->
+            <!-- Col 2: Puesto / Dpto / Selector / Nivel -->
             <td>
                 ${isLocked
                     ? `<div style="font-weight:700;font-size:13px">${b.puesto}</div>`
@@ -879,7 +877,7 @@ function renderTable() {
                     : `<input class="inline-input" value="${b.jornada||''}" placeholder="Jornada…" onchange="updateField(${b.id},'jornada',this.value)" style="font-size:12px;font-weight:700;background:#ece9e3;border-radius:4px;padding:2px 6px;width:100%;margin-top:2px">`}
                 <div><span class="ubic-pill">📍 ${b.ubicacion}</span></div>
             </td>
-            <!-- Col 4: Estado (simplificado) + Psicotécnicos -->
+            <!-- Col 4: Estado + Psicotécnicos -->
             <td>
                 ${estadoHtml}
                 <div class="sep"></div>
@@ -949,7 +947,6 @@ function renderTable() {
     updateDeptoFilter();
 }
 
-// ── Toggle comentarios estado ──
 function toggleComentarios(id, btn) {
     const log = document.getElementById('est-log-' + id);
     const icon = document.getElementById('est-icon-' + id);
@@ -998,9 +995,18 @@ function updateDeptoFilter() {
     sel.innerHTML = '<option value="">Todos los dptos.</option>' + deptos.map(d=>`<option ${d===cur?'selected':''}>${d}</option>`).join('');
 }
 
+// ══════════════════════════════════════════════
+//  UPDATE FIELD
+//  CP: solo congela HD, NO cambia el status
+//  ingreso: congela HD Y cierra la búsqueda
+// ══════════════════════════════════════════════
 async function updateField(id, field, val) {
     const update = { [field]: val };
+
+    // Solo el ingreso cierra la búsqueda automáticamente
     if (field === 'ingreso' && val) update.status = 'Cerrada';
+    // CP no toca el status — solo congela el contador HD en el render
+
     const { error } = await sb.from('busquedas').update(update).eq('id', id);
     if (error) { toast('Error al guardar', true); return; }
     await loadData();
@@ -1026,7 +1032,6 @@ async function removeEstadoEntry(entryId) {
     await loadData(); renderTable(); toast('Eliminado');
 }
 
-// ── Modal candidato: mostrar/ocultar campos de fecha según estado ──
 function toggleCandModalFechas() {
     const estado = document.getElementById('cand-estado').value;
     document.getElementById('cand-grp-entrevista').classList.toggle('hidden', estado !== 'Entrevista');
@@ -1069,7 +1074,6 @@ async function removeCand(candId) {
 async function updateCandEstado(candId, estado) {
     const hoy = today();
     const update = { estado };
-    // Si ya tiene fecha cargada, NO la pisamos; solo la inicializamos cuando falta.
     const c = busquedas.flatMap(b=>b.candidatos).find(x=>x.id===candId) || {};
     if (estado === 'Entrevista') { update.fecha_entrevista = c.fecha_entrevista || hoy; update.fecha_rechazo = null; }
     if (estado === 'Rechazado')  { update.fecha_rechazo = c.fecha_rechazo || hoy; }
@@ -1078,7 +1082,6 @@ async function updateCandEstado(candId, estado) {
     await sb.from('candidatos').update(update).eq('id', candId);
     await loadData(); renderTable(); toast('Estado actualizado ✓');
 }
-// ── Actualizar manualmente una fecha de candidato ──
 async function updateCandFecha(candId, field, val) {
     const { error } = await sb.from('candidatos').update({ [field]: val || null }).eq('id', candId);
     if (error) { toast('Error al guardar fecha', true); return; }
@@ -1109,7 +1112,6 @@ async function removePsico(psicoId) {
     await loadData(); renderTable(); toast('Eliminado');
 }
 
-// ── VERIFICACIONES (mismo patrón que psicotécnicos) ──
 function openVerifModal(id) {
     document.getElementById('verif-bid').value = id;
     document.getElementById('verif-tipo').value = 'Nosis';
@@ -1157,19 +1159,11 @@ async function addNew() {
     closeModal('modal-nueva'); await loadData(); renderTable(); toast('Búsqueda creada ✓');
 }
 
-// ══════════════════════════════════════════════
-//  REABRIR — versión corregida
-//  Problema anterior: la columna "reopened_from" puede no existir en la tabla
-//  o generar conflicto. Ahora se omite del INSERT y se registra el origen
-//  únicamente en estado_log (que sí existe) y en historial.
-// ══════════════════════════════════════════════
 async function reabrir(id) {
     const orig = busquedas.find(x => x.id === id);
     if (!orig) { toast('No se encontró la búsqueda', true); return; }
     if (!confirm('¿Reabrir búsqueda "' + orig.puesto + '"? Se creará una nueva entrada en Proceso.')) return;
 
-    // 1. Armar el objeto de inserción SIN reopened_from para evitar error de columna inexistente.
-    //    Si la columna existe en tu tabla puedes descomentarla abajo.
     const nuevaRow = {
         numero:       nextNro(),
         puesto:       orig.puesto,
@@ -1181,11 +1175,10 @@ async function reabrir(id) {
         sueldo:       orig.sueldo,
         jornada:      orig.jornada,
         ubicacion:    orig.ubicacion,
-        inicio:       today(),   // la reapertura empieza hoy
+        inicio:       today(),
         status:       'Proceso',
         ingreso:      null,
         ingreso_nombre: '',
-        // reopened_from: orig.numero,  // ← descomentar si la columna existe en Supabase
     };
 
     const { data: nueva, error: errInsert } = await sb
@@ -1200,24 +1193,11 @@ async function reabrir(id) {
         return;
     }
 
-    // 2. Registrar el origen en estado_log de la nueva búsqueda (siempre funciona)
     const textoOrigen = `Reapertura de ${orig.numero} — "${orig.puesto}". Anterior ingresado: ${orig.ingreso_nombre || 'N/D'} (${orig.ingreso || 'sin fecha'})`;
-    await sb.from('estado_log').insert({
-        busqueda_id: nueva.id,
-        texto: textoOrigen,
-        fecha: today()
-    });
+    await sb.from('estado_log').insert({ busqueda_id: nueva.id, texto: textoOrigen, fecha: today() });
 
-    // 3. Registrar en historial de la nueva búsqueda
     try {
-        const histEntries = [
-            {
-                busqueda_id: nueva.id,
-                texto: textoOrigen,
-                fecha: new Date().toISOString()
-            }
-        ];
-        // Copiar historial anterior si existe
+        const histEntries = [{ busqueda_id: nueva.id, texto: textoOrigen, fecha: new Date().toISOString() }];
         if (orig.historial && orig.historial.length > 0) {
             orig.historial.forEach(h => histEntries.push({
                 busqueda_id: nueva.id,
@@ -1226,19 +1206,14 @@ async function reabrir(id) {
             }));
         }
         await sb.from('historial').insert(histEntries);
-    } catch (e) {
-        console.warn('No se pudo copiar historial (no crítico):', e);
-    }
+    } catch (e) { console.warn('No se pudo copiar historial:', e); }
 
-    // 4. Marcar la original como Cerrada y registrar la fecha de baja
-    //    (congela el contador de permanencia en la fecha real en que dejó la empresa)
     let fechaBaja = prompt('Fecha de baja del que ingresó (AAAA-MM-DD). Dejá vacío si seguía hasta hoy:', today());
     const updOrig = { status: 'Cerrada' };
     if (fechaBaja && /^\d{4}-\d{2}-\d{2}$/.test(fechaBaja.trim())) updOrig.fecha_baja = fechaBaja.trim();
     await sb.from('busquedas').update(updOrig).eq('id', id);
 
-    await loadData();
-    renderTable();
+    await loadData(); renderTable();
     toast('Búsqueda reabierta como ' + nueva.numero + ' ✓');
 }
 
@@ -1379,8 +1354,6 @@ function renderChartsGeneral() {
     const byMotivo   = {}; busquedas.forEach(b=>{byMotivo[b.motivo]=(byMotivo[b.motivo]||0)+1;});
     const byDepto    = {}; busquedas.forEach(b=>{byDepto[b.depto]=(byDepto[b.depto]||0)+1;});
     const byNivel    = {}; busquedas.forEach(b=>{byNivel[b.nivel]=(byNivel[b.nivel]||0)+1;});
-    // FIX: contar TODAS las búsquedas con fecha de ingreso (no requiere ingreso_nombre).
-    //      Si no hay nombre, se usa el puesto como etiqueta. Se quitó el límite de 20.
     const permData   = busquedas.filter(b=>b.ingreso).map(b=>({nombre:(b.ingreso_nombre&&b.ingreso_nombre.trim())?b.ingreso_nombre:(b.puesto||'(sin nombre)'),dias:daysDiff(b.ingreso, b.fecha_baja || null),puesto:b.puesto})).sort((a,b)=>b.dias-a.dias);
 
     document.getElementById('charts-content').innerHTML = `
@@ -1419,7 +1392,6 @@ function renderChartsGeneral() {
     chartInstances['nivel']  = new Chart(document.getElementById('ch-nivel'),{type:'bar',data:{labels:Object.keys(byNivel),datasets:[{label:'Cantidad',data:Object.values(byNivel),backgroundColor:['#ca6702cc','#005f73cc','#9b2226cc'],borderRadius:6}]},options:{...cd,plugins:{legend:{display:false}},indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{precision:0}},y:{grid:{display:false}}}}});
 
     if (permData.length>0) {
-        // Milestones en días hábiles: 1 mes ≈ 22hd, 3 meses ≈ 65hd, 6 meses ≈ 130hd
         const permColors = permData.map(p=>p.dias>=130?'#2d6a4f':p.dias>=65?'#005f73':p.dias>=22?'#ca6702':'#9b2226');
         chartInstances['perm'] = new Chart(document.getElementById('ch-perm'),{type:'bar',data:{labels:permData.map(p=>p.nombre),datasets:[{label:'Días hábiles en empresa',data:permData.map(p=>p.dias),backgroundColor:permColors.map(c=>c+'cc'),borderColor:permColors,borderWidth:2,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const p=permData[ctx.dataIndex];const m=p.dias>=130?' 🏆 6m+':p.dias>=65?' ✓ 3m+':p.dias>=22?' 1m+':'';return ` ${p.dias} días háb. en empresa${m}`;},afterLabel:ctx=>` Puesto: ${permData[ctx.dataIndex].puesto}`}}},scales:{x:{beginAtZero:true,ticks:{precision:0,font:{family:'DM Mono',size:10}},grid:{color:'#e5e0d8'}},y:{ticks:{font:{family:'DM Sans',size:11}},grid:{display:false}}}}});
     }
@@ -1431,7 +1403,6 @@ function renderChartsTiempo() {
     const avgDias  = diasList.length?Math.round(diasList.reduce((a,c)=>a+c,0)/diasList.length):0;
     const minDias  = diasList.length?Math.min(...diasList):0;
     const maxDias  = diasList.length?Math.max(...diasList):0;
-    // Rangos en días hábiles (ajustados: 0-7, 8-14, 15-22, 23-30, +30)
     const rangos   = {'0–7hd':0,'8–14hd':0,'15–22hd':0,'23–30hd':0,'+30hd':0};
     diasList.forEach(d=>{if(d<=7)rangos['0–7hd']++;else if(d<=14)rangos['8–14hd']++;else if(d<=22)rangos['15–22hd']++;else if(d<=30)rangos['23–30hd']++;else rangos['+30hd']++;});
     const bySel = {};
