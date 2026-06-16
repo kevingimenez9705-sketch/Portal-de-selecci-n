@@ -112,11 +112,12 @@
         .cand-count { font-size: 12px; color: var(--muted); }
         .cand-timeline { display: flex; align-items: center; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
         .cand-tl-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-        .cand-tl-dot-blue { background: var(--blue); } .cand-tl-dot-green { background: var(--green); }
+        .cand-tl-dot-blue { background: var(--blue); } .cand-tl-dot-green { background: var(--green); } .cand-tl-dot-red { background: var(--red); }
         .cand-tl-line { flex: 1; height: 2px; background: var(--border); min-width: 10px; border-radius: 2px; }
         .cand-tl-badge { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 700; border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
         .cand-tl-badge-wait { background: #dbeafe; color: #1e40af; }
         .cand-tl-badge-done { background: #d1fae5; color: #065f46; }
+        .cand-tl-badge-rejected { background: #f8d7da; color: #721c24; }
         .modal-bg { position: fixed; inset: 0; background: rgba(26,23,20,.55); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; backdrop-filter: blur(2px); }
         .modal-bg.hidden { display: none; }
         .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; width: 100%; max-width: 560px; padding: 28px; box-shadow: 0 20px 60px rgba(0,0,0,.2); max-height: 90vh; overflow-y: auto; }
@@ -273,7 +274,7 @@
                 <span class="filter-label">Filtrar:</span>
                 <select class="filter-select" id="f-selector" onchange="applyFilters()">
                     <option value="">Todos los selectores</option>
-                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Luca</option><option>Soledad</option>
+                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Luca</option><option>Soledad</option><option>Angel</option><option>Noelia</option>
                 </select>
                 <select class="filter-select" id="f-tipo" onchange="applyFilters()">
                     <option value="">Fábrica y Staff</option>
@@ -333,7 +334,7 @@
             <div class="form-group form-full"><label>Puesto / Cargo</label><input class="form-input" id="n-puesto" placeholder="Ej: Analista Contable"></div>
             <div class="form-group"><label>Selector a cargo</label>
                 <select class="form-input" id="n-selector">
-                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Luca</option><option>Soledad</option>
+                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Luca</option><option>Soledad</option><option>Angel</option><option>Noelia</option>
                 </select>
             </div>
             <div class="form-group"><label>Departamento</label><input class="form-input" id="n-depto" placeholder="Ej: Administración"></div>
@@ -408,7 +409,7 @@
             <div class="form-group"><label>Selector que lo realiza</label>
                 <select class="form-input" id="psico-selector">
                     <option value="">— Sin asignar —</option>
-                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Luca</option><option>Soledad</option>
+                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Luca</option><option>Soledad</option><option>Angel</option><option>Noelia</option>
                 </select>
             </div>
             <div class="form-group"><label>¿Quién lo realizó? (evaluador externo)</label><input class="form-input" id="psico-realizado" placeholder="Nombre del evaluador"></div>
@@ -428,7 +429,7 @@ const SUPABASE_URL = 'https://nhlkndwwsuybnejbyigk.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5obGtuZHd3c3V5Ym5lamJ5aWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNzY5ODYsImV4cCI6MjA5Mzc1Mjk4Nn0.Xdli4VzqAKuYLkU5q8m8G6UTNda_BAaJlibROm9tGhw';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const SELECTORES = ['Silvina','Romina','Claudia','Luca','Soledad'];
+const SELECTORES = ['Silvina','Romina','Claudia','Luca','Soledad','Angel','Noelia'];
 
 const DEMORA_LIMITE = { 'Gerente/Director': 45, 'Jefe/Encargado': 30, 'Otros': 15 };
 let busquedas = [];
@@ -595,7 +596,9 @@ function renderTable() {
     const locked = (b) => (b.status === 'Cerrada' || b.status === 'Finalizada') && !isAdmin();
 
     body.innerHTML = list.map(b => {
-        const dias = b.ingreso ? daysDiff(b.inicio, b.ingreso) : daysDiff(b.inicio);
+        // HD: si hay fecha de ingreso, se congela ahí. Si no hay ingreso pero hay CP, se congela en la fecha de CP.
+        // Si no hay ninguna de las dos, sigue contando hasta hoy.
+        const dias = b.ingreso ? daysDiff(b.inicio, b.ingreso) : (b.cp ? daysDiff(b.inicio, b.cp) : daysDiff(b.inicio));
         const dClass = demoraClass(dias, b.nivel);
         const limite = DEMORA_LIMITE[b.nivel] || 15;
         const isLocked = locked(b);
@@ -639,6 +642,15 @@ function renderTable() {
                             <span class="cand-tl-badge cand-tl-badge-done">✓ ${d===0?'mismo día':d+'hd hasta entrevista'}</span>
                             <div class="cand-tl-line"></div>
                             <span class="cand-tl-dot cand-tl-dot-green"></span>
+                        </div>`;
+                    } else if (c.estado === 'Rechazado' && c.fecha_rechazo) {
+                        const d = daysDiff(c.fecha_envio, c.fecha_rechazo);
+                        tlHtml = `<div class="cand-timeline">
+                            <span class="cand-tl-dot cand-tl-dot-blue"></span>
+                            <div class="cand-tl-line"></div>
+                            <span class="cand-tl-badge cand-tl-badge-rejected">✗ ${d===0?'mismo día':d+'hd hasta rechazo'}</span>
+                            <div class="cand-tl-line"></div>
+                            <span class="cand-tl-dot cand-tl-dot-red"></span>
                         </div>`;
                     }
                 }
@@ -909,6 +921,7 @@ async function addEstadoEntry(id) {
 
 async function removeEstadoEntry(entryId) {
     if (!isAdmin()) { toast('Solo un administrador puede eliminar comentarios', true); return; }
+    if (!confirm('¿Eliminar este comentario? Esta acción no se puede deshacer.')) return;
     await sb.from('estado_log').delete().eq('id', entryId);
     await loadData(); renderTable(); toast('Eliminado');
 }
@@ -929,14 +942,17 @@ async function saveCand() {
     closeModal('modal-cand'); await loadData(); renderTable(); toast('Candidato agregado ✓');
 }
 async function removeCand(candId) {
+    if (!confirm('¿Eliminar este candidato? Esta acción no se puede deshacer.')) return;
     await sb.from('candidatos').delete().eq('id', candId);
     await loadData(); renderTable(); toast('Candidato eliminado');
 }
 async function updateCandEstado(candId, estado) {
     const hoy = today();
     const update = { estado };
-    if (estado === 'Entrevista') update.fecha_entrevista = hoy;
-    if (estado === 'Enviado') update.fecha_entrevista = null;
+    if (estado === 'Entrevista') { update.fecha_entrevista = hoy; update.fecha_rechazo = null; }
+    if (estado === 'Rechazado') update.fecha_rechazo = hoy;
+    if (estado === 'Enviado') { update.fecha_entrevista = null; update.fecha_rechazo = null; }
+    if (estado === 'Oferta') update.fecha_rechazo = null;
     await sb.from('candidatos').update(update).eq('id', candId);
     await loadData(); renderTable(); toast('Estado actualizado ✓');
 }
@@ -960,6 +976,7 @@ async function savePsico() {
     closeModal('modal-psico'); await loadData(); renderTable(); toast('Psicotécnico agregado ✓');
 }
 async function removePsico(psicoId) {
+    if (!confirm('¿Eliminar este psicotécnico? Esta acción no se puede deshacer.')) return;
     await sb.from('psicotecnicos').delete().eq('id', psicoId);
     await loadData(); renderTable(); toast('Eliminado');
 }
@@ -1070,7 +1087,7 @@ async function reabrir(id) {
 
 async function eliminar(id) {
     if (!isAdmin()) { toast('Solo un administrador puede eliminar búsquedas', true); return; }
-    if (!confirm('¿Eliminar esta búsqueda?')) return;
+    if (!confirm('¿Eliminar esta búsqueda? Esta acción no se puede deshacer.')) return;
     await sb.from('busquedas').delete().eq('id', id);
     await loadData(); renderTable(); toast('Búsqueda eliminada');
 }
@@ -1094,7 +1111,7 @@ async function abrirPDF(storagePath) {
     window.open(data.signedUrl, '_blank');
 }
 async function eliminarPDF(archivoId, storagePath) {
-    if (!confirm('¿Eliminar este archivo?')) return;
+    if (!confirm('¿Eliminar este archivo? Esta acción no se puede deshacer.')) return;
     await sb.storage.from('Busquedas-pdfs').remove([storagePath]);
     await sb.from('archivos').delete().eq('id', archivoId);
     await loadData(); renderTable(); toast('Archivo eliminado');
@@ -1135,7 +1152,7 @@ function renderStats(tab) {
         if (!bySelector[b.selector]) bySelector[b.selector] = {total:0,cerradas:0,dias:[]};
         bySelector[b.selector].total++;
         if (b.status==='Cerrada'||b.status==='Finalizada') bySelector[b.selector].cerradas++;
-        bySelector[b.selector].dias.push(b.ingreso ? daysDiff(b.inicio,b.ingreso) : daysDiff(b.inicio));
+        bySelector[b.selector].dias.push(b.ingreso ? daysDiff(b.inicio,b.ingreso) : (b.cp ? daysDiff(b.inicio,b.cp) : daysDiff(b.inicio)));
     });
     const byDepto = {}; subset.forEach(b => { byDepto[b.depto]=(byDepto[b.depto]||0)+1; });
     const byStatus = {}; subset.forEach(b => { byStatus[b.status]=(byStatus[b.status]||0)+1; });
