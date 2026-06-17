@@ -634,13 +634,13 @@ function renderTable() {
     const locked = (b) => (b.status === 'Cerrada' || b.status === 'Finalizada') && !isAdmin();
 
     body.innerHTML = list.map(b => {
-        // ── LÓGICA HD:
-        // 1. Si hay fecha de ingreso → congela en inicio→ingreso
-        // 2. Si hay CP (pero no ingreso) → congela en inicio→CP (sin cerrar)
+        // ── LÓGICA HD (prioridad CP):
+        // 1. Si hay CP → congela en inicio→CP
+        // 2. Si hay ingreso (pero no CP) → congela en inicio→ingreso
         // 3. Si ninguno → cuenta hasta hoy
-        const dias = b.ingreso
-            ? daysDiff(b.inicio, b.ingreso)
-            : (b.cp ? daysDiff(b.inicio, b.cp) : daysDiff(b.inicio));
+        const dias = b.cp
+            ? daysDiff(b.inicio, b.cp)
+            : (b.ingreso ? daysDiff(b.inicio, b.ingreso) : daysDiff(b.inicio));
 
         const dClass = demoraClass(dias, b.nivel);
         const limite = DEMORA_LIMITE[b.nivel] || 15;
@@ -648,10 +648,10 @@ function renderTable() {
         const diasEnEmpresa = b.ingreso ? daysDiff(b.ingreso, b.fecha_baja || null) : 0;
         const cantComentarios = (b.estado_busqueda || []).length;
 
-        // Badge que indica por qué está congelado el HD
-        const frozenBadge = b.ingreso
-            ? `<span class="cp-frozen"><i class="fas fa-lock" style="font-size:8px"></i> congelado al ingresar</span>`
-            : (b.cp ? `<span class="cp-frozen"><i class="fas fa-snowflake" style="font-size:8px"></i> HD congelado por CP</span>` : '');
+        // Badge que indica por qué está congelado el HD (prioridad CP)
+        const frozenBadge = b.cp
+            ? `<span class="cp-frozen"><i class="fas fa-snowflake" style="font-size:8px"></i> HD congelado por CP</span>`
+            : (b.ingreso ? `<span class="cp-frozen"><i class="fas fa-lock" style="font-size:8px"></i> congelado al ingresar</span>` : '');
 
         // PSICO
         const psicoHtml = b.psicotecnicos.length > 0
@@ -1284,7 +1284,7 @@ function renderStats(tab) {
         if (!bySelector[b.selector]) bySelector[b.selector] = {total:0,cerradas:0,dias:[]};
         bySelector[b.selector].total++;
         if (b.status==='Cerrada'||b.status==='Finalizada') bySelector[b.selector].cerradas++;
-        bySelector[b.selector].dias.push(b.ingreso ? daysDiff(b.inicio,b.ingreso) : (b.cp ? daysDiff(b.inicio,b.cp) : daysDiff(b.inicio)));
+        bySelector[b.selector].dias.push(b.cp ? daysDiff(b.inicio,b.cp) : (b.ingreso ? daysDiff(b.inicio,b.ingreso) : daysDiff(b.inicio)));
     });
     const byDepto = {}; subset.forEach(b => { byDepto[b.depto]=(byDepto[b.depto]||0)+1; });
     const byStatus = {}; subset.forEach(b => { byStatus[b.status]=(byStatus[b.status]||0)+1; });
