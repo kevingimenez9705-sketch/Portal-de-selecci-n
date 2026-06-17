@@ -648,10 +648,10 @@ function renderTable() {
         const diasEnEmpresa = b.ingreso ? daysDiff(b.ingreso, b.fecha_baja || null) : 0;
         const cantComentarios = (b.estado_busqueda || []).length;
 
-        // Badge que indica por qué está congelado el HD (prioridad CP)
-        const frozenBadge = b.cp
-            ? `<span class="cp-frozen"><i class="fas fa-snowflake" style="font-size:8px"></i> HD congelado por CP</span>`
-            : (b.ingreso ? `<span class="cp-frozen"><i class="fas fa-lock" style="font-size:8px"></i> congelado al ingresar</span>` : '');
+        // Badge solo para ingreso (CP no muestra cartel, solo congela el número)
+        const frozenBadge = (!b.cp && b.ingreso)
+            ? `<span class="cp-frozen"><i class="fas fa-lock" style="font-size:8px"></i> congelado al ingresar</span>`
+            : '';
 
         // PSICO
         const psicoHtml = b.psicotecnicos.length > 0
@@ -1054,16 +1054,19 @@ async function saveCand() {
     const estado = document.getElementById('cand-estado').value;
     if (!nombre) return;
     const fEnvio      = document.getElementById('cand-fecha-envio').value || today();
-    const fEntrevista = document.getElementById('cand-fecha-entrevista').value || null;
-    const fRechazo    = document.getElementById('cand-fecha-rechazo').value || null;
-    const row = {
-        busqueda_id: id, nombre, estado,
-        fecha_envio: fEnvio,
-        fecha_entrevista: estado === 'Entrevista' ? (fEntrevista || fEnvio) : null,
-        fecha_rechazo:    estado === 'Rechazado'  ? (fRechazo || fEnvio)    : null
-    };
+    const fEntrevista = document.getElementById('cand-fecha-entrevista').value;
+    const fRechazo    = document.getElementById('cand-fecha-rechazo').value;
+    // Solo se envían las columnas con valor. Evita mandar fechas vacías/null
+    // que pueden disparar un 400 si la columna no existe o no acepta null.
+    const row = { busqueda_id: id, nombre, estado, fecha_envio: fEnvio };
+    if (estado === 'Entrevista') row.fecha_entrevista = fEntrevista || fEnvio;
+    if (estado === 'Rechazado')  row.fecha_rechazo    = fRechazo || fEnvio;
     const { error } = await sb.from('candidatos').insert(row);
-    if (error) { toast('Error al guardar', true); return; }       // ← ESTA LÍNEA
+    if (error) {
+        console.error('saveCand error:', error, 'ROW:', row);
+        toast('Error: ' + (error.message || error.details || error.hint || error.code || 'desconocido'), true);
+        return;
+    }
     closeModal('modal-cand'); await loadData(); renderTable(); toast('Candidato agregado ✓');
 }
 async function removeCand(candId) {
