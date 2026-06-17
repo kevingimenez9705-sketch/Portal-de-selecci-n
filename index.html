@@ -1063,7 +1063,7 @@ async function saveCand() {
         fecha_rechazo:    estado === 'Rechazado'  ? (fRechazo || fEnvio)    : null
     };
     const { error } = await sb.from('candidatos').insert(row);
-    if (error) { toast('Error al guardar', true); return; }
+    if (error) { toast('Error al guardar', true); return; }       // ← ESTA LÍNEA
     closeModal('modal-cand'); await loadData(); renderTable(); toast('Candidato agregado ✓');
 }
 async function removeCand(candId) {
