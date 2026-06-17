@@ -1007,8 +1007,9 @@ async function updateField(id, field, val) {
     if (field === 'ingreso' && val) update.status = 'Cerrada';
     // CP no toca el status — solo congela el contador HD en el render
 
-    const { error } = await sb.from('busquedas').update(update).eq('id', id);
-    if (error) { toast('Error al guardar', true); return; }
+    const { data, error } = await sb.from('busquedas').update(update).eq('id', id).select();
+    if (error) { toast('Error al guardar: ' + (error.message || error.code), true); return; }
+    if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE en busquedas)', true); return; }
     await loadData();
     if (field === 'ingreso') await checkAndFinalizeSearches();
     renderTable();
@@ -1082,12 +1083,15 @@ async function updateCandEstado(candId, estado) {
     if (estado === 'Rechazado')  { update.fecha_rechazo = c.fecha_rechazo || hoy; }
     if (estado === 'Enviado')    { update.fecha_entrevista = null; update.fecha_rechazo = null; }
     if (estado === 'Oferta')     { update.fecha_rechazo = null; }
-    await sb.from('candidatos').update(update).eq('id', candId);
+    const { data, error } = await sb.from('candidatos').update(update).eq('id', candId).select();
+    if (error) { toast('Error: ' + (error.message || error.code), true); return; }
+    if (!data || data.length === 0) { toast('No se actualizó (revisar policy UPDATE en candidatos)', true); return; }
     await loadData(); renderTable(); toast('Estado actualizado ✓');
 }
 async function updateCandFecha(candId, field, val) {
-    const { error } = await sb.from('candidatos').update({ [field]: val || null }).eq('id', candId);
+    const { data, error } = await sb.from('candidatos').update({ [field]: val || null }).eq('id', candId).select();
     if (error) { toast('Error al guardar fecha', true); return; }
+    if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE en candidatos)', true); return; }
     await loadData(); renderTable(); toast('Fecha actualizada ✓');
 }
 
