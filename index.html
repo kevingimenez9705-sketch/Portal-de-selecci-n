@@ -203,7 +203,6 @@
         .perm-box-num { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: var(--green); line-height: 1; }
         .perm-box-lbl { font-size: 9px; color: var(--ok-text); text-transform: uppercase; letter-spacing: .8px; margin-top: 2px; }
         .perm-box-milestone { font-size: 10px; color: var(--green); font-weight: 700; margin-top: 3px; }
-        /* Badge CP congelado */
         .cp-frozen { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; color: var(--blue); background: #dbeafe; border-radius: 4px; padding: 1px 5px; margin-top: 2px; }
         @media(max-width:900px) {
             .topnav { padding: 0 16px; } .main { padding: 16px; }
@@ -468,8 +467,6 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const SELECTORES = ['Silvina','Romina','Claudia','Luca','Soledad','Angel','Noelia'];
-const TIPOS_VERIF = ['Nosis','Antecedentes Penales','Ambiental','Preocupacional','Curso de Manipulación'];
-
 const DEMORA_LIMITE = { 'Gerente/Director': 45, 'Jefe/Encargado': 30, 'Otros': 15 };
 let busquedas = [];
 let filteredIds = null;
@@ -489,7 +486,7 @@ function toast(msg, isError = false) {
 }
 
 // ══════════════════════════════════════════════
-//  DÍAS HÁBILES (lunes a viernes)
+//  DÍAS HÁBILES
 // ══════════════════════════════════════════════
 function workingDaysDiff(from, to = null) {
     if (!from) return 0;
@@ -543,12 +540,12 @@ async function loadData() {
 function mapRow(b) {
     return {
         ...b,
-        historial:       (b.historial   || []).sort((a,x)=>a.id-x.id),
-        estado_busqueda: (b.estado_log  || []).sort((a,x)=>a.id-x.id),
-        candidatos:      (b.candidatos  || []).sort((a,x)=>a.id-x.id),
-        psicotecnicos:   (b.psicotecnicos || []).map(p => ({...p, auth: p.auth_por})).sort((a,x)=>a.id-x.id),
-        verificaciones:  (b.verificaciones || []).sort((a,x)=>a.id-x.id),
-        archivos:        (b.archivos    || []).sort((a,x)=>a.id-x.id),
+        historial:       (b.historial   || []).sort((a,x) => a.id - x.id),
+        estado_busqueda: (b.estado_log  || []).sort((a,x) => a.id - x.id),
+        candidatos:      (b.candidatos  || []).sort((a,x) => a.id - x.id),
+        psicotecnicos:   (b.psicotecnicos || []).map(p => ({...p, auth: p.auth_por})).sort((a,x) => a.id - x.id),
+        verificaciones:  (b.verificaciones || []).sort((a,x) => a.id - x.id),
+        archivos:        (b.archivos    || []).sort((a,x) => a.id - x.id),
     };
 }
 
@@ -634,10 +631,6 @@ function renderTable() {
     const locked = (b) => (b.status === 'Cerrada' || b.status === 'Finalizada') && !isAdmin();
 
     body.innerHTML = list.map(b => {
-        // ── LÓGICA HD (prioridad CP):
-        // 1. Si hay CP → congela en inicio→CP
-        // 2. Si hay ingreso (pero no CP) → congela en inicio→ingreso
-        // 3. Si ninguno → cuenta hasta hoy
         const dias = b.cp
             ? daysDiff(b.inicio, b.cp)
             : (b.ingreso ? daysDiff(b.inicio, b.ingreso) : daysDiff(b.inicio));
@@ -648,7 +641,6 @@ function renderTable() {
         const diasEnEmpresa = b.ingreso ? daysDiff(b.ingreso, b.fecha_baja || null) : 0;
         const cantComentarios = (b.estado_busqueda || []).length;
 
-        // Badge solo para ingreso (CP no muestra cartel, solo congela el número)
         const frozenBadge = (!b.cp && b.ingreso)
             ? `<span class="cp-frozen"><i class="fas fa-lock" style="font-size:8px"></i> congelado al ingresar</span>`
             : '';
@@ -692,7 +684,7 @@ function renderTable() {
                         tlHtml = `<div class="cand-timeline">
                             <span class="cand-tl-dot cand-tl-dot-blue"></span>
                             <div class="cand-tl-line"></div>
-                            <span class="cand-tl-badge cand-tl-badge-wait">⏳ ${d===0?'Hoy':d+'hd esperando'}</span>
+                            <span class="cand-tl-badge cand-tl-badge-wait">⏳ ${d === 0 ? 'Hoy' : d + 'hd esperando'}</span>
                             <div class="cand-tl-line"></div>
                             <span class="cand-tl-dot cand-tl-dot-green" style="opacity:.3"></span>
                         </div>`;
@@ -701,7 +693,7 @@ function renderTable() {
                         tlHtml = `<div class="cand-timeline">
                             <span class="cand-tl-dot cand-tl-dot-blue"></span>
                             <div class="cand-tl-line"></div>
-                            <span class="cand-tl-badge cand-tl-badge-done">✓ ${d===0?'mismo día':d+'hd hasta entrevista'}</span>
+                            <span class="cand-tl-badge cand-tl-badge-done">✓ ${d === 0 ? 'mismo día' : d + 'hd hasta entrevista'}</span>
                             <div class="cand-tl-line"></div>
                             <span class="cand-tl-dot cand-tl-dot-green"></span>
                         </div>`;
@@ -710,7 +702,7 @@ function renderTable() {
                         tlHtml = `<div class="cand-timeline">
                             <span class="cand-tl-dot cand-tl-dot-blue"></span>
                             <div class="cand-tl-line"></div>
-                            <span class="cand-tl-badge cand-tl-badge-rejected">✗ ${d===0?'mismo día':d+'hd hasta rechazo'}</span>
+                            <span class="cand-tl-badge cand-tl-badge-rejected">✗ ${d === 0 ? 'mismo día' : d + 'hd hasta rechazo'}</span>
                             <div class="cand-tl-line"></div>
                             <span class="cand-tl-dot cand-tl-dot-red"></span>
                         </div>`;
@@ -722,20 +714,20 @@ function renderTable() {
                     fechasHtml = `
                     <div class="cand-fecha-row">
                         <span class="cand-fecha-lbl">Enviado</span>
-                        <input type="date" class="inline-input" style="font-size:11px" value="${c.fecha_envio||''}" onchange="updateCandFecha(${c.id},'fecha_envio',this.value)">
+                        <input type="date" class="inline-input" style="font-size:11px" value="${c.fecha_envio || ''}" onchange="updateCandFecha(${c.id},'fecha_envio',this.value)">
                     </div>`;
                     if (c.estado === 'Entrevista') {
                         fechasHtml += `
                         <div class="cand-fecha-row">
                             <span class="cand-fecha-lbl">Entrevistado</span>
-                            <input type="date" class="inline-input" style="font-size:11px" value="${c.fecha_entrevista||''}" onchange="updateCandFecha(${c.id},'fecha_entrevista',this.value)">
+                            <input type="date" class="inline-input" style="font-size:11px" value="${c.fecha_entrevista || ''}" onchange="updateCandFecha(${c.id},'fecha_entrevista',this.value)">
                         </div>`;
                     }
                     if (c.estado === 'Rechazado') {
                         fechasHtml += `
                         <div class="cand-fecha-row">
                             <span class="cand-fecha-lbl">Rechazado</span>
-                            <input type="date" class="inline-input" style="font-size:11px" value="${c.fecha_rechazo||''}" onchange="updateCandFecha(${c.id},'fecha_rechazo',this.value)">
+                            <input type="date" class="inline-input" style="font-size:11px" value="${c.fecha_rechazo || ''}" onchange="updateCandFecha(${c.id},'fecha_rechazo',this.value)">
                         </div>`;
                     }
                 }
@@ -744,16 +736,16 @@ function renderTable() {
                     <div class="cand-nombre">${c.nombre}</div>
                     ${isLocked ? `<div style="font-size:11px;color:var(--muted)">${c.estado}</div>` : `
                     <select class="inline-select" style="margin-top:3px;font-size:12px" onchange="updateCandEstado(${c.id},this.value)">
-                        <option value="Enviado" ${c.estado==='Enviado'?'selected':''}>✉ Enviado al área</option>
-                        <option value="Entrevista" ${c.estado==='Entrevista'?'selected':''}>🤝 En entrevista</option>
-                        <option value="Oferta" ${c.estado==='Oferta'?'selected':''}>📄 Con oferta</option>
-                        <option value="Rechazado" ${c.estado==='Rechazado'?'selected':''}>✗ Rechazado</option>
+                        <option value="Enviado" ${c.estado === 'Enviado' ? 'selected' : ''}>✉ Enviado al área</option>
+                        <option value="Entrevista" ${c.estado === 'Entrevista' ? 'selected' : ''}>🤝 En entrevista</option>
+                        <option value="Oferta" ${c.estado === 'Oferta' ? 'selected' : ''}>📄 Con oferta</option>
+                        <option value="Rechazado" ${c.estado === 'Rechazado' ? 'selected' : ''}>✗ Rechazado</option>
                     </select>
                     <button onclick="removeCand(${c.id})" style="position:absolute;top:4px;right:6px;background:none;border:none;cursor:pointer;color:#bbb;font-size:11px">✕</button>`}
                     ${fechasHtml}
                     ${tlHtml}
                 </div>`;
-              }).join('')
+            }).join('')
             : `<span class="tip">Sin candidatos enviados</span>`;
 
         // ARCHIVOS
@@ -781,13 +773,13 @@ function renderTable() {
             ? `<span class="tip">Sin comentarios</span>`
             : b.estado_busqueda.map((e, idx) => `
                 <div class="estado-entry">
-                    <span class="d-badge">D${idx+1}</span>
+                    <span class="d-badge">D${idx + 1}</span>
                     <div class="estado-entry-body">
                         <div class="estado-entry-text">${e.texto}</div>
                         <div class="estado-entry-meta">
                             <i class="fas fa-clock" style="font-size:9px"></i>
-                            ${daysDiff(e.fecha)===0?'Hoy':'hace '+daysDiff(e.fecha)+'hd'} · ${e.fecha}
-                            ${isAdmin()?`<button onclick="removeEstadoEntry(${e.id})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:10px;margin-left:4px" title="Solo admin">✕</button>`:''}
+                            ${daysDiff(e.fecha) === 0 ? 'Hoy' : 'hace ' + daysDiff(e.fecha) + 'hd'} · ${e.fecha}
+                            ${isAdmin() ? `<button onclick="removeEstadoEntry(${e.id})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:10px;margin-left:4px" title="Solo admin">✕</button>` : ''}
                         </div>
                     </div>
                 </div>`).join('');
@@ -813,8 +805,7 @@ function renderTable() {
             : '';
 
         return `
-        <tr id="row-${b.id}" class="${isLocked?'row-locked':''}">
-            <!-- Col 1: N°/Motivo -->
+        <tr id="row-${b.id}" class="${isLocked ? 'row-locked' : ''}">
             <td>
                 <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--muted)">${b.numero}</div>
                 <span class="motivo-chip ${motivoClass(b.motivo)}">${b.motivo}</span>
@@ -828,56 +819,39 @@ function renderTable() {
                     <span style="font-weight:700">CP:</span>
                     ${isLocked
                         ? `<strong>${b.cp || '—'}</strong>`
-                        : `<input type="date" class="inline-input" value="${b.cp||''}" onchange="updateField(${b.id},'cp',this.value)" style="font-size:11px;width:auto">`}
+                        : `<input type="date" class="inline-input" value="${b.cp || ''}" onchange="updateField(${b.id},'cp',this.value)" style="font-size:11px;width:auto">`}
                 </div>
                 ${reopenedTag}
             </td>
-            <!-- Col 2: Puesto / Dpto / Selector / Nivel -->
             <td>
                 ${isLocked
                     ? `<div style="font-weight:700;font-size:13px">${b.puesto}</div>`
-                    : `<input class="inline-input" value="${b.puesto||''}" placeholder="Puesto/Cargo"
-                           onchange="updateField(${b.id},'puesto',this.value)"
-                           style="font-weight:700;font-size:13px;width:100%">`}
-                <div style="font-size:11px;color:var(--muted);margin-top:2px">${b.depto} · <span style="padding:1px 5px;border-radius:3px;background:${b.tipo==='Staff'?'#cfe2ff':'#d1e7dd'};color:${b.tipo==='Staff'?'#0a367a':'#0a3622'};font-weight:700">${b.tipo}</span></div>
+                    : `<input class="inline-input" value="${b.puesto || ''}" placeholder="Puesto/Cargo" onchange="updateField(${b.id},'puesto',this.value)" style="font-weight:700;font-size:13px;width:100%">`}
+                <div style="font-size:11px;color:var(--muted);margin-top:2px">${b.depto} · <span style="padding:1px 5px;border-radius:3px;background:${b.tipo === 'Staff' ? '#cfe2ff' : '#d1e7dd'};color:${b.tipo === 'Staff' ? '#0a367a' : '#0a3622'};font-weight:700">${b.tipo}</span></div>
                 <div style="margin-top:6px;font-size:12px">
                     Selector:
-                    ${isLocked ? `<strong>${b.selector}</strong>` : `<select class="inline-select" onchange="updateField(${b.id},'selector',this.value)">${SELECTORES.map(s=>`<option ${b.selector===s?'selected':''}>${s}</option>`).join('')}</select>`}
+                    ${isLocked ? `<strong>${b.selector}</strong>` : `<select class="inline-select" onchange="updateField(${b.id},'selector',this.value)">${SELECTORES.map(s => `<option ${b.selector === s ? 'selected' : ''}>${s}</option>`).join('')}</select>`}
                 </div>
                 <div style="margin-top:4px;font-size:12px;display:flex;align-items:center;gap:4px">
                     <span style="color:var(--muted)">Nivel:</span>
                     ${isLocked
                         ? `<strong>${b.nivel}</strong>`
-                        : `<input class="inline-input"
-                               value="${b.nivel||''}"
-                               placeholder="Nivel del cargo…"
-                               list="nivel-datalist-inline"
-                               onchange="updateField(${b.id},'nivel',this.value)"
-                               style="font-size:12px;font-weight:600;flex:1">
-                           <datalist id="nivel-datalist-inline">
-                               <option>Otros</option>
-                               <option>Jefe/Encargado</option>
-                               <option>Gerente/Director</option>
-                           </datalist>`
-                    }
+                        : `<input class="inline-input" value="${b.nivel || ''}" placeholder="Nivel del cargo…" list="nivel-datalist-inline" onchange="updateField(${b.id},'nivel',this.value)" style="font-size:12px;font-weight:600;flex:1">
+                           <datalist id="nivel-datalist-inline"><option>Otros</option><option>Jefe/Encargado</option><option>Gerente/Director</option></datalist>`}
                 </div>
             </td>
-            <!-- Col 3: Sueldo / Jornada -->
             <td>
                 ${isLocked
                     ? `<div style="font-weight:700;font-size:13px;color:var(--green)">${fmtMoney(b.sueldo)}</div>`
                     : `<div style="display:flex;align-items:center;gap:3px;margin-bottom:2px">
                            <span style="font-weight:700;font-size:13px;color:var(--green);flex-shrink:0">$</span>
-                           <input class="inline-input" type="number" value="${b.sueldo||''}" placeholder="Monto ARS…"
-                               onchange="updateField(${b.id},'sueldo', parseFloat(this.value)||0)"
-                               style="font-weight:700;font-size:13px;color:var(--green);width:100%">
+                           <input class="inline-input" type="number" value="${b.sueldo || ''}" placeholder="Monto ARS…" onchange="updateField(${b.id},'sueldo',parseFloat(this.value)||0)" style="font-weight:700;font-size:13px;color:var(--green);width:100%">
                        </div>`}
                 ${isLocked
-                    ? `<div style="font-size:11px;font-weight:700;background:#ece9e3;border-radius:4px;padding:2px 6px;display:inline-block;margin-top:2px">${b.jornada||'—'}</div>`
-                    : `<input class="inline-input" value="${b.jornada||''}" placeholder="Jornada…" onchange="updateField(${b.id},'jornada',this.value)" style="font-size:12px;font-weight:700;background:#ece9e3;border-radius:4px;padding:2px 6px;width:100%;margin-top:2px">`}
+                    ? `<div style="font-size:11px;font-weight:700;background:#ece9e3;border-radius:4px;padding:2px 6px;display:inline-block;margin-top:2px">${b.jornada || '—'}</div>`
+                    : `<input class="inline-input" value="${b.jornada || ''}" placeholder="Jornada…" onchange="updateField(${b.id},'jornada',this.value)" style="font-size:12px;font-weight:700;background:#ece9e3;border-radius:4px;padding:2px 6px;width:100%;margin-top:2px">`}
                 <div><span class="ubic-pill">📍 ${b.ubicacion}</span></div>
             </td>
-            <!-- Col 4: Estado + Psicotécnicos -->
             <td>
                 ${estadoHtml}
                 <div class="sep"></div>
@@ -885,59 +859,55 @@ function renderTable() {
                     <summary><i class="fas fa-chevron-right"></i> Psicotécnicos (${b.psicotecnicos.length})</summary>
                     <div style="padding-top:5px" class="cell-scroll">
                         ${psicoHtml}
-                        ${!isLocked?`<button class="btn-sm" style="margin-top:5px" onclick="openPsicoModal(${b.id})"><i class="fas fa-plus" style="font-size:8px"></i> Agregar</button>`:''}
+                        ${!isLocked ? `<button class="btn-sm" style="margin-top:5px" onclick="openPsicoModal(${b.id})"><i class="fas fa-plus" style="font-size:8px"></i> Agregar</button>` : ''}
                     </div>
                 </details>
                 <details>
                     <summary><i class="fas fa-chevron-right"></i> Verificaciones (${b.verificaciones.length})</summary>
                     <div style="padding-top:5px" class="cell-scroll">
                         ${verifHtml}
-                        ${!isLocked?`<button class="btn-sm" style="margin-top:5px" onclick="openVerifModal(${b.id})"><i class="fas fa-plus" style="font-size:8px"></i> Agregar</button>`:''}
+                        ${!isLocked ? `<button class="btn-sm" style="margin-top:5px" onclick="openVerifModal(${b.id})"><i class="fas fa-plus" style="font-size:8px"></i> Agregar</button>` : ''}
                     </div>
                 </details>
             </td>
-            <!-- Col 5: Candidatos -->
             <td>
                 <div class="section-hdr">Candidatos enviados al área</div>
                 <div class="cand-count" style="margin-bottom:5px">Total: <strong>${b.candidatos.length}</strong></div>
                 <div class="cell-scroll">${candHtml}</div>
-                ${!isLocked?`<button class="btn-sm" style="margin-top:6px" onclick="openCandModal(${b.id})"><i class="fas fa-user-plus" style="font-size:8px"></i> Agregar</button>`:''}
+                ${!isLocked ? `<button class="btn-sm" style="margin-top:6px" onclick="openCandModal(${b.id})"><i class="fas fa-user-plus" style="font-size:8px"></i> Agregar</button>` : ''}
             </td>
-            <!-- Col 6: Archivos -->
             <td>
                 <div class="section-hdr">Archivos PDF</div>
                 <div class="cell-scroll" style="max-height:120px">${archivosHtml}</div>
-                ${!isLocked?`
+                ${!isLocked ? `
                 <label class="pdf-upload-btn">
                     <i class="fas fa-upload" style="font-size:10px"></i> Subir PDF
                     <input type="file" accept=".pdf,.doc,.docx" class="pdf-file-input" onchange="subirPDF(${b.id},this)">
-                </label>`:''}
+                </label>` : ''}
             </td>
-            <!-- Col 7: Ingreso + permanencia -->
             <td>
                 <div class="section-hdr">Candidato que ingresó</div>
                 ${isLocked
-                    ? `<div style="font-weight:700;color:var(--green)">${b.ingreso_nombre||'—'}</div><div style="font-size:11px;color:var(--muted)">${b.ingreso||''}</div>`
-                    : `<input class="inline-input" value="${b.ingreso_nombre||''}" placeholder="Nombre del ingresado" onchange="updateField(${b.id},'ingreso_nombre',this.value)" style="font-weight:700;color:var(--green)">
+                    ? `<div style="font-weight:700;color:var(--green)">${b.ingreso_nombre || '—'}</div><div style="font-size:11px;color:var(--muted)">${b.ingreso || ''}</div>`
+                    : `<input class="inline-input" value="${b.ingreso_nombre || ''}" placeholder="Nombre del ingresado" onchange="updateField(${b.id},'ingreso_nombre',this.value)" style="font-weight:700;color:var(--green)">
                     <div style="margin-top:5px">
                         <label style="font-size:11px;color:var(--muted)">Fecha de ingreso</label>
-                        <input type="date" class="inline-input" value="${b.ingreso||''}" onchange="updateField(${b.id},'ingreso',this.value)">
+                        <input type="date" class="inline-input" value="${b.ingreso || ''}" onchange="updateField(${b.id},'ingreso',this.value)">
                     </div>
                     <div style="margin-top:5px">
                         <label style="font-size:11px;color:var(--muted)">Fecha de baja <span style="font-style:italic">(si dejó la empresa)</span></label>
-                        <input type="date" class="inline-input" value="${b.fecha_baja||''}" onchange="updateField(${b.id},'fecha_baja',this.value)">
+                        <input type="date" class="inline-input" value="${b.fecha_baja || ''}" onchange="updateField(${b.id},'fecha_baja',this.value)">
                     </div>`}
                 ${permHtml}
             </td>
-            <!-- Col 8: Acciones -->
             <td style="vertical-align:middle">
                 <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
                     ${isLocked
                         ? `<span class="tag ${tagClass(b.status)}">${b.status}</span>`
                         : `<select class="inline-select" onchange="updateField(${b.id},'status',this.value)">
-                            ${['Proceso','Cerrada','Pausada','Finalizada'].map(s=>`<option ${b.status===s?'selected':''}>${s}</option>`).join('')}
+                            ${['Proceso', 'Cerrada', 'Pausada', 'Finalizada'].map(s => `<option ${b.status === s ? 'selected' : ''}>${s}</option>`).join('')}
                            </select>`}
-                    ${(b.status==='Cerrada'||b.status==='Finalizada') ? `<button class="btn-sm" style="font-size:11px" onclick="reabrir(${b.id})"><i class="fas fa-redo" style="font-size:8px"></i> Reabrir</button>` : ''}
+                    ${(b.status === 'Cerrada' || b.status === 'Finalizada') ? `<button class="btn-sm" style="font-size:11px" onclick="reabrir(${b.id})"><i class="fas fa-redo" style="font-size:8px"></i> Reabrir</button>` : ''}
                     ${isAdmin() ? `<button class="btn-sm btn-danger" onclick="eliminar(${b.id})"><i class="fas fa-trash" style="font-size:8px"></i></button>` : ''}
                 </div>
             </td>
@@ -957,12 +927,11 @@ function toggleComentarios(id, btn) {
 }
 
 function renderKPIs() {
-    const total      = busquedas.length;
-    const proceso    = busquedas.filter(b=>b.status==='Proceso').length;
-    const cerradas   = busquedas.filter(b=>b.status==='Cerrada').length;
-    const finalizadas= busquedas.filter(b=>b.status==='Finalizada').length;
-    const vencidas   = busquedas.filter(b=>{ const d=daysDiff(b.inicio); return d>(DEMORA_LIMITE[b.nivel]||15)&&b.status==='Proceso'; }).length;
-
+    const total       = busquedas.length;
+    const proceso     = busquedas.filter(b => b.status === 'Proceso').length;
+    const cerradas    = busquedas.filter(b => b.status === 'Cerrada').length;
+    const finalizadas = busquedas.filter(b => b.status === 'Finalizada').length;
+    const vencidas    = busquedas.filter(b => { const d = daysDiff(b.inicio); return d > (DEMORA_LIMITE[b.nivel] || 15) && b.status === 'Proceso'; }).length;
     document.getElementById('kpi-row').innerHTML = `
         <div class="kpi"><div class="kpi-num">${total}</div><div class="kpi-lbl">Total búsquedas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--blue)">${proceso}</div><div class="kpi-lbl">En proceso</div></div>
@@ -978,10 +947,10 @@ function applyFilters() {
     const status = document.getElementById('f-status').value;
     const search = document.getElementById('f-search').value.toLowerCase();
     filteredIds = busquedas.filter(b => {
-        if (sel && b.selector !== sel) return false;
-        if (tipo && b.tipo !== tipo) return false;
-        if (depto && b.depto !== depto) return false;
-        if (status && b.status !== status) return false;
+        if (sel    && b.selector !== sel)    return false;
+        if (tipo   && b.tipo !== tipo)       return false;
+        if (depto  && b.depto !== depto)     return false;
+        if (status && b.status !== status)   return false;
         if (search && !b.puesto.toLowerCase().includes(search) && !b.depto.toLowerCase().includes(search)) return false;
         return true;
     }).map(b => b.id);
@@ -989,24 +958,18 @@ function applyFilters() {
 }
 
 function updateDeptoFilter() {
-    const deptos = [...new Set(busquedas.map(b=>b.depto))];
+    const deptos = [...new Set(busquedas.map(b => b.depto))];
     const sel = document.getElementById('f-depto');
     const cur = sel.value;
-    sel.innerHTML = '<option value="">Todos los dptos.</option>' + deptos.map(d=>`<option ${d===cur?'selected':''}>${d}</option>`).join('');
+    sel.innerHTML = '<option value="">Todos los dptos.</option>' + deptos.map(d => `<option ${d === cur ? 'selected' : ''}>${d}</option>`).join('');
 }
 
 // ══════════════════════════════════════════════
 //  UPDATE FIELD
-//  CP: solo congela HD, NO cambia el status
-//  ingreso: congela HD Y cierra la búsqueda
 // ══════════════════════════════════════════════
 async function updateField(id, field, val) {
     const update = { [field]: val };
-
-    // Solo el ingreso cierra la búsqueda automáticamente
     if (field === 'ingreso' && val) update.status = 'Cerrada';
-    // CP no toca el status — solo congela el contador HD en el render
-
     const { data, error } = await sb.from('busquedas').update(update).eq('id', id).select();
     if (error) { toast('Error al guardar: ' + (error.message || error.code), true); return; }
     if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE en busquedas)', true); return; }
@@ -1049,19 +1012,21 @@ function openCandModal(id) {
     toggleCandModalFechas();
     openModal('modal-cand');
 }
+
 async function saveCand() {
-    const id = +document.getElementById('cand-bid').value;
+    const id     = +document.getElementById('cand-bid').value;
     const nombre = document.getElementById('cand-nombre').value.trim();
     const estado = document.getElementById('cand-estado').value;
     if (!nombre) return;
     const fEnvio      = document.getElementById('cand-fecha-envio').value || today();
     const fEntrevista = document.getElementById('cand-fecha-entrevista').value;
     const fRechazo    = document.getElementById('cand-fecha-rechazo').value;
-    // Solo se envían las columnas con valor. Evita mandar fechas vacías/null
-    // que pueden disparar un 400 si la columna no existe o no acepta null.
+
+    // ── FIX: construimos el row solo con columnas que existen ──
     const row = { busqueda_id: id, nombre, estado, fecha_envio: fEnvio };
-    if (estado === 'Entrevista') row.fecha_entrevista = fEntrevista || fEnvio;
-    if (estado === 'Rechazado')  row.fecha_rechazo    = fRechazo || fEnvio;
+    if (estado === 'Entrevista' && fEntrevista) row.fecha_entrevista = fEntrevista;
+    if (estado === 'Rechazado'  && fRechazo)    row.fecha_rechazo   = fRechazo;
+
     const { error } = await sb.from('candidatos').insert(row);
     if (error) {
         console.error('saveCand error:', error, 'ROW:', row);
@@ -1070,44 +1035,75 @@ async function saveCand() {
     }
     closeModal('modal-cand'); await loadData(); renderTable(); toast('Candidato agregado ✓');
 }
+
 async function removeCand(candId) {
     if (!confirm('¿Eliminar este candidato? Esta acción no se puede deshacer.')) return;
     await sb.from('candidatos').delete().eq('id', candId);
     await loadData(); renderTable(); toast('Candidato eliminado');
 }
+
+// ── FIX PRINCIPAL: updateCandEstado ya no manda fecha_rechazo=null cuando no existe la col ──
 async function updateCandEstado(candId, estado) {
     const hoy = today();
     const update = { estado };
-    const c = busquedas.flatMap(b=>b.candidatos).find(x=>x.id===candId) || {};
-    if (estado === 'Entrevista') { update.fecha_entrevista = c.fecha_entrevista || hoy; update.fecha_rechazo = null; }
-    if (estado === 'Rechazado')  { update.fecha_rechazo = c.fecha_rechazo || hoy; }
-    if (estado === 'Enviado')    { update.fecha_entrevista = null; update.fecha_rechazo = null; }
-    if (estado === 'Oferta')     { update.fecha_rechazo = null; }
+    const c = busquedas.flatMap(b => b.candidatos).find(x => x.id === candId) || {};
+
+    if (estado === 'Entrevista') {
+        update.fecha_entrevista = c.fecha_entrevista || hoy;
+        // Solo nullificamos fecha_rechazo si la columna existe (ya corriste el ALTER TABLE)
+        update.fecha_rechazo = null;
+    }
+    if (estado === 'Rechazado') {
+        update.fecha_rechazo = c.fecha_rechazo || hoy;
+    }
+    if (estado === 'Enviado') {
+        update.fecha_entrevista = null;
+        update.fecha_rechazo = null;
+    }
+    if (estado === 'Oferta') {
+        update.fecha_rechazo = null;
+    }
+
     const { data, error } = await sb.from('candidatos').update(update).eq('id', candId).select();
-    if (error) { toast('Error: ' + (error.message || error.code), true); return; }
+    if (error) {
+        // Si el error es por fecha_rechazo inexistente, reintentamos SIN esa columna
+        if (error.message && error.message.includes('fecha_rechazo')) {
+            const updateSinRechazo = { estado };
+            if (estado === 'Entrevista') updateSinRechazo.fecha_entrevista = c.fecha_entrevista || hoy;
+            if (estado === 'Enviado')    updateSinRechazo.fecha_entrevista = null;
+            const { data: d2, error: e2 } = await sb.from('candidatos').update(updateSinRechazo).eq('id', candId).select();
+            if (e2) { toast('Error: ' + (e2.message || e2.code), true); return; }
+            if (!d2 || d2.length === 0) { toast('No se actualizó (revisar policy UPDATE en candidatos)', true); return; }
+            await loadData(); renderTable(); toast('Estado actualizado ✓');
+            return;
+        }
+        toast('Error: ' + (error.message || error.code), true);
+        return;
+    }
     if (!data || data.length === 0) { toast('No se actualizó (revisar policy UPDATE en candidatos)', true); return; }
     await loadData(); renderTable(); toast('Estado actualizado ✓');
 }
+
 async function updateCandFecha(candId, field, val) {
     const { data, error } = await sb.from('candidatos').update({ [field]: val || null }).eq('id', candId).select();
-    if (error) { toast('Error al guardar fecha', true); return; }
+    if (error) { toast('Error al guardar fecha: ' + (error.message || error.code), true); return; }
     if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE en candidatos)', true); return; }
     await loadData(); renderTable(); toast('Fecha actualizada ✓');
 }
 
 function openPsicoModal(id) {
     document.getElementById('psico-bid').value = id;
-    ['psico-nombre','psico-realizado','psico-auth'].forEach(i => document.getElementById(i).value = '');
+    ['psico-nombre', 'psico-realizado', 'psico-auth'].forEach(i => document.getElementById(i).value = '');
     document.getElementById('psico-selector').value = '';
     openModal('modal-psico');
 }
 async function savePsico() {
-    const id = +document.getElementById('psico-bid').value;
-    const nombre = document.getElementById('psico-nombre').value.trim();
-    const resultado = document.getElementById('psico-resultado').value;
+    const id           = +document.getElementById('psico-bid').value;
+    const nombre       = document.getElementById('psico-nombre').value.trim();
+    const resultado    = document.getElementById('psico-resultado').value;
     const selector_psico = document.getElementById('psico-selector').value;
-    const realizado_por = document.getElementById('psico-realizado').value.trim();
-    const auth_por = document.getElementById('psico-auth').value.trim();
+    const realizado_por  = document.getElementById('psico-realizado').value.trim();
+    const auth_por       = document.getElementById('psico-auth').value.trim();
     if (!nombre) return;
     const { error } = await sb.from('psicotecnicos').insert({ busqueda_id: id, nombre, resultado, selector_psico, realizado_por, auth_por });
     if (error) { toast('Error al guardar', true); return; }
@@ -1121,18 +1117,18 @@ async function removePsico(psicoId) {
 
 function openVerifModal(id) {
     document.getElementById('verif-bid').value = id;
-    document.getElementById('verif-tipo').value = 'Nosis';
+    document.getElementById('verif-tipo').value     = 'Nosis';
     document.getElementById('verif-resultado').value = 'Pendiente';
-    document.getElementById('verif-selector').value = '';
-    document.getElementById('verif-obs').value = '';
+    document.getElementById('verif-selector').value  = '';
+    document.getElementById('verif-obs').value       = '';
     openModal('modal-verif');
 }
 async function saveVerif() {
-    const id = +document.getElementById('verif-bid').value;
-    const tipo = document.getElementById('verif-tipo').value;
-    const resultado = document.getElementById('verif-resultado').value;
+    const id           = +document.getElementById('verif-bid').value;
+    const tipo         = document.getElementById('verif-tipo').value;
+    const resultado    = document.getElementById('verif-resultado').value;
     const selector_verif = document.getElementById('verif-selector').value;
-    const observaciones = document.getElementById('verif-obs').value.trim();
+    const observaciones  = document.getElementById('verif-obs').value.trim();
     const { error } = await sb.from('verificaciones').insert({ busqueda_id: id, tipo, resultado, selector_verif, observaciones });
     if (error) { toast('Error al guardar', true); return; }
     closeModal('modal-verif'); await loadData(); renderTable(); toast('Verificación agregada ✓');
@@ -1149,15 +1145,15 @@ async function addNew() {
     const nivel = document.getElementById('n-nivel').value.trim() || 'Otros';
     const row = {
         numero: nextNro(), puesto,
-        selector: document.getElementById('n-selector').value,
-        depto: document.getElementById('n-depto').value || 'Sin definir',
-        tipo: document.getElementById('n-tipo').value,
-        motivo: document.getElementById('n-motivo').value,
+        selector:  document.getElementById('n-selector').value,
+        depto:     document.getElementById('n-depto').value || 'Sin definir',
+        tipo:      document.getElementById('n-tipo').value,
+        motivo:    document.getElementById('n-motivo').value,
         nivel,
-        sueldo: parseFloat(document.getElementById('n-sueldo').value) || 0,
-        jornada: document.getElementById('n-jornada').value,
+        sueldo:    parseFloat(document.getElementById('n-sueldo').value) || 0,
+        jornada:   document.getElementById('n-jornada').value,
         ubicacion: document.getElementById('n-ubicacion').value,
-        inicio: document.getElementById('n-inicio').value || today(),
+        inicio:    document.getElementById('n-inicio').value || today(),
         status: 'Proceso', ingreso: null, ingreso_nombre: ''
     };
     const { data, error } = await sb.from('busquedas').insert(row).select().single();
@@ -1170,56 +1166,27 @@ async function reabrir(id) {
     const orig = busquedas.find(x => x.id === id);
     if (!orig) { toast('No se encontró la búsqueda', true); return; }
     if (!confirm('¿Reabrir búsqueda "' + orig.puesto + '"? Se creará una nueva entrada en Proceso.')) return;
-
     const nuevaRow = {
-        numero:       nextNro(),
-        puesto:       orig.puesto,
-        selector:     orig.selector,
-        depto:        orig.depto,
-        tipo:         orig.tipo,
-        motivo:       orig.motivo,
-        nivel:        orig.nivel,
-        sueldo:       orig.sueldo,
-        jornada:      orig.jornada,
-        ubicacion:    orig.ubicacion,
-        inicio:       today(),
-        status:       'Proceso',
-        ingreso:      null,
-        ingreso_nombre: '',
+        numero: nextNro(), puesto: orig.puesto, selector: orig.selector,
+        depto: orig.depto, tipo: orig.tipo, motivo: orig.motivo, nivel: orig.nivel,
+        sueldo: orig.sueldo, jornada: orig.jornada, ubicacion: orig.ubicacion,
+        inicio: today(), status: 'Proceso', ingreso: null, ingreso_nombre: ''
     };
-
-    const { data: nueva, error: errInsert } = await sb
-        .from('busquedas')
-        .insert(nuevaRow)
-        .select()
-        .single();
-
-    if (errInsert) {
-        console.error('Error al reabrir:', errInsert);
-        toast('Error al reabrir: ' + (errInsert.message || 'verificar permisos en Supabase'), true);
-        return;
-    }
-
+    const { data: nueva, error: errInsert } = await sb.from('busquedas').insert(nuevaRow).select().single();
+    if (errInsert) { toast('Error al reabrir: ' + (errInsert.message || 'verificar permisos'), true); return; }
     const textoOrigen = `Reapertura de ${orig.numero} — "${orig.puesto}". Anterior ingresado: ${orig.ingreso_nombre || 'N/D'} (${orig.ingreso || 'sin fecha'})`;
     await sb.from('estado_log').insert({ busqueda_id: nueva.id, texto: textoOrigen, fecha: today() });
-
     try {
         const histEntries = [{ busqueda_id: nueva.id, texto: textoOrigen, fecha: new Date().toISOString() }];
         if (orig.historial && orig.historial.length > 0) {
-            orig.historial.forEach(h => histEntries.push({
-                busqueda_id: nueva.id,
-                texto: '[Historial copiado] ' + h.texto,
-                fecha: new Date().toISOString()
-            }));
+            orig.historial.forEach(h => histEntries.push({ busqueda_id: nueva.id, texto: '[Historial copiado] ' + h.texto, fecha: new Date().toISOString() }));
         }
         await sb.from('historial').insert(histEntries);
     } catch (e) { console.warn('No se pudo copiar historial:', e); }
-
     let fechaBaja = prompt('Fecha de baja del que ingresó (AAAA-MM-DD). Dejá vacío si seguía hasta hoy:', today());
     const updOrig = { status: 'Cerrada' };
     if (fechaBaja && /^\d{4}-\d{2}-\d{2}$/.test(fechaBaja.trim())) updOrig.fecha_baja = fechaBaja.trim();
     await sb.from('busquedas').update(updOrig).eq('id', id);
-
     await loadData(); renderTable();
     toast('Búsqueda reabierta como ' + nueva.numero + ' ✓');
 }
@@ -1238,7 +1205,6 @@ async function subirPDF(busquedaId, input) {
     const path = `${busquedaId}/${Date.now()}_${file.name}`;
     const { error: upErr } = await sb.storage.from('Busquedas-pdfs').upload(path, file);
     if (upErr) { toast('Error al subir: ' + upErr.message, true); return; }
-    const { data: { publicUrl } } = sb.storage.from('Busquedas-pdfs').getPublicUrl(path);
     const { data: { session } } = await sb.auth.getSession();
     await sb.from('archivos').insert({ busqueda_id: busquedaId, nombre: file.name, url: path, subido_por: session.user.id });
     await loadData(); renderTable(); toast('PDF subido ✓');
@@ -1257,85 +1223,83 @@ async function eliminarPDF(archivoId, storagePath) {
 }
 
 function showView(v, btn) {
-    if ((v === 'stats' || v === 'charts') && !isAdmin()) {
-        toast('Acceso restringido a administradores', true); return;
-    }
-    ['pipeline','stats','charts'].forEach(id => document.getElementById('view-'+id).classList.toggle('hidden', id!==v));
-    document.querySelectorAll('.inline-nav-btn').forEach(b=>b.classList.remove('active'));
+    if ((v === 'stats' || v === 'charts') && !isAdmin()) { toast('Acceso restringido a administradores', true); return; }
+    ['pipeline', 'stats', 'charts'].forEach(id => document.getElementById('view-' + id).classList.toggle('hidden', id !== v));
+    document.querySelectorAll('.inline-nav-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    window.scrollTo({top:0,behavior:'smooth'});
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     const titles = {
-        pipeline:['Pipeline de Selección','Control de búsquedas, seguimiento y feedback'],
-        stats:   ['Estadísticas','Análisis de rendimiento y métricas'],
-        charts:  ['Gráficos','Visualizaciones interactivas del pipeline']
+        pipeline: ['Pipeline de Selección', 'Control de búsquedas, seguimiento y feedback'],
+        stats:    ['Estadísticas', 'Análisis de rendimiento y métricas'],
+        charts:   ['Gráficos', 'Visualizaciones interactivas del pipeline']
     };
     document.getElementById('main-title').textContent = titles[v][0];
     document.getElementById('main-sub').textContent   = titles[v][1];
-    if (v==='stats')  renderStats('general');
-    if (v==='charts') { destroyCharts(); renderCharts('general'); }
+    if (v === 'stats')  renderStats('general');
+    if (v === 'charts') { destroyCharts(); renderCharts('general'); }
 }
-function openModal(id='modal-nueva') { document.getElementById(id).classList.remove('hidden'); }
-function closeModal(id='modal-nueva') { document.getElementById(id).classList.add('hidden'); }
-document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.add('hidden'); }));
+function openModal(id = 'modal-nueva') { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id = 'modal-nueva') { document.getElementById(id).classList.add('hidden'); }
+document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.add('hidden'); }));
 
 // ── STATS ──
 function switchStatsTab(tab, btn) {
-    document.querySelectorAll('#view-stats .page-tab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('#view-stats .page-tab').forEach(b => b.classList.remove('active'));
     btn.classList.add('active'); renderStats(tab);
 }
 function renderStats(tab) {
-    const subset = tab==='general' ? busquedas : busquedas.filter(b=>b.tipo===(tab==='staff'?'Staff':'Fábrica'));
-    const total = subset.length||1;
+    const subset = tab === 'general' ? busquedas : busquedas.filter(b => b.tipo === (tab === 'staff' ? 'Staff' : 'Fábrica'));
+    const total = subset.length || 1;
     const bySelector = {};
     subset.forEach(b => {
-        if (!bySelector[b.selector]) bySelector[b.selector] = {total:0,cerradas:0,dias:[]};
+        if (!bySelector[b.selector]) bySelector[b.selector] = { total: 0, cerradas: 0, dias: [] };
         bySelector[b.selector].total++;
-        if (b.status==='Cerrada'||b.status==='Finalizada') bySelector[b.selector].cerradas++;
-        bySelector[b.selector].dias.push(b.cp ? daysDiff(b.inicio,b.cp) : (b.ingreso ? daysDiff(b.inicio,b.ingreso) : daysDiff(b.inicio)));
+        if (b.status === 'Cerrada' || b.status === 'Finalizada') bySelector[b.selector].cerradas++;
+        bySelector[b.selector].dias.push(b.cp ? daysDiff(b.inicio, b.cp) : (b.ingreso ? daysDiff(b.inicio, b.ingreso) : daysDiff(b.inicio)));
     });
-    const byDepto = {}; subset.forEach(b => { byDepto[b.depto]=(byDepto[b.depto]||0)+1; });
-    const byStatus = {}; subset.forEach(b => { byStatus[b.status]=(byStatus[b.status]||0)+1; });
+    const byDepto  = {}; subset.forEach(b => { byDepto[b.depto]   = (byDepto[b.depto]   || 0) + 1; });
+    const byStatus = {}; subset.forEach(b => { byStatus[b.status] = (byStatus[b.status] || 0) + 1; });
     const psicoBySelector = {};
     subset.forEach(b => b.psicotecnicos.forEach(p => {
-        const k = p.selector_psico||'(sin asignar)';
-        if (!psicoBySelector[k]) psicoBySelector[k]={total:0,apto:0,noApto:0};
+        const k = p.selector_psico || '(sin asignar)';
+        if (!psicoBySelector[k]) psicoBySelector[k] = { total: 0, apto: 0, noApto: 0 };
         psicoBySelector[k].total++;
-        if (p.resultado==='Apto') psicoBySelector[k].apto++;
-        if (p.resultado==='No Apto') psicoBySelector[k].noApto++;
+        if (p.resultado === 'Apto') psicoBySelector[k].apto++;
+        if (p.resultado === 'No Apto') psicoBySelector[k].noApto++;
     }));
-    const totalPsicoSub = subset.reduce((a,b)=>a+b.psicotecnicos.length,0);
-    const selectorHtml = Object.entries(bySelector).map(([name,d]) => {
-        const p = Math.round((d.cerradas/Math.max(d.total,1))*100);
-        const avg = d.dias.length ? Math.round(d.dias.reduce((a,b)=>a+b,0)/d.dias.length) : 0;
-        return `<div class="bar-row"><div class="bar-row-top"><span>${name}</span><span>${d.cerradas}/${d.total} cerradas · ⌀ ${avg}hd</span></div><div class="bar-track"><div class="bar-fill ${tab==='staff'?'bar-fill-staff':tab==='fabrica'?'bar-fill-fab':''}" style="width:${p}%"></div></div></div>`;
+    const totalPsicoSub = subset.reduce((a, b) => a + b.psicotecnicos.length, 0);
+    const selectorHtml = Object.entries(bySelector).map(([name, d]) => {
+        const p   = Math.round((d.cerradas / Math.max(d.total, 1)) * 100);
+        const avg = d.dias.length ? Math.round(d.dias.reduce((a, b) => a + b, 0) / d.dias.length) : 0;
+        return `<div class="bar-row"><div class="bar-row-top"><span>${name}</span><span>${d.cerradas}/${d.total} cerradas · ⌀ ${avg}hd</span></div><div class="bar-track"><div class="bar-fill ${tab === 'staff' ? 'bar-fill-staff' : tab === 'fabrica' ? 'bar-fill-fab' : ''}" style="width:${p}%"></div></div></div>`;
     }).join('');
-    const deptoHtml = Object.entries(byDepto).map(([name,c]) => {
-        const p = Math.round((c/total)*100);
+    const deptoHtml = Object.entries(byDepto).map(([name, c]) => {
+        const p = Math.round((c / total) * 100);
         return `<div class="bar-row"><div class="bar-row-top"><span>${name}</span><span>${c} (${p}%)</span></div><div class="bar-track"><div class="bar-fill" style="width:${p}%"></div></div></div>`;
     }).join('');
-    const statusHtml = Object.entries(byStatus).map(([s,c]) => `
+    const statusHtml = Object.entries(byStatus).map(([s, c]) => `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg);border-radius:8px;margin-bottom:6px">
             <span class="tag ${tagClass(s)}">${s}</span>
             <span style="font-family:'DM Mono',monospace;font-weight:600;font-size:15px">${c}</span>
         </div>`).join('');
     const psicoSelHtml = Object.entries(psicoBySelector).length > 0
-        ? Object.entries(psicoBySelector).sort((a,b)=>b[1].total-a[1].total).map(([sel,d]) => {
-            const p = Math.round((d.total/Math.max(totalPsicoSub,1))*100);
+        ? Object.entries(psicoBySelector).sort((a, b) => b[1].total - a[1].total).map(([sel, d]) => {
+            const p = Math.round((d.total / Math.max(totalPsicoSub, 1)) * 100);
             return `<div class="bar-row"><div class="bar-row-top"><span>${sel}</span><span>${d.total} psico · ${d.apto} aptos · ${d.noApto} no aptos</span></div><div class="bar-track"><div class="bar-fill bar-fill-staff" style="width:${p}%"></div></div></div>`;
-          }).join('')
+        }).join('')
         : '<span class="tip">Sin datos de psicotécnicos asignados</span>';
     document.getElementById('stats-content').innerHTML = `
         <div class="stats-grid">
-            <div class="stat-card"><div class="stat-card-title">Rendimiento por Selector</div>${selectorHtml||'<span class="tip">Sin datos</span>'}</div>
-            <div class="stat-card"><div class="stat-card-title">Por Departamento</div>${deptoHtml||'<span class="tip">Sin datos</span>'}</div>
-            <div class="stat-card"><div class="stat-card-title">Por Estado</div>${statusHtml||'<span class="tip">Sin datos</span>'}</div>
+            <div class="stat-card"><div class="stat-card-title">Rendimiento por Selector</div>${selectorHtml || '<span class="tip">Sin datos</span>'}</div>
+            <div class="stat-card"><div class="stat-card-title">Por Departamento</div>${deptoHtml || '<span class="tip">Sin datos</span>'}</div>
+            <div class="stat-card"><div class="stat-card-title">Por Estado</div>${statusHtml || '<span class="tip">Sin datos</span>'}</div>
             <div class="stat-card"><div class="stat-card-title"><i class="fas fa-brain" style="margin-right:5px;color:var(--blue)"></i>Psicotécnicos por Selector</div>${psicoSelHtml}</div>
             <div class="stat-card"><div class="stat-card-title">Resumen General</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
                     <div style="text-align:center;padding:14px;background:var(--bg);border-radius:8px"><div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800">${subset.length}</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:2px">Búsquedas</div></div>
-                    <div style="text-align:center;padding:14px;background:var(--bg);border-radius:8px"><div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--green)">${subset.filter(b=>b.status==='Cerrada'||b.status==='Finalizada').length}</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:2px">Cerradas/Fin.</div></div>
-                    <div style="text-align:center;padding:14px;background:var(--bg);border-radius:8px"><div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--orange)">${subset.reduce((a,b)=>a+b.candidatos.length,0)}</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:2px">Candidatos</div></div>
-                    <div style="text-align:center;padding:14px;background:var(--bg);border-radius:8px"><div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--blue)">${subset.reduce((a,b)=>a+b.psicotecnicos.length,0)}</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:2px">Psicotécnicos</div></div>
+                    <div style="text-align:center;padding:14px;background:var(--bg);border-radius:8px"><div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--green)">${subset.filter(b => b.status === 'Cerrada' || b.status === 'Finalizada').length}</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:2px">Cerradas/Fin.</div></div>
+                    <div style="text-align:center;padding:14px;background:var(--bg);border-radius:8px"><div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--orange)">${subset.reduce((a, b) => a + b.candidatos.length, 0)}</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:2px">Candidatos</div></div>
+                    <div style="text-align:center;padding:14px;background:var(--bg);border-radius:8px"><div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--blue)">${subset.reduce((a, b) => a + b.psicotecnicos.length, 0)}</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:2px">Psicotécnicos</div></div>
                 </div>
             </div>
         </div>`;
@@ -1343,31 +1307,33 @@ function renderStats(tab) {
 
 // ── GRÁFICOS ──
 let chartInstances = {};
-function destroyCharts() { Object.values(chartInstances).forEach(c=>{try{c.destroy();}catch(e){}}); chartInstances={}; }
-function switchChartsTab(tab,btn) { document.querySelectorAll('#view-charts .page-tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderCharts(tab); }
-function renderCharts(tab) { destroyCharts(); if(tab==='general') renderChartsGeneral(); else if(tab==='tiempo') renderChartsTiempo(); else if(tab==='selectores') renderChartsSelectores(); }
+function destroyCharts() { Object.values(chartInstances).forEach(c => { try { c.destroy(); } catch (e) {} }); chartInstances = {}; }
+function switchChartsTab(tab, btn) { document.querySelectorAll('#view-charts .page-tab').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderCharts(tab); }
+function renderCharts(tab) { destroyCharts(); if (tab === 'general') renderChartsGeneral(); else if (tab === 'tiempo') renderChartsTiempo(); else if (tab === 'selectores') renderChartsSelectores(); }
 
 function renderChartsGeneral() {
-    const cerradas   = busquedas.filter(b=>b.status==='Cerrada'||b.status==='Finalizada').length;
-    const proceso    = busquedas.filter(b=>b.status==='Proceso').length;
-    const pausadas   = busquedas.filter(b=>b.status==='Pausada').length;
-    const finalizadas= busquedas.filter(b=>b.status==='Finalizada').length;
-    const tasaCierre = Math.round((cerradas/Math.max(busquedas.length,1))*100);
-    const totalCands = busquedas.reduce((a,b)=>a+b.candidatos.length,0);
-    const totalPsico = busquedas.reduce((a,b)=>a+b.psicotecnicos.length,0);
-    const byStatus   = {}; busquedas.forEach(b=>{byStatus[b.status]=(byStatus[b.status]||0)+1;});
-    const staff      = busquedas.filter(b=>b.tipo==='Staff').length;
-    const fabrica    = busquedas.filter(b=>b.tipo==='Fábrica').length;
-    const byMotivo   = {}; busquedas.forEach(b=>{byMotivo[b.motivo]=(byMotivo[b.motivo]||0)+1;});
-    const byDepto    = {}; busquedas.forEach(b=>{byDepto[b.depto]=(byDepto[b.depto]||0)+1;});
-    const byNivel    = {}; busquedas.forEach(b=>{byNivel[b.nivel]=(byNivel[b.nivel]||0)+1;});
-    const permData   = busquedas.filter(b=>b.ingreso).map(b=>({nombre:(b.ingreso_nombre&&b.ingreso_nombre.trim())?b.ingreso_nombre:(b.puesto||'(sin nombre)'),dias:daysDiff(b.ingreso, b.fecha_baja || null),puesto:b.puesto})).sort((a,b)=>b.dias-a.dias);
+    const cerradas    = busquedas.filter(b => b.status === 'Cerrada' || b.status === 'Finalizada').length;
+    const proceso     = busquedas.filter(b => b.status === 'Proceso').length;
+    const pausadas    = busquedas.filter(b => b.status === 'Pausada').length;
+    const finalizadas = busquedas.filter(b => b.status === 'Finalizada').length;
+    const tasaCierre  = Math.round((cerradas / Math.max(busquedas.length, 1)) * 100);
+    const totalCands  = busquedas.reduce((a, b) => a + b.candidatos.length, 0);
+    const byStatus    = {}; busquedas.forEach(b => { byStatus[b.status] = (byStatus[b.status] || 0) + 1; });
+    const staff       = busquedas.filter(b => b.tipo === 'Staff').length;
+    const fabrica     = busquedas.filter(b => b.tipo === 'Fábrica').length;
+    const byMotivo    = {}; busquedas.forEach(b => { byMotivo[b.motivo] = (byMotivo[b.motivo] || 0) + 1; });
+    const byDepto     = {}; busquedas.forEach(b => { byDepto[b.depto]   = (byDepto[b.depto]   || 0) + 1; });
+    const byNivel     = {}; busquedas.forEach(b => { byNivel[b.nivel]   = (byNivel[b.nivel]   || 0) + 1; });
+    const permData    = busquedas.filter(b => b.ingreso).map(b => ({
+        nombre: (b.ingreso_nombre && b.ingreso_nombre.trim()) ? b.ingreso_nombre : (b.puesto || '(sin nombre)'),
+        dias: daysDiff(b.ingreso, b.fecha_baja || null), puesto: b.puesto
+    })).sort((a, b) => b.dias - a.dias);
 
     document.getElementById('charts-content').innerHTML = `
     <div class="mini-kpi-row">
         <div class="mini-kpi"><div class="mini-kpi-num">${busquedas.length}</div><div class="mini-kpi-lbl">Total</div><div class="mini-kpi-sub">${proceso} en curso · ${pausadas} pausadas</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${tasaCierre}%</div><div class="mini-kpi-lbl">Tasa de Cierre</div><div class="mini-kpi-sub">${cerradas} de ${busquedas.length}</div></div>
-        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--orange)">${totalCands}</div><div class="mini-kpi-lbl">Candidatos</div><div class="mini-kpi-sub">⌀ ${(totalCands/Math.max(busquedas.length,1)).toFixed(1)} por búsqueda</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--orange)">${totalCands}</div><div class="mini-kpi-lbl">Candidatos</div><div class="mini-kpi-sub">⌀ ${(totalCands / Math.max(busquedas.length, 1)).toFixed(1)} por búsqueda</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:#92400e">${finalizadas}</div><div class="mini-kpi-lbl">Finalizadas</div><div class="mini-kpi-sub">≥ 90 días háb. en empresa</div></div>
     </div>
     <div class="charts-grid">
@@ -1382,48 +1348,46 @@ function renderChartsGeneral() {
     <div style="margin-top:20px">
         <div class="chart-card">
             <div class="chart-card-title"><i class="fas fa-user-clock"></i> Permanencia por Persona (días hábiles en empresa) · ${permData.length} ingresos</div>
-            ${permData.length>0
-                ? `<div style="position:relative;height:${Math.max(180,permData.length*28)}px"><canvas id="ch-perm"></canvas></div>`
+            ${permData.length > 0
+                ? `<div style="position:relative;height:${Math.max(180, permData.length * 28)}px"><canvas id="ch-perm"></canvas></div>`
                 : `<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Sin ingresos registrados aún</div>`}
         </div>
     </div>`;
 
     const palette = ['#1a1714','#005f73','#2d6a4f','#ca6702','#9b2226','#b5a300','#4a1272','#0a367a'];
-    const cd = { responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{font:{family:'DM Sans',size:11},color:'#1a1714'}}} };
-
-    chartInstances['status'] = new Chart(document.getElementById('ch-status'),{type:'doughnut',data:{labels:Object.keys(byStatus),datasets:[{data:Object.values(byStatus),backgroundColor:['#cfe2ff','#d1e7dd','#fff3cd','#fef3c7','#f0d9ff'],borderColor:['#0a367a','#0a3622','#664d03','#92400e','#4a1272'],borderWidth:2}]},options:{...cd,cutout:'65%'}});
-    chartInstances['tipo']   = new Chart(document.getElementById('ch-tipo'),{type:'pie',data:{labels:['Staff','Fábrica'],datasets:[{data:[staff,fabrica],backgroundColor:['#005f73','#2d6a4f'],borderColor:['#fff','#fff'],borderWidth:3}]},options:{...cd}});
-    const dl = Object.keys(byDepto).sort((a,b)=>byDepto[b]-byDepto[a]);
-    chartInstances['depto']  = new Chart(document.getElementById('ch-depto'),{type:'bar',data:{labels:dl,datasets:[{label:'Búsquedas',data:dl.map(d=>byDepto[d]),backgroundColor:dl.map((_,i)=>palette[i%palette.length]+'cc'),borderColor:dl.map((_,i)=>palette[i%palette.length]),borderWidth:2,borderRadius:6}]},options:{...cd,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}});
-    chartInstances['motivo'] = new Chart(document.getElementById('ch-motivo'),{type:'doughnut',data:{labels:Object.keys(byMotivo),datasets:[{data:Object.values(byMotivo),backgroundColor:['#cfe2ff','#ffd6a5','#d8f3dc'],borderWidth:2}]},options:{...cd,cutout:'55%'}});
-    chartInstances['nivel']  = new Chart(document.getElementById('ch-nivel'),{type:'bar',data:{labels:Object.keys(byNivel),datasets:[{label:'Cantidad',data:Object.values(byNivel),backgroundColor:['#ca6702cc','#005f73cc','#9b2226cc'],borderRadius:6}]},options:{...cd,plugins:{legend:{display:false}},indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{precision:0}},y:{grid:{display:false}}}}});
-
-    if (permData.length>0) {
-        const permColors = permData.map(p=>p.dias>=130?'#2d6a4f':p.dias>=65?'#005f73':p.dias>=22?'#ca6702':'#9b2226');
-        chartInstances['perm'] = new Chart(document.getElementById('ch-perm'),{type:'bar',data:{labels:permData.map(p=>p.nombre),datasets:[{label:'Días hábiles en empresa',data:permData.map(p=>p.dias),backgroundColor:permColors.map(c=>c+'cc'),borderColor:permColors,borderWidth:2,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const p=permData[ctx.dataIndex];const m=p.dias>=130?' 🏆 6m+':p.dias>=65?' ✓ 3m+':p.dias>=22?' 1m+':'';return ` ${p.dias} días háb. en empresa${m}`;},afterLabel:ctx=>` Puesto: ${permData[ctx.dataIndex].puesto}`}}},scales:{x:{beginAtZero:true,ticks:{precision:0,font:{family:'DM Mono',size:10}},grid:{color:'#e5e0d8'}},y:{ticks:{font:{family:'DM Sans',size:11}},grid:{display:false}}}}});
+    const cd = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { font: { family: 'DM Sans', size: 11 }, color: '#1a1714' } } } };
+    chartInstances['status'] = new Chart(document.getElementById('ch-status'), { type: 'doughnut', data: { labels: Object.keys(byStatus), datasets: [{ data: Object.values(byStatus), backgroundColor: ['#cfe2ff','#d1e7dd','#fff3cd','#fef3c7','#f0d9ff'], borderColor: ['#0a367a','#0a3622','#664d03','#92400e','#4a1272'], borderWidth: 2 }] }, options: { ...cd, cutout: '65%' } });
+    chartInstances['tipo']   = new Chart(document.getElementById('ch-tipo'),   { type: 'pie',       data: { labels: ['Staff','Fábrica'],    datasets: [{ data: [staff, fabrica], backgroundColor: ['#005f73','#2d6a4f'], borderColor: ['#fff','#fff'], borderWidth: 3 }] }, options: { ...cd } });
+    const dl = Object.keys(byDepto).sort((a, b) => byDepto[b] - byDepto[a]);
+    chartInstances['depto']  = new Chart(document.getElementById('ch-depto'),  { type: 'bar', data: { labels: dl, datasets: [{ label: 'Búsquedas', data: dl.map(d => byDepto[d]), backgroundColor: dl.map((_, i) => palette[i % palette.length] + 'cc'), borderColor: dl.map((_, i) => palette[i % palette.length]), borderWidth: 2, borderRadius: 6 }] }, options: { ...cd, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
+    chartInstances['motivo'] = new Chart(document.getElementById('ch-motivo'), { type: 'doughnut', data: { labels: Object.keys(byMotivo), datasets: [{ data: Object.values(byMotivo), backgroundColor: ['#cfe2ff','#ffd6a5','#d8f3dc'], borderWidth: 2 }] }, options: { ...cd, cutout: '55%' } });
+    chartInstances['nivel']  = new Chart(document.getElementById('ch-nivel'),  { type: 'bar', data: { labels: Object.keys(byNivel), datasets: [{ label: 'Cantidad', data: Object.values(byNivel), backgroundColor: ['#ca6702cc','#005f73cc','#9b2226cc'], borderRadius: 6 }] }, options: { ...cd, plugins: { legend: { display: false } }, indexAxis: 'y', scales: { x: { beginAtZero: true, ticks: { precision: 0 } }, y: { grid: { display: false } } } } });
+    if (permData.length > 0) {
+        const permColors = permData.map(p => p.dias >= 130 ? '#2d6a4f' : p.dias >= 65 ? '#005f73' : p.dias >= 22 ? '#ca6702' : '#9b2226');
+        chartInstances['perm'] = new Chart(document.getElementById('ch-perm'), { type: 'bar', data: { labels: permData.map(p => p.nombre), datasets: [{ label: 'Días hábiles en empresa', data: permData.map(p => p.dias), backgroundColor: permColors.map(c => c + 'cc'), borderColor: permColors, borderWidth: 2, borderRadius: 5 }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => { const p = permData[ctx.dataIndex]; const m = p.dias >= 130 ? ' 🏆 6m+' : p.dias >= 65 ? ' ✓ 3m+' : p.dias >= 22 ? ' 1m+' : ''; return ` ${p.dias} días háb. en empresa${m}`; }, afterLabel: ctx => ` Puesto: ${permData[ctx.dataIndex].puesto}` } } }, scales: { x: { beginAtZero: true, ticks: { precision: 0, font: { family: 'DM Mono', size: 10 } }, grid: { color: '#e5e0d8' } }, y: { ticks: { font: { family: 'DM Sans', size: 11 } }, grid: { display: false } } } } });
     }
 }
 
 function renderChartsTiempo() {
-    const cerradas = busquedas.filter(b=>(b.status==='Cerrada'||b.status==='Finalizada')&&b.ingreso);
-    const diasList = cerradas.map(b=>daysDiff(b.inicio,b.ingreso));
-    const avgDias  = diasList.length?Math.round(diasList.reduce((a,c)=>a+c,0)/diasList.length):0;
-    const minDias  = diasList.length?Math.min(...diasList):0;
-    const maxDias  = diasList.length?Math.max(...diasList):0;
-    const rangos   = {'0–7hd':0,'8–14hd':0,'15–22hd':0,'23–30hd':0,'+30hd':0};
-    diasList.forEach(d=>{if(d<=7)rangos['0–7hd']++;else if(d<=14)rangos['8–14hd']++;else if(d<=22)rangos['15–22hd']++;else if(d<=30)rangos['23–30hd']++;else rangos['+30hd']++;});
+    const cerradas = busquedas.filter(b => (b.status === 'Cerrada' || b.status === 'Finalizada') && b.ingreso);
+    const diasList = cerradas.map(b => daysDiff(b.inicio, b.ingreso));
+    const avgDias  = diasList.length ? Math.round(diasList.reduce((a, c) => a + c, 0) / diasList.length) : 0;
+    const minDias  = diasList.length ? Math.min(...diasList) : 0;
+    const maxDias  = diasList.length ? Math.max(...diasList) : 0;
+    const rangos   = { '0–7hd': 0, '8–14hd': 0, '15–22hd': 0, '23–30hd': 0, '+30hd': 0 };
+    diasList.forEach(d => { if (d <= 7) rangos['0–7hd']++; else if (d <= 14) rangos['8–14hd']++; else if (d <= 22) rangos['15–22hd']++; else if (d <= 30) rangos['23–30hd']++; else rangos['+30hd']++; });
     const bySel = {};
-    cerradas.forEach(b=>{if(!bySel[b.selector])bySel[b.selector]=[];bySel[b.selector].push(daysDiff(b.inicio,b.ingreso));});
-    const selAvg = Object.entries(bySel).map(([s,d])=>({sel:s,avg:Math.round(d.reduce((a,c)=>a+c,0)/d.length)})).sort((a,b)=>a.avg-b.avg);
+    cerradas.forEach(b => { if (!bySel[b.selector]) bySel[b.selector] = []; bySel[b.selector].push(daysDiff(b.inicio, b.ingreso)); });
+    const selAvg = Object.entries(bySel).map(([s, d]) => ({ sel: s, avg: Math.round(d.reduce((a, c) => a + c, 0) / d.length) })).sort((a, b) => a.avg - b.avg);
     const byNivel = {};
-    cerradas.forEach(b=>{if(!byNivel[b.nivel])byNivel[b.nivel]=[];byNivel[b.nivel].push(daysDiff(b.inicio,b.ingreso));});
-    const nivelAvg = Object.entries(byNivel).map(([n,d])=>({nivel:n,avg:Math.round(d.reduce((a,c)=>a+c,0)/d.length),limite:DEMORA_LIMITE[n]||15}));
-    document.getElementById('charts-content').innerHTML=`
+    cerradas.forEach(b => { if (!byNivel[b.nivel]) byNivel[b.nivel] = []; byNivel[b.nivel].push(daysDiff(b.inicio, b.ingreso)); });
+    const nivelAvg = Object.entries(byNivel).map(([n, d]) => ({ nivel: n, avg: Math.round(d.reduce((a, c) => a + c, 0) / d.length), limite: DEMORA_LIMITE[n] || 15 }));
+    document.getElementById('charts-content').innerHTML = `
     <div class="mini-kpi-row">
         <div class="mini-kpi"><div class="mini-kpi-num">${avgDias}hd</div><div class="mini-kpi-lbl">Tiempo promedio</div><div class="mini-kpi-sub">${cerradas.length} búsquedas cerradas</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${minDias}hd</div><div class="mini-kpi-lbl">Más rápida</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--red)">${maxDias}hd</div><div class="mini-kpi-lbl">Más lenta</div></div>
-        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--orange)">${busquedas.filter(b=>{const d=daysDiff(b.inicio);return d>(DEMORA_LIMITE[b.nivel]||15)&&b.status==='Proceso';}).length}</div><div class="mini-kpi-lbl">Fuera de plazo</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--orange)">${busquedas.filter(b => { const d = daysDiff(b.inicio); return d > (DEMORA_LIMITE[b.nivel] || 15) && b.status === 'Proceso'; }).length}</div><div class="mini-kpi-lbl">Fuera de plazo</div></div>
     </div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:12px;padding:6px 12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;display:inline-block">
         <i class="fas fa-info-circle"></i> Todos los tiempos expresados en <strong>días hábiles (hd)</strong> — lunes a viernes
@@ -1434,30 +1398,29 @@ function renderChartsTiempo() {
         <div class="chart-card full"><div class="chart-card-title"><i class="fas fa-layer-group"></i> Tiempo Real vs Límite por Nivel (días hábiles)</div><div class="chart-wrap"><canvas id="ch-nivellib"></canvas></div></div>
     </div>
     <div style="margin-top:20px"><div class="chart-card"><div class="chart-card-title"><i class="fas fa-list-ol"></i> Ranking más rápidas</div>
-    <div>${cerradas.sort((a,b)=>daysDiff(a.inicio,a.ingreso)-daysDiff(b.inicio,b.ingreso)).slice(0,6).map((b,i)=>{const d=daysDiff(b.inicio,b.ingreso);const lim=DEMORA_LIMITE[b.nivel]||15;return`<div class="rank-row"><span class="rank-pos">#${i+1}</span><span class="rank-name">${b.puesto} <span style="font-size:11px;color:var(--muted)">· ${b.selector}</span></span><span class="rank-stat" style="color:${d<=lim?'var(--green)':'var(--red)'}">${d}hd</span><span style="font-size:11px;color:var(--muted);margin-left:6px">lim. ${lim}hd</span></div>`;}).join('')}</div>
+    <div>${cerradas.sort((a, b) => daysDiff(a.inicio, a.ingreso) - daysDiff(b.inicio, b.ingreso)).slice(0, 6).map((b, i) => { const d = daysDiff(b.inicio, b.ingreso); const lim = DEMORA_LIMITE[b.nivel] || 15; return `<div class="rank-row"><span class="rank-pos">#${i + 1}</span><span class="rank-name">${b.puesto} <span style="font-size:11px;color:var(--muted)">· ${b.selector}</span></span><span class="rank-stat" style="color:${d <= lim ? 'var(--green)' : 'var(--red)'}">${d}hd</span><span style="font-size:11px;color:var(--muted);margin-left:6px">lim. ${lim}hd</span></div>`; }).join('')}</div>
     </div></div>`;
-    chartInstances['dist']     = new Chart(document.getElementById('ch-dist'),{type:'bar',data:{labels:Object.keys(rangos),datasets:[{label:'Búsquedas',data:Object.values(rangos),backgroundColor:['#d1e7dd','#cfe2ff','#fff3cd','#ffd6a5','#f8d7da'],borderColor:['#0a3622','#0a367a','#664d03','#7c3d00','#721c24'],borderWidth:2,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}});
-    chartInstances['seltime']  = new Chart(document.getElementById('ch-seltime'),{type:'bar',data:{labels:selAvg.map(s=>s.sel),datasets:[{label:'Días háb. promedio',data:selAvg.map(s=>s.avg),backgroundColor:selAvg.map(s=>s.avg>14?'#f8d7da':'#d1e7dd'),borderColor:selAvg.map(s=>s.avg>14?'#721c24':'#0a3622'),borderWidth:2,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}});
-    chartInstances['nivellib'] = new Chart(document.getElementById('ch-nivellib'),{type:'bar',data:{labels:nivelAvg.map(n=>n.nivel),datasets:[{label:'Tiempo real (hd)',data:nivelAvg.map(n=>n.avg),backgroundColor:'#005f73cc',borderRadius:4},{label:'Límite establecido (hd)',data:nivelAvg.map(n=>n.limite),backgroundColor:'#9b222633',borderColor:'#9b2226',borderWidth:2,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}});
+    chartInstances['dist']     = new Chart(document.getElementById('ch-dist'),     { type: 'bar', data: { labels: Object.keys(rangos), datasets: [{ label: 'Búsquedas', data: Object.values(rangos), backgroundColor: ['#d1e7dd','#cfe2ff','#fff3cd','#ffd6a5','#f8d7da'], borderColor: ['#0a3622','#0a367a','#664d03','#7c3d00','#721c24'], borderWidth: 2, borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
+    chartInstances['seltime']  = new Chart(document.getElementById('ch-seltime'),  { type: 'bar', data: { labels: selAvg.map(s => s.sel), datasets: [{ label: 'Días háb. promedio', data: selAvg.map(s => s.avg), backgroundColor: selAvg.map(s => s.avg > 14 ? '#f8d7da' : '#d1e7dd'), borderColor: selAvg.map(s => s.avg > 14 ? '#721c24' : '#0a3622'), borderWidth: 2, borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
+    chartInstances['nivellib'] = new Chart(document.getElementById('ch-nivellib'), { type: 'bar', data: { labels: nivelAvg.map(n => n.nivel), datasets: [{ label: 'Tiempo real (hd)', data: nivelAvg.map(n => n.avg), backgroundColor: '#005f73cc', borderRadius: 4 }, { label: 'Límite establecido (hd)', data: nivelAvg.map(n => n.limite), backgroundColor: '#9b222633', borderColor: '#9b2226', borderWidth: 2, borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
 }
 
 function renderChartsSelectores() {
     const data = {};
-    const selectores = SELECTORES;
-    selectores.forEach(s=>{data[s]={total:0,cerradas:0,proceso:0,candidatos:0,psico:0,psico_realizado:0,dias:[]};});
-    busquedas.forEach(b=>{
-        if(!data[b.selector])return;
+    SELECTORES.forEach(s => { data[s] = { total: 0, cerradas: 0, proceso: 0, candidatos: 0, psico: 0, psico_realizado: 0, dias: [] }; });
+    busquedas.forEach(b => {
+        if (!data[b.selector]) return;
         data[b.selector].total++;
-        if(b.status==='Cerrada'||b.status==='Finalizada'){data[b.selector].cerradas++;if(b.ingreso)data[b.selector].dias.push(daysDiff(b.inicio,b.ingreso));}
-        if(b.status==='Proceso')data[b.selector].proceso++;
-        data[b.selector].candidatos+=b.candidatos.length;
-        data[b.selector].psico+=b.psicotecnicos.length;
-        b.psicotecnicos.forEach(p=>{if(p.selector_psico&&data[p.selector_psico])data[p.selector_psico].psico_realizado++;});
+        if (b.status === 'Cerrada' || b.status === 'Finalizada') { data[b.selector].cerradas++; if (b.ingreso) data[b.selector].dias.push(daysDiff(b.inicio, b.ingreso)); }
+        if (b.status === 'Proceso') data[b.selector].proceso++;
+        data[b.selector].candidatos += b.candidatos.length;
+        data[b.selector].psico += b.psicotecnicos.length;
+        b.psicotecnicos.forEach(p => { if (p.selector_psico && data[p.selector_psico]) data[p.selector_psico].psico_realizado++; });
     });
-    const activos = selectores.filter(s=>data[s].total>0);
-    const avgDiasPerSel = activos.map(s=>data[s].dias.length?Math.round(data[s].dias.reduce((a,c)=>a+c,0)/data[s].dias.length):0);
-    document.getElementById('charts-content').innerHTML=`
-    <div class="mini-kpi-row">${activos.map(s=>`<div class="mini-kpi"><div class="mini-kpi-num">${data[s].total}</div><div class="mini-kpi-lbl">${s}</div><div class="mini-kpi-sub">${data[s].cerradas} cerradas · ${data[s].proceso} en curso</div></div>`).join('')}</div>
+    const activos      = SELECTORES.filter(s => data[s].total > 0);
+    const avgDiasPerSel = activos.map(s => data[s].dias.length ? Math.round(data[s].dias.reduce((a, c) => a + c, 0) / data[s].dias.length) : 0);
+    document.getElementById('charts-content').innerHTML = `
+    <div class="mini-kpi-row">${activos.map(s => `<div class="mini-kpi"><div class="mini-kpi-num">${data[s].total}</div><div class="mini-kpi-lbl">${s}</div><div class="mini-kpi-sub">${data[s].cerradas} cerradas · ${data[s].proceso} en curso</div></div>`).join('')}</div>
     <div class="charts-grid">
         <div class="chart-card"><div class="chart-card-title"><i class="fas fa-briefcase"></i> Búsquedas por Selector</div><div class="chart-wrap"><canvas id="ch-seltotal"></canvas></div></div>
         <div class="chart-card"><div class="chart-card-title"><i class="fas fa-check-circle"></i> Tasa de Cierre</div><div class="chart-wrap"><canvas id="ch-seltasa"></canvas></div></div>
@@ -1466,25 +1429,25 @@ function renderChartsSelectores() {
     </div>
     <div style="margin-top:20px"><div class="chart-card full"><div class="chart-card-title"><i class="fas fa-table"></i> Panel comparativo</div>
         <div style="overflow-x:auto"><table style="width:100%;min-width:700px;border-collapse:collapse">
-            <thead><tr>${['Selector','Total','Cerradas','En proceso','Candidatos','Psico en búsqueda','Psico realizados','⌀ días háb. cierre'].map(h=>`<th style="padding:10px 14px;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);text-align:left">${h}</th>`).join('')}</tr></thead>
-            <tbody>${activos.map((s,i)=>`<tr style="background:${i%2===0?'var(--bg)':'transparent'}">
+            <thead><tr>${['Selector','Total','Cerradas','En proceso','Candidatos','Psico en búsqueda','Psico realizados','⌀ días háb. cierre'].map(h => `<th style="padding:10px 14px;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);text-align:left">${h}</th>`).join('')}</tr></thead>
+            <tbody>${activos.map((s, i) => `<tr style="background:${i % 2 === 0 ? 'var(--bg)' : 'transparent'}">
                 <td style="padding:10px 14px;font-weight:700">${s}</td>
                 <td style="padding:10px 14px;font-family:'DM Mono',monospace">${data[s].total}</td>
                 <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:var(--green);font-weight:700">${data[s].cerradas}</td>
                 <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:var(--blue)">${data[s].proceso}</td>
                 <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:var(--orange)">${data[s].candidatos}</td>
                 <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:var(--blue)">${data[s].psico}</td>
-                <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:var(--blue);font-weight:700">${data[s].psico_realizado||'—'}</td>
-                <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:${avgDiasPerSel[i]>20?'var(--red)':'var(--green)'};font-weight:700">${avgDiasPerSel[i]||'—'}hd</td>
+                <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:var(--blue);font-weight:700">${data[s].psico_realizado || '—'}</td>
+                <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:${avgDiasPerSel[i] > 20 ? 'var(--red)' : 'var(--green)'};font-weight:700">${avgDiasPerSel[i] || '—'}hd</td>
             </tr>`).join('')}</tbody>
         </table></div>
     </div></div>`;
     const colors = ['#1a1714','#005f73','#2d6a4f','#ca6702','#9b2226'];
-    const cOpts = {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0,font:{family:'DM Mono',size:10}},grid:{color:'#e5e0d8'}},x:{ticks:{font:{family:'DM Sans',size:11}},grid:{display:false}}}};
-    chartInstances['seltotal'] = new Chart(document.getElementById('ch-seltotal'),{type:'bar',data:{labels:activos,datasets:[{label:'Total',data:activos.map(s=>data[s].total),backgroundColor:colors.map(c=>c+'cc'),borderColor:colors,borderWidth:2,borderRadius:6}]},options:cOpts});
-    chartInstances['seltasa']  = new Chart(document.getElementById('ch-seltasa'),{type:'bar',data:{labels:activos,datasets:[{label:'Tasa %',data:activos.map(s=>Math.round((data[s].cerradas/Math.max(data[s].total,1))*100)),backgroundColor:activos.map(s=>Math.round((data[s].cerradas/Math.max(data[s].total,1))*100)>50?'#d1e7ddcc':'#fff3cdcc'),borderColor:activos.map(s=>Math.round((data[s].cerradas/Math.max(data[s].total,1))*100)>50?'#0a3622':'#664d03'),borderWidth:2,borderRadius:6}]},options:{...cOpts,scales:{...cOpts.scales,y:{...cOpts.scales.y,max:100}}}});
-    chartInstances['selcand']  = new Chart(document.getElementById('ch-selcand'),{type:'bar',data:{labels:activos,datasets:[{label:'Candidatos',data:activos.map(s=>data[s].candidatos),backgroundColor:'#ca6702cc',borderColor:'#ca6702',borderWidth:2,borderRadius:6}]},options:cOpts});
-    chartInstances['selpsico'] = new Chart(document.getElementById('ch-selpsico'),{type:'bar',data:{labels:activos,datasets:[{label:'Psico realizados',data:activos.map(s=>data[s].psico_realizado),backgroundColor:'#005f73cc',borderColor:'#005f73',borderWidth:2,borderRadius:6}]},options:cOpts});
+    const cOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0, font: { family: 'DM Mono', size: 10 } }, grid: { color: '#e5e0d8' } }, x: { ticks: { font: { family: 'DM Sans', size: 11 } }, grid: { display: false } } } };
+    chartInstances['seltotal'] = new Chart(document.getElementById('ch-seltotal'), { type: 'bar', data: { labels: activos, datasets: [{ label: 'Total',          data: activos.map(s => data[s].total),          backgroundColor: colors.map(c => c + 'cc'), borderColor: colors, borderWidth: 2, borderRadius: 6 }] }, options: cOpts });
+    chartInstances['seltasa']  = new Chart(document.getElementById('ch-seltasa'),  { type: 'bar', data: { labels: activos, datasets: [{ label: 'Tasa %',         data: activos.map(s => Math.round((data[s].cerradas / Math.max(data[s].total, 1)) * 100)), backgroundColor: activos.map(s => Math.round((data[s].cerradas / Math.max(data[s].total, 1)) * 100) > 50 ? '#d1e7ddcc' : '#fff3cdcc'), borderColor: activos.map(s => Math.round((data[s].cerradas / Math.max(data[s].total, 1)) * 100) > 50 ? '#0a3622' : '#664d03'), borderWidth: 2, borderRadius: 6 }] }, options: { ...cOpts, scales: { ...cOpts.scales, y: { ...cOpts.scales.y, max: 100 } } } });
+    chartInstances['selcand']  = new Chart(document.getElementById('ch-selcand'),  { type: 'bar', data: { labels: activos, datasets: [{ label: 'Candidatos',     data: activos.map(s => data[s].candidatos),     backgroundColor: '#ca6702cc', borderColor: '#ca6702', borderWidth: 2, borderRadius: 6 }] }, options: cOpts });
+    chartInstances['selpsico'] = new Chart(document.getElementById('ch-selpsico'), { type: 'bar', data: { labels: activos, datasets: [{ label: 'Psico realizados', data: activos.map(s => data[s].psico_realizado), backgroundColor: '#005f73cc', borderColor: '#005f73', borderWidth: 2, borderRadius: 6 }] }, options: cOpts });
 }
 </script>
 </body>
