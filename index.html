@@ -204,6 +204,9 @@
         .perm-box-lbl { font-size: 9px; color: var(--ok-text); text-transform: uppercase; letter-spacing: .8px; margin-top: 2px; }
         .perm-box-milestone { font-size: 10px; color: var(--green); font-weight: 700; margin-top: 3px; }
         .cp-frozen { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; color: var(--blue); background: #dbeafe; border-radius: 4px; padding: 1px 5px; margin-top: 2px; }
+        .verif-counter { display: inline-flex; align-items: center; gap: 4px; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 700; border-radius: 4px; padding: 1px 6px; margin-top: 3px; }
+        .verif-counter-run { background: #dbeafe; color: #1e40af; }
+        .verif-counter-done { background: #d1fae5; color: #065f46; }
         @media(max-width:900px) {
             .topnav { padding: 0 16px; } .main { padding: 16px; }
             .charts-grid, .charts-grid-2 { grid-template-columns: 1fr; }
@@ -468,6 +471,8 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const SELECTORES = ['Silvina','Romina','Claudia','Luca','Soledad','Angel','Noelia'];
 const DEMORA_LIMITE = { 'Gerente/Director': 45, 'Jefe/Encargado': 30, 'Otros': 15 };
+const VERIF_EN_CURSO = ['Pendiente','En proceso'];
+function verifEnCurso(r) { return VERIF_EN_CURSO.includes(r); }
 let busquedas = [];
 let filteredIds = null;
 let currentProfile = null;
@@ -662,16 +667,31 @@ function renderTable() {
 
         // VERIFICACIONES
         const verifHtml = b.verificaciones.length > 0
-            ? b.verificaciones.map(v => `
+            ? b.verificaciones.map(v => {
+                const enCurso = verifEnCurso(v.resultado);
+                let counterHtml = '';
+                if (v.fecha_inicio) {
+                    const d = enCurso ? daysDiff(v.fecha_inicio) : daysDiff(v.fecha_inicio, v.fecha_fin || null);
+                    counterHtml = `<span class="verif-counter ${enCurso ? 'verif-counter-run' : 'verif-counter-done'}" title="${enCurso ? 'En curso desde ' + v.fecha_inicio : 'Resuelto en ' + d + ' días háb. (' + v.fecha_inicio + ' → ' + (v.fecha_fin || '—') + ')'}">
+                        <i class="fas fa-${enCurso ? 'hourglass-half' : 'flag-checkered'}" style="font-size:8px"></i> ${d}hd
+                    </span>`;
+                }
+                return `
                 <div class="psico-item">
                     <span class="psico-nombre">${v.tipo}</span>
-                    <span>
-                        <span class="psico-result ${verifClass(v.resultado)}">${v.resultado}</span>
+                    <span style="text-align:right">
+                        ${isLocked
+                            ? `<span class="psico-result ${verifClass(v.resultado)}">${v.resultado}</span>`
+                            : `<select class="inline-select" style="font-size:11px" onchange="updateVerifEstado(${v.id},this.value)">
+                                ${['Pendiente','En proceso','OK','Observado','No Apto'].map(o => `<option value="${o}" ${v.resultado === o ? 'selected' : ''}>${o === 'OK' ? 'OK / Apto' : o}</option>`).join('')}
+                               </select>`}
+                        ${counterHtml ? `<span style="display:block">${counterHtml}</span>` : ''}
                         ${v.selector_verif ? `<span class="psico-quien"><i class="fas fa-user" style="font-size:8px"></i> Realizó: <strong>${v.selector_verif}</strong></span>` : ''}
                         ${v.observaciones ? `<span class="psico-quien">Obs: ${v.observaciones}</span>` : ''}
                         ${!isLocked ? `<button onclick="removeVerif(${v.id})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:9px">✕</button>` : ''}
                     </span>
-                </div>`).join('')
+                </div>`;
+            }).join('')
             : `<span class="tip">Sin verificaciones</span>`;
 
         // CANDIDATOS
@@ -1129,10 +1149,39 @@ async function saveVerif() {
     const resultado    = document.getElementById('verif-resultado').value;
     const selector_verif = document.getElementById('verif-selector').value;
     const observaciones  = document.getElementById('verif-obs').value.trim();
-    const { error } = await sb.from('verificaciones').insert({ busqueda_id: id, tipo, resultado, selector_verif, observaciones });
-    if (error) { toast('Error al guardar', true); return; }
+
+    // ── Contador: fecha_inicio al crear; si nace ya resuelto, también fecha_fin ──
+    const row = { busqueda_id: id, tipo, resultado, selector_verif, observaciones, fecha_inicio: today() };
+    if (!verifEnCurso(resultado)) row.fecha_fin = today();
+
+    let { error } = await sb.from('verificaciones').insert(row);
+    // Fallback si todavía no corriste el ALTER TABLE (columnas fecha_inicio/fecha_fin)
+    if (error && error.message && /fecha_(inicio|fin)/.test(error.message)) {
+        ({ error } = await sb.from('verificaciones').insert({ busqueda_id: id, tipo, resultado, selector_verif, observaciones }));
+    }
+    if (error) { toast('Error al guardar: ' + (error.message || error.code), true); return; }
     closeModal('modal-verif'); await loadData(); renderTable(); toast('Verificación agregada ✓');
 }
+
+// ── Editar estado inline + congelar/reactivar contador ──
+async function updateVerifEstado(verifId, resultado) {
+    const v = busquedas.flatMap(b => b.verificaciones).find(x => x.id === verifId) || {};
+    const update = { resultado };
+    if (verifEnCurso(resultado)) {
+        update.fecha_fin = null;                       // reabre → vuelve a correr el contador
+    } else {
+        update.fecha_fin = v.fecha_fin || today();     // resuelve → congela en la fecha del cambio
+    }
+    let { data, error } = await sb.from('verificaciones').update(update).eq('id', verifId).select();
+    // Fallback si no existe fecha_fin todavía
+    if (error && error.message && error.message.includes('fecha_fin')) {
+        ({ data, error } = await sb.from('verificaciones').update({ resultado }).eq('id', verifId).select());
+    }
+    if (error) { toast('Error: ' + (error.message || error.code), true); return; }
+    if (!data || data.length === 0) { toast('No se actualizó (revisar policy UPDATE en verificaciones)', true); return; }
+    await loadData(); renderTable(); toast('Estado actualizado ✓');
+}
+
 async function removeVerif(verifId) {
     if (!confirm('¿Eliminar esta verificación? Esta acción no se puede deshacer.')) return;
     await sb.from('verificaciones').delete().eq('id', verifId);
