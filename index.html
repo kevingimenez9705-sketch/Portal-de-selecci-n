@@ -631,11 +631,22 @@ function fmtMoney(n) {
 }
 
 // ══════════════════════════════════════════════
+//  CATEGORÍA: explícita (columna) o inferida por el puesto
+//  (chofer / ayudante caen en la pestaña "Choferes y Ayudantes")
+// ══════════════════════════════════════════════
+function catOf(b) {
+    if (b.categoria === 'choferes' || b.categoria === 'general') return b.categoria;
+    const p = (b.puesto || '').toLowerCase();
+    if (/chofer|ayudante/.test(p)) return 'choferes';
+    return 'general';
+}
+
+// ══════════════════════════════════════════════
 //  RENDER TABLE
 // ══════════════════════════════════════════════
 function renderTable() {
     const body = document.getElementById('table-body');
-    const base = busquedas.filter(b => (b.categoria || 'general') === currentCategoria);
+    const base = busquedas.filter(b => catOf(b) === currentCategoria);
     const list = filteredIds ? base.filter(b => filteredIds.includes(b.id)) : base;
     const locked = (b) => (b.status === 'Cerrada' || b.status === 'Finalizada') && !isAdmin();
 
@@ -977,7 +988,7 @@ function toggleComentarios(id, btn) {
 }
 
 function renderKPIs() {
-    const cat         = busquedas.filter(b => (b.categoria || 'general') === currentCategoria);
+    const cat         = busquedas.filter(b => catOf(b) === currentCategoria);
     const total       = cat.length;
     const proceso     = cat.filter(b => b.status === 'Proceso').length;
     const cerradas    = cat.filter(b => b.status === 'Cerrada').length;
@@ -998,7 +1009,7 @@ function applyFilters() {
     const status = document.getElementById('f-status').value;
     const search = (document.getElementById('f-search').value || '').trim().toLowerCase();
     filteredIds = busquedas
-        .filter(b => (b.categoria || 'general') === currentCategoria)
+        .filter(b => catOf(b) === currentCategoria)
         .filter(b => {
             if (sel    && (b.selector || '') !== sel)  return false;
             if (tipo   && (b.tipo || '') !== tipo)     return false;
@@ -1015,7 +1026,7 @@ function applyFilters() {
 
 function updateDeptoFilter() {
     const deptos = [...new Set(busquedas
-        .filter(b => (b.categoria || 'general') === currentCategoria)
+        .filter(b => catOf(b) === currentCategoria)
         .map(b => b.depto).filter(Boolean))];
     const sel = document.getElementById('f-depto');
     const cur = sel.value;
@@ -1452,6 +1463,15 @@ function renderChartsGeneral() {
         dias: daysDiff(b.ingreso, b.fecha_baja || null), puesto: b.puesto
     })).sort((a, b) => b.dias - a.dias);
 
+    // ── Demora promedio por nivel (Otros / Jefe-Encargado / Gerente-Director) ──
+    const NIVELES = ['Otros', 'Jefe/Encargado', 'Gerente/Director'];
+    const demoraPorNivel = NIVELES.map(n => {
+        const items = busquedas.filter(b => (b.nivel || 'Otros') === n);
+        const dl = items.map(b => b.cp ? daysDiff(b.inicio, b.cp) : (b.ingreso ? daysDiff(b.inicio, b.ingreso) : daysDiff(b.inicio)));
+        const avg = dl.length ? Math.round(dl.reduce((a, c) => a + c, 0) / dl.length) : 0;
+        return { nivel: n, avg, limite: DEMORA_LIMITE[n] || 15, count: items.length };
+    });
+
     document.getElementById('charts-content').innerHTML = `
     <div class="mini-kpi-row">
         <div class="mini-kpi"><div class="mini-kpi-num">${busquedas.length}</div><div class="mini-kpi-lbl">Total</div><div class="mini-kpi-sub">${proceso} en curso · ${pausadas} pausadas</div></div>
@@ -1465,10 +1485,22 @@ function renderChartsGeneral() {
     </div>
     <div style="margin-top:20px">
         <div class="chart-card">
-            <div class="chart-card-title"><i class="fas fa-user-clock"></i> Permanencia por Persona (días hábiles en empresa) · ${permData.length} ingresos</div>
-            ${permData.length > 0
-                ? `<div style="position:relative;height:${Math.max(180, permData.length * 28)}px"><canvas id="ch-perm"></canvas></div>`
-                : `<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Sin ingresos registrados aún</div>`}
+            <div class="chart-card-title"><i class="fas fa-stopwatch"></i> Demora Promedio por Nivel del Puesto (días hábiles)</div>
+            <div class="chart-wrap"><canvas id="ch-demora-nivel"></canvas></div>
+        </div>
+    </div>
+    <div style="margin-top:20px">
+        <div class="chart-card">
+            <details id="perm-details" ${permData.length > 0 && permData.length <= 8 ? 'open' : ''} ontoggle="if(this.open && chartInstances['perm']) setTimeout(()=>chartInstances['perm'].resize(),50)">
+                <summary style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">
+                    <i class="fas fa-chevron-right"></i> <i class="fas fa-user-clock"></i> Permanencia por Persona (días hábiles en empresa) · ${permData.length} ingresos
+                </summary>
+                <div style="margin-top:14px">
+                ${permData.length > 0
+                    ? `<div style="position:relative;height:${Math.max(180, permData.length * 28)}px"><canvas id="ch-perm"></canvas></div>`
+                    : `<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Sin ingresos registrados aún</div>`}
+                </div>
+            </details>
         </div>
     </div>`;
 
@@ -1476,6 +1508,10 @@ function renderChartsGeneral() {
     const cd = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { font: { family: 'DM Sans', size: 11 }, color: '#1a1714' } } } };
     chartInstances['motivo'] = new Chart(document.getElementById('ch-motivo'), { type: 'doughnut', data: { labels: Object.keys(byMotivo), datasets: [{ data: Object.values(byMotivo), backgroundColor: ['#cfe2ff','#ffd6a5','#d8f3dc'], borderWidth: 2 }] }, options: { ...cd, cutout: '55%' } });
     chartInstances['nivel']  = new Chart(document.getElementById('ch-nivel'),  { type: 'bar', data: { labels: Object.keys(byNivel), datasets: [{ label: 'Cantidad', data: Object.values(byNivel), backgroundColor: ['#ca6702cc','#005f73cc','#9b2226cc'], borderRadius: 6 }] }, options: { ...cd, plugins: { legend: { display: false } }, indexAxis: 'y', scales: { x: { beginAtZero: true, ticks: { precision: 0 } }, y: { grid: { display: false } } } } });
+    chartInstances['demoraNivel'] = new Chart(document.getElementById('ch-demora-nivel'), { type: 'bar', data: { labels: demoraPorNivel.map(d => `${d.nivel} (${d.count})`), datasets: [
+        { label: 'Demora promedio (hd)', data: demoraPorNivel.map(d => d.avg), backgroundColor: demoraPorNivel.map(d => d.avg > d.limite ? '#9b2226cc' : '#2d6a4fcc'), borderColor: demoraPorNivel.map(d => d.avg > d.limite ? '#9b2226' : '#2d6a4f'), borderWidth: 2, borderRadius: 6 },
+        { label: 'Límite (hd)', data: demoraPorNivel.map(d => d.limite), backgroundColor: '#7a716633', borderColor: '#7a7166', borderWidth: 2, borderRadius: 6 }
+    ] }, options: { ...cd, plugins: { legend: { labels: { font: { family: 'DM Sans', size: 11 } } } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
     if (permData.length > 0) {
         const permColors = permData.map(p => p.dias >= 130 ? '#2d6a4f' : p.dias >= 65 ? '#005f73' : p.dias >= 22 ? '#ca6702' : '#9b2226');
         chartInstances['perm'] = new Chart(document.getElementById('ch-perm'), { type: 'bar', data: { labels: permData.map(p => p.nombre), datasets: [{ label: 'Días hábiles en empresa', data: permData.map(p => p.dias), backgroundColor: permColors.map(c => c + 'cc'), borderColor: permColors, borderWidth: 2, borderRadius: 5 }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => { const p = permData[ctx.dataIndex]; const m = p.dias >= 130 ? ' 🏆 6m+' : p.dias >= 65 ? ' ✓ 3m+' : p.dias >= 22 ? ' 1m+' : ''; return ` ${p.dias} días háb. en empresa${m}`; }, afterLabel: ctx => ` Puesto: ${permData[ctx.dataIndex].puesto}` } } }, scales: { x: { beginAtZero: true, ticks: { precision: 0, font: { family: 'DM Mono', size: 10 } }, grid: { color: '#e5e0d8' } }, y: { ticks: { font: { family: 'DM Sans', size: 11 } }, grid: { display: false } } } } });
