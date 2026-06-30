@@ -171,7 +171,7 @@
         .estado-toggle { font-size: 11px; color: var(--blue); background: none; border: none; cursor: pointer; padding: 0; font-weight: 600; display: flex; align-items: center; gap: 4px; margin-top: 4px; }
         .estado-toggle:hover { text-decoration: underline; }
         .pdf-item { display: flex; align-items: center; gap: 4px; padding: 2px 5px; background: #e5e0d822; border-radius: 5px; margin-bottom: 2px; }
-        .pdf-item-name { font-size: 10px; font-weight: 600; color: var(--muted); flex: 1; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .pdf-item-name { font-size: 10px; font-weight: 600; color: var(--muted); flex: 1; min-width: 0; max-width: 80px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .pdf-item-name:hover { text-decoration: underline; }
         .pdf-upload-btn { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; color: #4b5563; padding: 2px 7px; border-radius: 5px; background: #e5e7eb; border: none; cursor: pointer; margin-top: 3px; }
         .pdf-upload-btn:hover { background: #d1d5db; }
@@ -313,7 +313,7 @@
                         <th style="width:130px">Sueldo · Jornada</th>
                         <th style="width:240px">Estado · Psicotécnicos</th>
                         <th style="width:200px">Candidatos</th>
-                        <th style="width:120px">Archivos PDF</th>
+                        <th style="width:100px">Archivos PDF</th>
                         <th style="width:160px">Ingreso</th>
                         <th style="width:185px">Demora (hd) · Acciones</th>
                     </tr></thead>
@@ -403,6 +403,8 @@
                 <select class="form-input" id="cand-estado" onchange="toggleCandModalFechas()">
                     <option value="Enviado">Enviado al área</option>
                     <option value="Entrevista">En entrevista</option>
+                    <option value="Oferta">Con oferta</option>
+                    <option value="Baja">Se bajó</option>
                     <option value="Rechazado">Rechazado</option>
                 </select>
             </div>
@@ -734,38 +736,9 @@ function renderTable() {
     const locked = (b) => (b.status === 'Cerrada' || b.status === 'Finalizada') && !isAdmin();
 
     body.innerHTML = list.map(b => {
-        // ── Contador Hd principal (badge) con congelamiento ──
-        // El contador se FRENA cuando se completa "Enviado al sector" (cp).
-        // Mientras haya candidatos "Enviado al área" o "En entrevista" sin cp/ingreso,
-        // el contador se CONGELA en la fecha de envío más antigua. Vuelve a correr cuando
-        // todos pasan a "Con oferta"/"Rechazado" (o cuando se carga el envío al sector / ingreso).
-        const pendientes = (b.candidatos || []).filter(c => (c.estado === 'Enviado' || c.estado === 'Entrevista') && c.fecha_envio);
-        const frozenByCand = !b.cp && !b.ingreso && pendientes.length > 0;
-        let dias;
-        if (b.cp) {
-            dias = daysDiff(b.inicio, b.cp);          // ← frenado en "Enviado al sector"
-        } else if (b.ingreso) {
-            dias = daysDiff(b.inicio, b.ingreso);
-        } else if (frozenByCand) {
-            const minEnvio = pendientes.map(c => c.fecha_envio).sort()[0];
-            dias = daysDiff(b.inicio, minEnvio);
-        } else {
-            dias = daysDiff(b.inicio);
-        }
-
-        const dClass = demoraClass(dias, b.nivel);
-        const limite = DEMORA_LIMITE[b.nivel] || 15;
         const isLocked = locked(b);
         const diasEnEmpresa = b.ingreso ? daysDiff(b.ingreso, b.fecha_baja || null) : 0;
         const cantComentarios = (b.estado_busqueda || []).length;
-
-        const frozenBadge = (b.cp)
-            ? `<span class="cp-frozen"><i class="fas fa-lock" style="font-size:8px"></i> frenado al enviar al sector</span>`
-            : (!b.cp && b.ingreso)
-            ? `<span class="cp-frozen"><i class="fas fa-lock" style="font-size:8px"></i> congelado al ingresar</span>`
-            : (frozenByCand
-                ? `<span class="cp-frozen" style="color:#92400e;background:#fef3c7"><i class="fas fa-pause" style="font-size:8px"></i> congelado · en revisión del área</span>`
-                : '');
 
         // PSICO
         const psicoHtml = b.psicotecnicos.length > 0
@@ -843,6 +816,15 @@ function renderTable() {
                             <div class="cand-tl-line"></div>
                             <span class="cand-tl-dot cand-tl-dot-red"></span>
                         </div>`;
+                    } else if (c.estado === 'Baja' && c.fecha_rechazo) {
+                        const d = daysDiff(c.fecha_envio, c.fecha_rechazo);
+                        tlHtml = `<div class="cand-timeline">
+                            <span class="cand-tl-dot cand-tl-dot-blue"></span>
+                            <div class="cand-tl-line"></div>
+                            <span class="cand-tl-badge" style="background:#fef3c7;color:#92400e">↩ ${d === 0 ? 'mismo día' : d + 'hd hasta baja'}</span>
+                            <div class="cand-tl-line"></div>
+                            <span class="cand-tl-dot" style="background:#f59e0b"></span>
+                        </div>`;
                     }
                 }
 
@@ -867,6 +849,13 @@ function renderTable() {
                             <input type="date" class="inline-input" style="font-size:11px" value="${c.fecha_rechazo || ''}" onchange="updateCandFecha(${c.id},'fecha_rechazo',this.value)">
                         </div>`;
                     }
+                    if (c.estado === 'Baja') {
+                        fechasHtml += `
+                        <div class="cand-fecha-row">
+                            <span class="cand-fecha-lbl">Se bajó</span>
+                            <input type="date" class="inline-input" style="font-size:11px" value="${c.fecha_rechazo || ''}" onchange="updateCandFecha(${c.id},'fecha_rechazo',this.value)">
+                        </div>`;
+                    }
                 }
 
                 return `<div class="cand-item">
@@ -876,6 +865,7 @@ function renderTable() {
                         <option value="Enviado" ${c.estado === 'Enviado' ? 'selected' : ''}>✉ Enviado al área</option>
                         <option value="Entrevista" ${c.estado === 'Entrevista' ? 'selected' : ''}>🤝 En entrevista</option>
                         <option value="Oferta" ${c.estado === 'Oferta' ? 'selected' : ''}>📄 Con oferta</option>
+                        <option value="Baja" ${c.estado === 'Baja' ? 'selected' : ''}>↩ Se bajó</option>
                         <option value="Rechazado" ${c.estado === 'Rechazado' ? 'selected' : ''}>✗ Rechazado</option>
                     </select>
                     <button onclick="removeCand(${c.id})" style="position:absolute;top:4px;right:6px;background:none;border:none;cursor:pointer;color:#bbb;font-size:11px">✕</button>`}
@@ -948,9 +938,7 @@ function renderTable() {
                 <span class="motivo-chip ${motivoClass(b.motivo)}">${b.motivo}</span>
                 <div style="margin-top:5px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
                     <span class="tag ${tagClass(b.status)}">${b.status}</span>
-                    <span class="demora-badge ${dClass}" title="Demora de Selección hasta enviar al sector · Límite: ${limite}hd (días hábiles)">${dias}hd</span>
                 </div>
-                ${frozenBadge}
                 <div style="margin-top:4px;font-size:11px;color:var(--muted)">Inicio: ${b.inicio}</div>
                 <div style="margin-top:3px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px">
                     <span style="font-weight:700">Enviado al sector:</span>
@@ -1024,8 +1012,8 @@ function renderTable() {
                 ${!isLocked ? `<button class="btn-sm" style="margin-top:6px" onclick="openCandModal(${b.id})"><i class="fas fa-user-plus" style="font-size:8px"></i> Agregar</button>` : ''}
             </td>
             <td>
-                <div class="section-hdr">Archivos PDF</div>
-                <div class="cell-scroll" style="max-height:64px">${archivosHtml}</div>
+                <div class="section-hdr" style="margin-bottom:3px">Archivos PDF</div>
+                <div class="cell-scroll" style="max-height:44px">${archivosHtml}</div>
                 ${!isLocked ? `
                 <label class="pdf-upload-btn">
                     <i class="fas fa-upload" style="font-size:10px"></i> Subir PDF
@@ -1171,7 +1159,10 @@ async function removeEstadoEntry(entryId) {
 function toggleCandModalFechas() {
     const estado = document.getElementById('cand-estado').value;
     document.getElementById('cand-grp-entrevista').classList.toggle('hidden', estado !== 'Entrevista');
-    document.getElementById('cand-grp-rechazo').classList.toggle('hidden', estado !== 'Rechazado');
+    const grpRech = document.getElementById('cand-grp-rechazo');
+    grpRech.classList.toggle('hidden', estado !== 'Rechazado' && estado !== 'Baja');
+    const lbl = grpRech.querySelector('label');
+    if (lbl) lbl.textContent = estado === 'Baja' ? 'Fecha en que se bajó' : 'Fecha de rechazo';
 }
 
 function openCandModal(id) {
@@ -1197,7 +1188,7 @@ async function saveCand() {
     // ── FIX: construimos el row solo con columnas que existen ──
     const row = { busqueda_id: id, nombre, estado, fecha_envio: fEnvio };
     if (estado === 'Entrevista' && fEntrevista) row.fecha_entrevista = fEntrevista;
-    if (estado === 'Rechazado'  && fRechazo)    row.fecha_rechazo   = fRechazo;
+    if ((estado === 'Rechazado' || estado === 'Baja') && fRechazo) row.fecha_rechazo = fRechazo;
 
     const { error } = await sb.from('candidatos').insert(row);
     if (error) {
@@ -1226,6 +1217,9 @@ async function updateCandEstado(candId, estado) {
         update.fecha_rechazo = null;
     }
     if (estado === 'Rechazado') {
+        update.fecha_rechazo = c.fecha_rechazo || hoy;
+    }
+    if (estado === 'Baja') {
         update.fecha_rechazo = c.fecha_rechazo || hoy;
     }
     if (estado === 'Enviado') {
