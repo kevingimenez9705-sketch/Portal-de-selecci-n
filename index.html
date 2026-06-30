@@ -207,6 +207,22 @@
         .verif-counter { display: inline-flex; align-items: center; gap: 4px; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 700; border-radius: 4px; padding: 1px 6px; margin-top: 3px; }
         .verif-counter-run { background: #dbeafe; color: #1e40af; }
         .verif-counter-done { background: #d1fae5; color: #065f46; }
+
+        /* ── DEMORA BREAKDOWN (tramos del proceso) ── */
+        .demora-bd { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+        .dm-row { display: flex; align-items: center; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 5px 8px; }
+        .dm-row.dm-total { background: var(--text); border-color: var(--text); }
+        .dm-ico { font-size: 11px; width: 16px; text-align: center; flex-shrink: 0; }
+        .dm-row.dm-total .dm-ico { color: #fff; }
+        .dm-body { display: flex; flex-direction: column; gap: 1px; line-height: 1.1; }
+        .dm-val { font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 700; color: var(--text); display: flex; align-items: center; }
+        .dm-row.dm-total .dm-val { color: #fff; }
+        .dm-u { font-size: 9px; font-weight: 500; opacity: .55; margin-left: 2px; }
+        .dm-lbl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; font-weight: 700; }
+        .dm-row.dm-total .dm-lbl { color: rgba(255,255,255,.65); }
+        .dm-live { font-size: 6px; color: var(--blue); margin-left: 5px; animation: dmpulse 1.4s infinite; }
+        @keyframes dmpulse { 0%,100% { opacity: 1; } 50% { opacity: .15; } }
+
         @media(max-width:900px) {
             .topnav { padding: 0 16px; } .main { padding: 16px; }
             .charts-grid, .charts-grid-2 { grid-template-columns: 1fr; }
@@ -299,7 +315,7 @@
                         <th style="width:200px">Candidatos</th>
                         <th style="width:150px">Archivos PDF</th>
                         <th style="width:160px">Ingreso</th>
-                        <th style="width:80px"></th>
+                        <th style="width:185px">Demora (hd) · Acciones</th>
                     </tr></thead>
                     <tbody id="table-body"></tbody>
                 </table>
@@ -515,6 +531,72 @@ function workingDaysDiff(from, to = null) {
 }
 function daysDiff(from, to = null) { return workingDaysDiff(from, to); }
 
+// ══════════════════════════════════════════════
+//  TRAMOS DE DEMORA (en días hábiles)
+//  T1 · Selección : apertura (inicio) → enviado al sector (cp)
+//                   ↳ el contador principal (badge) se FRENA en este punto
+//  T2 · Sector    : enviado al sector (cp) → cierre/ingreso (o corriendo)
+//  Total = T1 + T2  (demora real de punta a punta)
+// ══════════════════════════════════════════════
+function tramosDemora(b) {
+    let t1, t1Run = false;
+    let t2 = 0, t2Run = false, t2NA = false;
+
+    // ── Tramo 1: cuánto tardó Selección en enviar el perfil al sector ──
+    if (b.cp) {
+        t1 = daysDiff(b.inicio, b.cp);          // frenado: ya se envió al sector
+    } else if (b.ingreso) {
+        t1 = daysDiff(b.inicio, b.ingreso);     // se cerró sin registrar el envío
+    } else {
+        t1 = daysDiff(b.inicio);                // sigue corriendo: todavía no se envió
+        t1Run = true;
+    }
+
+    // ── Tramo 2: cuánto tardó el sector en cerrar o rechazar el perfil ──
+    if (b.cp) {
+        if (b.ingreso) {
+            t2 = daysDiff(b.cp, b.ingreso);     // frenado: ya se cerró
+        } else {
+            t2 = daysDiff(b.cp);                // sigue corriendo: el sector evalúa
+            t2Run = true;
+        }
+    } else {
+        t2NA = true;                            // todavía no se envió al sector
+    }
+
+    return { t1, t1Run, t2, t2Run, t2NA, total: (t1 || 0) + (t2 || 0) };
+}
+
+function renderDemoraBreakdown(b) {
+    const t = tramosDemora(b);
+    const live = run => run ? `<i class="fas fa-circle dm-live"></i>` : '';
+    const t2val = t.t2NA ? '—' : t.t2;
+    return `
+    <div class="demora-bd">
+        <div class="dm-row" title="Días hábiles desde la apertura hasta enviar el perfil al sector${t.t1Run ? ' (en curso · aún sin enviar)' : ''}">
+            <span class="dm-ico" style="color:var(--blue)"><i class="fas fa-paper-plane"></i></span>
+            <div class="dm-body">
+                <span class="dm-val">${t.t1}<span class="dm-u">hd</span>${live(t.t1Run)}</span>
+                <span class="dm-lbl">Envío al sector</span>
+            </div>
+        </div>
+        <div class="dm-row" title="${t.t2NA ? 'Aún no se envió el perfil al sector' : 'Días hábiles que tardó el sector en cerrar o rechazar el perfil' + (t.t2Run ? ' (en curso)' : '')}">
+            <span class="dm-ico" style="color:var(--orange)"><i class="fas fa-building"></i></span>
+            <div class="dm-body">
+                <span class="dm-val">${t2val}<span class="dm-u">hd</span>${live(t.t2Run)}</span>
+                <span class="dm-lbl">Decisión del sector</span>
+            </div>
+        </div>
+        <div class="dm-row dm-total" title="Demora total del proceso: envío al sector + decisión del sector (días hábiles)">
+            <span class="dm-ico"><i class="fas fa-equals"></i></span>
+            <div class="dm-body">
+                <span class="dm-val">${t.total}<span class="dm-u">hd</span></span>
+                <span class="dm-lbl">Total proceso</span>
+            </div>
+        </div>
+    </div>`;
+}
+
 async function login() {
     const email = document.getElementById('login-email').value.trim();
     const pass  = document.getElementById('login-pass').value;
@@ -548,6 +630,7 @@ async function loadData() {
 function mapRow(b) {
     return {
         ...b,
+        cp:              b.enviado_sector,   // alias: la columna DB pasó a llamarse enviado_sector
         historial:       (b.historial   || []).sort((a,x) => a.id - x.id),
         estado_busqueda: (b.estado_log  || []).sort((a,x) => a.id - x.id),
         candidatos:      (b.candidatos  || []).sort((a,x) => a.id - x.id),
@@ -651,15 +734,16 @@ function renderTable() {
     const locked = (b) => (b.status === 'Cerrada' || b.status === 'Finalizada') && !isAdmin();
 
     body.innerHTML = list.map(b => {
-        // ── Contador Hd con congelamiento ──
-        // Mientras haya candidatos "Enviado al área" o "En entrevista", el contador se CONGELA
-        // en la fecha de envío más antigua. Vuelve a correr cuando todos pasan a "Con oferta"
-        // o "Rechazado" (o cuando se carga CP/ingreso).
+        // ── Contador Hd principal (badge) con congelamiento ──
+        // El contador se FRENA cuando se completa "Enviado al sector" (cp).
+        // Mientras haya candidatos "Enviado al área" o "En entrevista" sin cp/ingreso,
+        // el contador se CONGELA en la fecha de envío más antigua. Vuelve a correr cuando
+        // todos pasan a "Con oferta"/"Rechazado" (o cuando se carga el envío al sector / ingreso).
         const pendientes = (b.candidatos || []).filter(c => (c.estado === 'Enviado' || c.estado === 'Entrevista') && c.fecha_envio);
         const frozenByCand = !b.cp && !b.ingreso && pendientes.length > 0;
         let dias;
         if (b.cp) {
-            dias = daysDiff(b.inicio, b.cp);
+            dias = daysDiff(b.inicio, b.cp);          // ← frenado en "Enviado al sector"
         } else if (b.ingreso) {
             dias = daysDiff(b.inicio, b.ingreso);
         } else if (frozenByCand) {
@@ -675,7 +759,9 @@ function renderTable() {
         const diasEnEmpresa = b.ingreso ? daysDiff(b.ingreso, b.fecha_baja || null) : 0;
         const cantComentarios = (b.estado_busqueda || []).length;
 
-        const frozenBadge = (!b.cp && b.ingreso)
+        const frozenBadge = (b.cp)
+            ? `<span class="cp-frozen"><i class="fas fa-lock" style="font-size:8px"></i> frenado al enviar al sector</span>`
+            : (!b.cp && b.ingreso)
             ? `<span class="cp-frozen"><i class="fas fa-lock" style="font-size:8px"></i> congelado al ingresar</span>`
             : (frozenByCand
                 ? `<span class="cp-frozen" style="color:#92400e;background:#fef3c7"><i class="fas fa-pause" style="font-size:8px"></i> congelado · en revisión del área</span>`
@@ -862,15 +948,15 @@ function renderTable() {
                 <span class="motivo-chip ${motivoClass(b.motivo)}">${b.motivo}</span>
                 <div style="margin-top:5px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
                     <span class="tag ${tagClass(b.status)}">${b.status}</span>
-                    <span class="demora-badge ${dClass}" title="Límite: ${limite}hd (días hábiles)">${dias}hd</span>
+                    <span class="demora-badge ${dClass}" title="Demora de Selección hasta enviar al sector · Límite: ${limite}hd (días hábiles)">${dias}hd</span>
                 </div>
                 ${frozenBadge}
                 <div style="margin-top:4px;font-size:11px;color:var(--muted)">Inicio: ${b.inicio}</div>
                 <div style="margin-top:3px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px">
-                    <span style="font-weight:700">CP:</span>
+                    <span style="font-weight:700">Enviado al sector:</span>
                     ${isLocked
                         ? `<strong>${b.cp || '—'}</strong>`
-                        : `<input type="date" class="inline-input" value="${b.cp || ''}" onchange="updateField(${b.id},'cp',this.value)" style="font-size:11px;width:auto">`}
+                        : `<input type="date" class="inline-input" value="${b.cp || ''}" onchange="updateField(${b.id},'enviado_sector',this.value)" style="font-size:11px;width:auto" title="Al completar esta fecha se frena el contador principal">`}
                 </div>
                 ${reopenedTag}
             </td>
@@ -962,6 +1048,8 @@ function renderTable() {
                 ${permHtml}
             </td>
             <td style="vertical-align:middle">
+                ${renderDemoraBreakdown(b)}
+                <div class="sep" style="margin:8px 0"></div>
                 <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
                     ${isLocked
                         ? `<span class="tag ${tagClass(b.status)}">${b.status}</span>`
