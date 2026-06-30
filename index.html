@@ -170,10 +170,10 @@
         .estado-add-btn { background: var(--text); color: #fff; border: none; border-radius: 6px; padding: 5px 10px; font-size: 11px; cursor: pointer; font-weight: 700; white-space: nowrap; }
         .estado-toggle { font-size: 11px; color: var(--blue); background: none; border: none; cursor: pointer; padding: 0; font-weight: 600; display: flex; align-items: center; gap: 4px; margin-top: 4px; }
         .estado-toggle:hover { text-decoration: underline; }
-        .pdf-item { display: flex; align-items: center; gap: 6px; padding: 4px 6px; background: #e5e0d822; border-radius: 5px; margin-bottom: 3px; }
-        .pdf-item-name { font-size: 11px; font-weight: 600; color: var(--muted); flex: 1; cursor: pointer; }
+        .pdf-item { display: flex; align-items: center; gap: 4px; padding: 2px 5px; background: #e5e0d822; border-radius: 5px; margin-bottom: 2px; }
+        .pdf-item-name { font-size: 10px; font-weight: 600; color: var(--muted); flex: 1; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .pdf-item-name:hover { text-decoration: underline; }
-        .pdf-upload-btn { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: #4b5563; padding: 3px 8px; border-radius: 5px; background: #e5e7eb; border: none; cursor: pointer; margin-top: 4px; }
+        .pdf-upload-btn { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; color: #4b5563; padding: 2px 7px; border-radius: 5px; background: #e5e7eb; border: none; cursor: pointer; margin-top: 3px; }
         .pdf-upload-btn:hover { background: #d1d5db; }
         input[type="file"].pdf-file-input { display: none; }
         .page-tabs { display: flex; gap: 4px; margin-bottom: 24px; background: #e5e0d8; padding: 4px; border-radius: 12px; width: fit-content; }
@@ -313,7 +313,7 @@
                         <th style="width:130px">Sueldo · Jornada</th>
                         <th style="width:240px">Estado · Psicotécnicos</th>
                         <th style="width:200px">Candidatos</th>
-                        <th style="width:150px">Archivos PDF</th>
+                        <th style="width:120px">Archivos PDF</th>
                         <th style="width:160px">Ingreso</th>
                         <th style="width:185px">Demora (hd) · Acciones</th>
                     </tr></thead>
@@ -1025,7 +1025,7 @@ function renderTable() {
             </td>
             <td>
                 <div class="section-hdr">Archivos PDF</div>
-                <div class="cell-scroll" style="max-height:120px">${archivosHtml}</div>
+                <div class="cell-scroll" style="max-height:64px">${archivosHtml}</div>
                 ${!isLocked ? `
                 <label class="pdf-upload-btn">
                     <i class="fas fa-upload" style="font-size:10px"></i> Subir PDF
