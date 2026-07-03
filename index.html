@@ -223,6 +223,15 @@
         .dm-live { font-size: 6px; color: var(--blue); margin-left: 5px; animation: dmpulse 1.4s infinite; }
         @keyframes dmpulse { 0%,100% { opacity: 1; } 50% { opacity: .15; } }
 
+        /* ── CHOFERES: estado de ingreso por postulante ── */
+        .chofer-result-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+        .chofer-result-select { font-size: 11px; border-radius: 5px; padding: 3px 5px; }
+        .chofer-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; border-radius: 5px; padding: 2px 7px; display: inline-block; }
+        .chofer-badge-ingresar { background: var(--ok); color: var(--ok-text); }
+        .chofer-badge-noapto { background: var(--danger); color: var(--danger-text); }
+        .chofer-badge-pendiente { background: var(--warn); color: var(--warn-text); }
+        .chofer-fecha-wrap { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+
         @media(max-width:900px) {
             .topnav { padding: 0 16px; } .main { padding: 16px; }
             .charts-grid, .charts-grid-2 { grid-template-columns: 1fr; }
@@ -302,6 +311,12 @@
                 <select class="filter-select" id="f-status" onchange="applyFilters()">
                     <option value="">Todos los estados</option>
                     <option>Proceso</option><option>Cerrada</option><option>Pausada</option><option>Finalizada</option>
+                </select>
+                <select class="filter-select hidden" id="f-chofer-resultado" onchange="applyFilters()">
+                    <option value="">Postulantes: todos</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Para ingresar">Para ingresar</option>
+                    <option value="No apto">No apto</option>
                 </select>
                 <input class="filter-input" id="f-search" placeholder="Buscar puesto..." oninput="applyFilters()">
             </div>
@@ -785,6 +800,7 @@ function renderTable() {
             : `<span class="tip">Sin verificaciones</span>`;
 
         // CANDIDATOS
+        const esChoferes = catOf(b) === 'choferes';
         const candHtml = b.candidatos.length > 0
             ? b.candidatos.map(c => {
                 let tlHtml = '';
@@ -858,6 +874,30 @@ function renderTable() {
                     }
                 }
 
+                // ── Choferes y Ayudantes: estado de ingreso (Pendiente / Para ingresar / No apto) ──
+                let choferHtml = '';
+                if (esChoferes) {
+                    const resChofer = c.resultado_chofer || 'Pendiente';
+                    const badgeClass = resChofer === 'Para ingresar' ? 'chofer-badge-ingresar' : resChofer === 'No apto' ? 'chofer-badge-noapto' : 'chofer-badge-pendiente';
+                    if (isLocked) {
+                        choferHtml = `<div class="chofer-result-row"><span class="chofer-badge ${badgeClass}">${resChofer}</span>${resChofer === 'Para ingresar' && c.fecha_ingreso_chofer ? `<span style="font-size:10px;color:var(--muted)">${c.fecha_ingreso_chofer}</span>` : ''}</div>`;
+                    } else {
+                        choferHtml = `
+                        <div class="chofer-result-row">
+                            <select class="inline-select chofer-result-select" onchange="updateCandChoferResultado(${c.id},this.value)">
+                                <option value="Pendiente" ${resChofer === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                                <option value="Para ingresar" ${resChofer === 'Para ingresar' ? 'selected' : ''}>Para ingresar</option>
+                                <option value="No apto" ${resChofer === 'No apto' ? 'selected' : ''}>No apto</option>
+                            </select>
+                        </div>
+                        ${resChofer === 'Para ingresar' ? `
+                        <div class="chofer-fecha-wrap">
+                            <span class="cand-fecha-lbl">Fecha para ingresar</span>
+                            <input type="date" class="inline-input" style="font-size:11px" value="${c.fecha_ingreso_chofer || ''}" onchange="updateCandChoferFecha(${c.id},this.value)">
+                        </div>` : ''}`;
+                    }
+                }
+
                 return `<div class="cand-item">
                     <div class="cand-nombre">${c.nombre}</div>
                     ${isLocked ? `<div style="font-size:11px;color:var(--muted)">${c.estado}</div>` : `
@@ -870,6 +910,7 @@ function renderTable() {
                     </select>
                     <button onclick="removeCand(${c.id})" style="position:absolute;top:4px;right:6px;background:none;border:none;cursor:pointer;color:#bbb;font-size:11px">✕</button>`}
                     ${fechasHtml}
+                    ${choferHtml}
                     ${tlHtml}
                 </div>`;
             }).join('')
@@ -1084,6 +1125,7 @@ function applyFilters() {
     const depto  = document.getElementById('f-depto').value;
     const status = document.getElementById('f-status').value;
     const search = (document.getElementById('f-search').value || '').trim().toLowerCase();
+    const choferRes = currentCategoria === 'choferes' ? (document.getElementById('f-chofer-resultado')?.value || '') : '';
     filteredIds = busquedas
         .filter(b => catOf(b) === currentCategoria)
         .filter(b => {
@@ -1091,6 +1133,10 @@ function applyFilters() {
             if (tipo   && (b.tipo || '') !== tipo)     return false;
             if (depto  && (b.depto || '') !== depto)   return false;
             if (status && (b.status || '') !== status) return false;
+            if (choferRes) {
+                const match = (b.candidatos || []).some(c => (c.resultado_chofer || 'Pendiente') === choferRes);
+                if (!match) return false;
+            }
             if (search) {
                 const hay = ((b.puesto || '') + ' ' + (b.depto || '') + ' ' + (b.selector || '')).toLowerCase();
                 if (!hay.includes(search)) return false;
@@ -1252,6 +1298,31 @@ async function updateCandEstado(candId, estado) {
 
 async function updateCandFecha(candId, field, val) {
     const { data, error } = await sb.from('candidatos').update({ [field]: val || null }).eq('id', candId).select();
+    if (error) { toast('Error al guardar fecha: ' + (error.message || error.code), true); return; }
+    if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE en candidatos)', true); return; }
+    await loadData(); renderTable(); toast('Fecha actualizada ✓');
+}
+
+// ── Choferes y Ayudantes: estado de ingreso por postulante ──
+async function updateCandChoferResultado(candId, resultado) {
+    const update = { resultado_chofer: resultado };
+    if (resultado !== 'Para ingresar') update.fecha_ingreso_chofer = null;
+    let { data, error } = await sb.from('candidatos').update(update).eq('id', candId).select();
+    if (error && error.message && /resultado_chofer|fecha_ingreso_chofer/.test(error.message)) {
+        toast('Falta agregar las columnas "resultado_chofer" y "fecha_ingreso_chofer" en la tabla candidatos (Supabase)', true);
+        return;
+    }
+    if (error) { toast('Error: ' + (error.message || error.code), true); return; }
+    if (!data || data.length === 0) { toast('No se actualizó (revisar policy UPDATE en candidatos)', true); return; }
+    await loadData(); renderTable(); toast('Estado actualizado ✓');
+}
+
+async function updateCandChoferFecha(candId, val) {
+    const { data, error } = await sb.from('candidatos').update({ fecha_ingreso_chofer: val || null }).eq('id', candId).select();
+    if (error && error.message && error.message.includes('fecha_ingreso_chofer')) {
+        toast('Falta agregar la columna "fecha_ingreso_chofer" en la tabla candidatos (Supabase)', true);
+        return;
+    }
     if (error) { toast('Error al guardar fecha: ' + (error.message || error.code), true); return; }
     if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE en candidatos)', true); return; }
     await loadData(); renderTable(); toast('Fecha actualizada ✓');
@@ -1444,10 +1515,12 @@ function showView(v, btn) {
     };
     document.getElementById('main-title').textContent = titles[v][0];
     document.getElementById('main-sub').textContent   = titles[v][1];
+    const fChoferSel = document.getElementById('f-chofer-resultado');
+    if (fChoferSel) fChoferSel.classList.toggle('hidden', v !== 'choferes');
     if (v === 'pipeline' || v === 'choferes') {
         currentCategoria = (v === 'choferes') ? 'choferes' : 'general';
         filteredIds = null;
-        ['f-selector','f-tipo','f-depto','f-status','f-search'].forEach(fid => { const el = document.getElementById(fid); if (el) el.value = ''; });
+        ['f-selector','f-tipo','f-depto','f-status','f-search','f-chofer-resultado'].forEach(fid => { const el = document.getElementById(fid); if (el) el.value = ''; });
         renderTable();
     }
     if (v === 'stats')  renderStats('general');
