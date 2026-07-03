@@ -232,6 +232,24 @@
         .chofer-badge-pendiente { background: var(--warn); color: var(--warn-text); }
         .chofer-fecha-wrap { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
 
+        /* ── FICHA CHOFER (replica planilla) ── */
+        .ficha-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .ficha-table th, .ficha-table td { border: 1px solid var(--border); padding: 6px 8px; text-align: center; vertical-align: middle; }
+        .ficha-table thead th { background: #dbe4f0; font-family: 'DM Sans',sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #1a1714; }
+        .ficha-table thead tr.ficha-subhdr th { background: #eef1f6; font-size: 10px; font-weight: 700; }
+        .ficha-table td.ficha-lbl { background: #f0ede8; font-weight: 800; text-align: left; white-space: nowrap; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; }
+        .ficha-table td.ficha-val { text-align: left; }
+        .ficha-table input.ficha-input, .ficha-table select.ficha-input { width: 100%; border: 1px solid transparent; border-radius: 4px; padding: 3px 5px; font-family: 'DM Sans',sans-serif; font-size: 12px; background: #fff; color: var(--text); outline: none; }
+        .ficha-table input.ficha-input:hover, .ficha-table select.ficha-input:hover { border-color: var(--border); }
+        .ficha-table input.ficha-input:focus, .ficha-table select.ficha-input:focus { border-color: var(--text); }
+        .ficha-table tr.ficha-estado-row td { background: var(--ok); font-weight: 800; text-align: center; }
+        .ficha-table tr.ficha-estado-row.estado-noapto td { background: var(--danger); }
+        .ficha-table tr.ficha-estado-row.estado-pendiente td { background: var(--warn); }
+        .ficha-estado-inner { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+        .ficha-nombre-val { font-weight: 700; color: var(--green); }
+        .btn-ficha { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px; background: #dbe4f0; color: #0a367a; border: none; cursor: pointer; margin-top: 4px; }
+        .btn-ficha:hover { background: #c7d6ea; }
+
         @media(max-width:900px) {
             .topnav { padding: 0 16px; } .main { padding: 16px; }
             .charts-grid, .charts-grid-2 { grid-template-columns: 1fr; }
@@ -496,6 +514,17 @@
     </div>
 </div>
 
+<div id="modal-ficha" class="modal-bg hidden">
+    <div class="modal-box" style="max-width:900px">
+        <div class="modal-title">Ficha del Postulante</div>
+        <input type="hidden" id="ficha-cand-id">
+        <div id="ficha-content"></div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal('modal-ficha')">Cerrar</button>
+        </div>
+    </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -511,6 +540,8 @@ let busquedas = [];
 let filteredIds = null;
 let currentCategoria = 'general';
 const HERRAMIENTAS = ['PC', 'Celular', 'Notebook', 'Línea de teléfono'];
+const FICHA_SIMPLE_OPTS = ['Pendiente', 'OK', 'Observado', 'No Apto'];
+const FICHA_PSICO_OPTS  = ['Pendiente', 'Apto', 'Apto con observaciones', 'Apto con reservas', 'No Apto'];
 let currentProfile = null;
 let nroSeq = 1;
 
@@ -894,7 +925,8 @@ function renderTable() {
                         <div class="chofer-fecha-wrap">
                             <span class="cand-fecha-lbl">Fecha para ingresar</span>
                             <input type="date" class="inline-input" style="font-size:11px" value="${c.fecha_ingreso_chofer || ''}" onchange="updateCandChoferFecha(${c.id},this.value)">
-                        </div>` : ''}`;
+                        </div>` : ''}
+                        <button class="btn-ficha" onclick="openFichaModal(${c.id})"><i class="fas fa-id-card" style="font-size:10px"></i> Ver ficha completa</button>`;
                     }
                 }
 
@@ -1326,6 +1358,122 @@ async function updateCandChoferFecha(candId, val) {
     if (error) { toast('Error al guardar fecha: ' + (error.message || error.code), true); return; }
     if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE en candidatos)', true); return; }
     await loadData(); renderTable(); toast('Fecha actualizada ✓');
+}
+
+// ══════════════════════════════════════════════
+//  FICHA COMPLETA DEL POSTULANTE (Choferes y Ayudantes)
+//  Replica la planilla: datos personales + Ambientales +
+//  Psicotécnico + Preocupacional + Antecedentes + Manipulación
+// ══════════════════════════════════════════════
+function fmtFechaCorta(iso) {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}`;
+}
+
+function openFichaModal(candId) {
+    document.getElementById('ficha-cand-id').value = candId;
+    renderFichaModalContent(candId);
+    openModal('modal-ficha');
+}
+
+function renderFichaModalContent(candId) {
+    const b = busquedas.find(bb => (bb.candidatos || []).some(cc => cc.id === candId));
+    const c = b ? b.candidatos.find(cc => cc.id === candId) : null;
+    const box = document.getElementById('ficha-content');
+    if (!c || !b) { box.innerHTML = '<span class="tip">No se encontró el candidato</span>'; return; }
+
+    const isLocked = (b.status === 'Cerrada' || b.status === 'Finalizada') && !isAdmin();
+    const inp = (field, val, type = 'text', ph = '') => isLocked
+        ? `<span>${val || '—'}</span>`
+        : `<input class="ficha-input" type="${type}" value="${val || ''}" placeholder="${ph}" onchange="updateFichaField(${c.id},'${field}',this.value)">`;
+    const sel = (field, val, opts) => isLocked
+        ? `<span>${val || 'Pendiente'}</span>`
+        : `<select class="ficha-input" onchange="updateFichaField(${c.id},'${field}',this.value)">${opts.map(o => `<option value="${o}" ${(val || 'Pendiente') === o ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
+
+    const resChofer = c.resultado_chofer || 'Pendiente';
+    const estadoClass = resChofer === 'No apto' ? 'estado-noapto' : resChofer === 'Pendiente' ? 'estado-pendiente' : '';
+    const estadoTexto = resChofer === 'Para ingresar'
+        ? `Para ingresar${c.fecha_ingreso_chofer ? ' ' + fmtFechaCorta(c.fecha_ingreso_chofer) : ''}`
+        : resChofer;
+
+    box.innerHTML = `
+    <div style="overflow-x:auto">
+    <table class="ficha-table">
+        <thead>
+            <tr>
+                <th style="min-width:110px">ÁREA:</th>
+                <th style="min-width:130px">${inp('area', c.area, 'text', 'Ej: Logística')}</th>
+                <th colspan="3">AMBIENTALES</th>
+                <th colspan="2">PSICOTÉCNICO</th>
+                <th colspan="2">PREOCUPACIONAL</th>
+                <th style="min-width:110px">ANTECEDENTES<br>PENALES</th>
+                <th style="min-width:120px">MANIPULACIÓN<br>DE ALIMENTOS</th>
+            </tr>
+            <tr class="ficha-subhdr">
+                <th></th><th></th>
+                <th>Fecha de envío</th><th>Fecha estimada de resultados</th><th>Resultados</th>
+                <th>Fecha Administración</th><th>Resultado</th>
+                <th>Fecha</th><th>Resultado</th>
+                <th></th><th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="ficha-lbl">NOMBRE</td>
+                <td class="ficha-val">${inp('nombre', c.nombre)}</td>
+                <td>${inp('amb_fecha_envio', c.amb_fecha_envio, 'date')}</td>
+                <td>${inp('amb_fecha_estimada', c.amb_fecha_estimada, 'date')}</td>
+                <td>${sel('amb_resultado', c.amb_resultado, FICHA_SIMPLE_OPTS)}</td>
+                <td>${inp('psico_fecha', c.psico_fecha, 'date')}</td>
+                <td>${sel('psico_resultado', c.psico_resultado, FICHA_PSICO_OPTS)}</td>
+                <td>${inp('preocup_fecha', c.preocup_fecha, 'date')}</td>
+                <td>${sel('preocup_resultado', c.preocup_resultado, FICHA_SIMPLE_OPTS)}</td>
+                <td>${sel('antecedentes_resultado', c.antecedentes_resultado, FICHA_SIMPLE_OPTS)}</td>
+                <td>${sel('manipulacion_resultado', c.manipulacion_resultado, FICHA_SIMPLE_OPTS)}</td>
+            </tr>
+            <tr><td class="ficha-lbl">APELLIDO</td><td class="ficha-val" colspan="10">${inp('apellido', c.apellido)}</td></tr>
+            <tr><td class="ficha-lbl">DNI</td><td class="ficha-val" colspan="10">${inp('dni', c.dni)}</td></tr>
+            <tr><td class="ficha-lbl">CUIL</td><td class="ficha-val" colspan="10">${inp('cuil', c.cuil)}</td></tr>
+            <tr><td class="ficha-lbl">Fecha nacimiento</td><td class="ficha-val" colspan="10">${inp('fecha_nacimiento', c.fecha_nacimiento, 'date')}</td></tr>
+            <tr><td class="ficha-lbl">CEL</td><td class="ficha-val" colspan="10">${inp('celular', c.celular)}</td></tr>
+            <tr><td class="ficha-lbl">DOMICILIO</td><td class="ficha-val" colspan="10">${inp('domicilio', c.domicilio)}</td></tr>
+            <tr><td class="ficha-lbl">PUESTO</td><td class="ficha-val" colspan="10">${inp('puesto_candidato', c.puesto_candidato || b.puesto)}</td></tr>
+            <tr><td class="ficha-lbl">RAZÓN SOCIAL</td><td class="ficha-val" colspan="10">${inp('razon_social', c.razon_social)}</td></tr>
+            <tr class="ficha-estado-row ${estadoClass}">
+                <td colspan="11">
+                    <div class="ficha-estado-inner">
+                        <span style="font-weight:800;text-transform:uppercase;letter-spacing:.5px;font-size:11px">Estado:</span>
+                        ${isLocked ? `<strong>${estadoTexto}</strong>` : `
+                            <select class="ficha-input" style="width:auto;font-weight:700" onchange="updateCandChoferResultado(${c.id},this.value).then(()=>renderFichaModalContent(${c.id}))">
+                                <option value="Pendiente" ${resChofer === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                                <option value="Para ingresar" ${resChofer === 'Para ingresar' ? 'selected' : ''}>Para ingresar</option>
+                                <option value="No apto" ${resChofer === 'No apto' ? 'selected' : ''}>No apto</option>
+                            </select>
+                            ${resChofer === 'Para ingresar' ? `<input type="date" class="ficha-input" style="width:auto" value="${c.fecha_ingreso_chofer || ''}" onchange="updateCandChoferFecha(${c.id},this.value).then(()=>renderFichaModalContent(${c.id}))">` : ''}
+                        `}
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    </div>
+    <div class="tip" style="margin-top:10px;display:block">
+        <i class="fas fa-info-circle"></i> Si algún campo no se guarda, es probable que falte agregar la columna correspondiente en la tabla <strong>candidatos</strong> de Supabase (ver aviso emergente al guardar).
+    </div>`;
+}
+
+async function updateFichaField(candId, field, val) {
+    const { data, error } = await sb.from('candidatos').update({ [field]: val || null }).eq('id', candId).select();
+    if (error) {
+        toast('Falta la columna "' + field + '" en la tabla candidatos (Supabase)', true);
+        return;
+    }
+    if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE en candidatos)', true); return; }
+    await loadData();
+    renderTable();
+    renderFichaModalContent(candId);
+    toast('Guardado ✓');
 }
 
 function openPsicoModal(id) {
