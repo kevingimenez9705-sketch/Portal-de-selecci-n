@@ -798,6 +798,16 @@ function catOf(b) {
 }
 
 // ══════════════════════════════════════════════
+//  ¿La búsqueda pertenece a la vista actual?
+//  Pipeline (currentCategoria === 'general') muestra TODAS las búsquedas.
+//  Choferes y Ayudantes muestra solo las de esa categoría.
+// ══════════════════════════════════════════════
+function inCategoria(b) {
+    if (currentCategoria === 'general') return true;
+    return catOf(b) === currentCategoria;
+}
+
+// ══════════════════════════════════════════════
 //  RENDER DISPATCH: pipeline (tabla) vs choferes (fichas)
 // ══════════════════════════════════════════════
 function refreshView() {
@@ -810,7 +820,7 @@ function refreshView() {
 // ══════════════════════════════════════════════
 function renderTable() {
     const body = document.getElementById('table-body');
-    const base = busquedas.filter(b => catOf(b) === currentCategoria);
+    const base = busquedas.filter(inCategoria);
     const list = filteredIds ? base.filter(b => filteredIds.includes(b.id)) : base;
     const locked = (b) => (b.status === 'Cerrada' || b.status === 'Finalizada') && !isAdmin();
 
@@ -1295,7 +1305,7 @@ function toggleComentarios(id, btn) {
 }
 
 function renderKPIs() {
-    const cat         = busquedas.filter(b => catOf(b) === currentCategoria);
+    const cat         = busquedas.filter(inCategoria);
     const total       = cat.length;
     const proceso     = cat.filter(b => b.status === 'Proceso').length;
     const cerradas    = cat.filter(b => b.status === 'Cerrada').length;
@@ -1316,7 +1326,7 @@ function applyFilters() {
     const status = document.getElementById('f-status').value;
     const search = (document.getElementById('f-search').value || '').trim().toLowerCase();
     filteredIds = busquedas
-        .filter(b => catOf(b) === currentCategoria)
+        .filter(inCategoria)
         .filter(b => {
             if (sel    && (b.selector || '') !== sel)  return false;
             if (tipo   && (b.tipo || '') !== tipo)     return false;
@@ -1333,7 +1343,7 @@ function applyFilters() {
 
 function updateDeptoFilter() {
     const deptos = [...new Set(busquedas
-        .filter(b => catOf(b) === currentCategoria)
+        .filter(inCategoria)
         .map(b => b.depto).filter(Boolean))];
     const sel = document.getElementById('f-depto');
     const cur = sel.value;
@@ -1662,7 +1672,7 @@ async function addNew() {
         ubicacion: document.getElementById('n-ubicacion').value,
         inicio:    document.getElementById('n-inicio').value || today(),
         status: 'Proceso', ingreso: null, ingreso_nombre: '',
-        categoria: currentCategoria
+        categoria: currentCategoria === 'choferes' ? 'choferes' : null
     };
     let { data, error } = await sb.from('busquedas').insert(row).select().single();
     // Fallback si todavía no corriste el ALTER TABLE (columna categoria)
@@ -1684,7 +1694,7 @@ async function reabrir(id) {
         depto: orig.depto, tipo: orig.tipo, motivo: orig.motivo, nivel: orig.nivel,
         sueldo: orig.sueldo, jornada: orig.jornada, ubicacion: orig.ubicacion,
         inicio: today(), status: 'Proceso', ingreso: null, ingreso_nombre: '',
-        categoria: orig.categoria || 'general', herramientas: orig.herramientas || null
+        categoria: orig.categoria || null, herramientas: orig.herramientas || null
     };
     let { data: nueva, error: errInsert } = await sb.from('busquedas').insert(nuevaRow).select().single();
     if (errInsert && errInsert.message && /categoria|herramientas/.test(errInsert.message)) {
