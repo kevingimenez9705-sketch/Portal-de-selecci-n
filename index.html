@@ -250,6 +250,16 @@
         .btn-ficha { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px; background: #dbe4f0; color: #0a367a; border: none; cursor: pointer; margin-top: 4px; }
         .btn-ficha:hover { background: #c7d6ea; }
 
+        /* ── FICHAS: vista de tarjetas (Choferes y Ayudantes) ── */
+        .fichas-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 18px; flex-wrap: wrap; }
+        .fichas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(540px, 1fr)); gap: 20px; }
+        .ficha-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+        .ficha-card-hdr { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 10px; }
+        .ficha-card-puesto { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 14px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+        .ficha-card-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+        .ficha-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .ficha-card-files { margin-top: 10px; }
+
         @media(max-width:900px) {
             .topnav { padding: 0 16px; } .main { padding: 16px; }
             .charts-grid, .charts-grid-2 { grid-template-columns: 1fr; }
@@ -257,6 +267,7 @@
             .mini-kpi-row { grid-template-columns: repeat(2,1fr); }
             .inline-nav { gap: 4px; }
             .inline-nav-btn { padding: 6px 12px; font-size: 12px; }
+            .fichas-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -312,32 +323,33 @@
             <button class="inline-nav-btn" onclick="openModal()"><i class="fas fa-plus"></i> Nueva Búsqueda</button>
         </div>
 
+        <div class="filters">
+            <span class="filter-label">Filtrar:</span>
+            <select class="filter-select" id="f-selector" onchange="applyFilters()">
+                <option value="">Todos los selectores</option>
+                <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Soledad</option><option>Angel</option><option>Noelia</option>
+            </select>
+            <select class="filter-select" id="f-tipo" onchange="applyFilters()">
+                <option value="">Fábrica y Staff</option>
+                <option value="Fábrica">Fábrica</option><option value="Staff">Staff</option>
+            </select>
+            <select class="filter-select" id="f-depto" onchange="applyFilters()"><option value="">Todos los dptos.</option></select>
+            <select class="filter-select" id="f-status" onchange="applyFilters()">
+                <option value="">Todos los estados</option>
+                <option>Proceso</option><option>Cerrada</option><option>Pausada</option><option>Finalizada</option>
+            </select>
+            <select class="filter-select hidden" id="f-chofer-resultado" onchange="applyFilters()">
+                <option value="">Postulantes: todos</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Para ingresar">Para ingresar</option>
+                <option value="No apto">No apto</option>
+            </select>
+            <input class="filter-input" id="f-search" placeholder="Buscar puesto..." oninput="applyFilters()">
+        </div>
+
         <!-- PIPELINE -->
         <div id="view-pipeline">
             <div class="kpi-row" id="kpi-row"></div>
-            <div class="filters">
-                <span class="filter-label">Filtrar:</span>
-                <select class="filter-select" id="f-selector" onchange="applyFilters()">
-                    <option value="">Todos los selectores</option>
-                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Soledad</option><option>Angel</option><option>Noelia</option>
-                </select>
-                <select class="filter-select" id="f-tipo" onchange="applyFilters()">
-                    <option value="">Fábrica y Staff</option>
-                    <option value="Fábrica">Fábrica</option><option value="Staff">Staff</option>
-                </select>
-                <select class="filter-select" id="f-depto" onchange="applyFilters()"><option value="">Todos los dptos.</option></select>
-                <select class="filter-select" id="f-status" onchange="applyFilters()">
-                    <option value="">Todos los estados</option>
-                    <option>Proceso</option><option>Cerrada</option><option>Pausada</option><option>Finalizada</option>
-                </select>
-                <select class="filter-select hidden" id="f-chofer-resultado" onchange="applyFilters()">
-                    <option value="">Postulantes: todos</option>
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="Para ingresar">Para ingresar</option>
-                    <option value="No apto">No apto</option>
-                </select>
-                <input class="filter-input" id="f-search" placeholder="Buscar puesto..." oninput="applyFilters()">
-            </div>
             <div class="table-wrap">
                 <table>
                     <thead><tr>
@@ -353,6 +365,15 @@
                     <tbody id="table-body"></tbody>
                 </table>
             </div>
+        </div>
+
+        <!-- FICHAS: CHOFERES Y AYUDANTES -->
+        <div id="view-fichas" class="hidden">
+            <div class="kpi-row" id="kpi-row-fichas"></div>
+            <div class="fichas-toolbar">
+                <button class="btn-primary" onclick="openNuevoPostulanteModal()"><i class="fas fa-user-plus"></i> Nuevo Postulante</button>
+            </div>
+            <div class="fichas-grid" id="fichas-grid"></div>
         </div>
 
         <!-- STATS -->
@@ -431,6 +452,10 @@
         <div class="modal-title">Agregar Candidato</div>
         <input type="hidden" id="cand-bid">
         <div class="form-row" style="grid-template-columns:1fr;">
+            <div class="form-group hidden" id="cand-grp-busqueda">
+                <label>Búsqueda / Puesto</label>
+                <select class="form-input" id="cand-busqueda-select" onchange="document.getElementById('cand-bid').value=this.value"></select>
+            </div>
             <div class="form-group"><label>Nombre del candidato</label><input class="form-input" id="cand-nombre" placeholder="Nombre Apellido"></div>
             <div class="form-group"><label>Estado</label>
                 <select class="form-input" id="cand-estado" onchange="toggleCandModalFechas()">
@@ -717,7 +742,7 @@ async function initDashboard() {
         document.getElementById('nav-stats').classList.add('hidden');
         document.getElementById('nav-charts').classList.add('hidden');
     }
-    renderTable();
+    refreshView();
 }
 
 async function initApp() {
@@ -770,6 +795,14 @@ function catOf(b) {
     const p = (b.puesto || '').toLowerCase();
     if (/chofer|ayudante/.test(p)) return 'choferes';
     return 'general';
+}
+
+// ══════════════════════════════════════════════
+//  RENDER DISPATCH: pipeline (tabla) vs choferes (fichas)
+// ══════════════════════════════════════════════
+function refreshView() {
+    if (currentCategoria === 'choferes') { renderFichas(); }
+    else { renderTable(); }
 }
 
 // ══════════════════════════════════════════════
@@ -831,7 +864,6 @@ function renderTable() {
             : `<span class="tip">Sin verificaciones</span>`;
 
         // CANDIDATOS
-        const esChoferes = catOf(b) === 'choferes';
         const candHtml = b.candidatos.length > 0
             ? b.candidatos.map(c => {
                 let tlHtml = '';
@@ -905,31 +937,6 @@ function renderTable() {
                     }
                 }
 
-                // ── Choferes y Ayudantes: estado de ingreso (Pendiente / Para ingresar / No apto) ──
-                let choferHtml = '';
-                if (esChoferes) {
-                    const resChofer = c.resultado_chofer || 'Pendiente';
-                    const badgeClass = resChofer === 'Para ingresar' ? 'chofer-badge-ingresar' : resChofer === 'No apto' ? 'chofer-badge-noapto' : 'chofer-badge-pendiente';
-                    if (isLocked) {
-                        choferHtml = `<div class="chofer-result-row"><span class="chofer-badge ${badgeClass}">${resChofer}</span>${resChofer === 'Para ingresar' && c.fecha_ingreso_chofer ? `<span style="font-size:10px;color:var(--muted)">${c.fecha_ingreso_chofer}</span>` : ''}</div>`;
-                    } else {
-                        choferHtml = `
-                        <div class="chofer-result-row">
-                            <select class="inline-select chofer-result-select" onchange="updateCandChoferResultado(${c.id},this.value)">
-                                <option value="Pendiente" ${resChofer === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
-                                <option value="Para ingresar" ${resChofer === 'Para ingresar' ? 'selected' : ''}>Para ingresar</option>
-                                <option value="No apto" ${resChofer === 'No apto' ? 'selected' : ''}>No apto</option>
-                            </select>
-                        </div>
-                        ${resChofer === 'Para ingresar' ? `
-                        <div class="chofer-fecha-wrap">
-                            <span class="cand-fecha-lbl">Fecha para ingresar</span>
-                            <input type="date" class="inline-input" style="font-size:11px" value="${c.fecha_ingreso_chofer || ''}" onchange="updateCandChoferFecha(${c.id},this.value)">
-                        </div>` : ''}
-                        <button class="btn-ficha" onclick="openFichaModal(${c.id})"><i class="fas fa-id-card" style="font-size:10px"></i> Ver ficha completa</button>`;
-                    }
-                }
-
                 return `<div class="cand-item">
                     <div class="cand-nombre">${c.nombre}</div>
                     ${isLocked ? `<div style="font-size:11px;color:var(--muted)">${c.estado}</div>` : `
@@ -942,7 +949,6 @@ function renderTable() {
                     </select>
                     <button onclick="removeCand(${c.id})" style="position:absolute;top:4px;right:6px;background:none;border:none;cursor:pointer;color:#bbb;font-size:11px">✕</button>`}
                     ${fechasHtml}
-                    ${choferHtml}
                     ${tlHtml}
                 </div>`;
             }).join('')
@@ -1127,6 +1133,158 @@ function renderTable() {
     updateDeptoFilter();
 }
 
+// ══════════════════════════════════════════════
+//  RENDER FICHAS (Choferes y Ayudantes) — tarjetas
+// ══════════════════════════════════════════════
+function fmtFechaCorta(iso) {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}`;
+}
+
+function buildFichaTableHtml(c, b) {
+    const isLocked = (b.status === 'Cerrada' || b.status === 'Finalizada') && !isAdmin();
+    const inp = (field, val, type = 'text', ph = '') => isLocked
+        ? `<span>${val || '—'}</span>`
+        : `<input class="ficha-input" type="${type}" value="${val || ''}" placeholder="${ph}" onchange="updateFichaField(${c.id},'${field}',this.value)">`;
+    const sel = (field, val, opts) => isLocked
+        ? `<span>${val || 'Pendiente'}</span>`
+        : `<select class="ficha-input" onchange="updateFichaField(${c.id},'${field}',this.value)">${opts.map(o => `<option value="${o}" ${(val || 'Pendiente') === o ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
+
+    const resChofer = c.resultado_chofer || 'Pendiente';
+    const estadoClass = resChofer === 'No apto' ? 'estado-noapto' : resChofer === 'Pendiente' ? 'estado-pendiente' : '';
+    const estadoTexto = resChofer === 'Para ingresar'
+        ? `Para ingresar${c.fecha_ingreso_chofer ? ' ' + fmtFechaCorta(c.fecha_ingreso_chofer) : ''}`
+        : resChofer;
+
+    return `
+    <table class="ficha-table">
+        <thead>
+            <tr>
+                <th style="min-width:100px">ÁREA:</th>
+                <th style="min-width:120px">${inp('area', c.area, 'text', 'Ej: Logística')}</th>
+                <th colspan="3">AMBIENTALES</th>
+                <th colspan="2">PSICOTÉCNICO</th>
+                <th colspan="2">PREOCUPACIONAL</th>
+                <th style="min-width:100px">ANTECEDENTES<br>PENALES</th>
+                <th style="min-width:110px">MANIPULACIÓN<br>DE ALIMENTOS</th>
+            </tr>
+            <tr class="ficha-subhdr">
+                <th></th><th></th>
+                <th>Fecha de envío</th><th>Fecha estimada</th><th>Resultados</th>
+                <th>Fecha Adm.</th><th>Resultado</th>
+                <th>Fecha</th><th>Resultado</th>
+                <th></th><th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="ficha-lbl">NOMBRE</td>
+                <td class="ficha-val">${inp('nombre', c.nombre)}</td>
+                <td>${inp('amb_fecha_envio', c.amb_fecha_envio, 'date')}</td>
+                <td>${inp('amb_fecha_estimada', c.amb_fecha_estimada, 'date')}</td>
+                <td>${sel('amb_resultado', c.amb_resultado, FICHA_SIMPLE_OPTS)}</td>
+                <td>${inp('psico_fecha', c.psico_fecha, 'date')}</td>
+                <td>${sel('psico_resultado', c.psico_resultado, FICHA_PSICO_OPTS)}</td>
+                <td>${inp('preocup_fecha', c.preocup_fecha, 'date')}</td>
+                <td>${sel('preocup_resultado', c.preocup_resultado, FICHA_SIMPLE_OPTS)}</td>
+                <td>${sel('antecedentes_resultado', c.antecedentes_resultado, FICHA_SIMPLE_OPTS)}</td>
+                <td>${sel('manipulacion_resultado', c.manipulacion_resultado, FICHA_SIMPLE_OPTS)}</td>
+            </tr>
+            <tr><td class="ficha-lbl">APELLIDO</td><td class="ficha-val" colspan="10">${inp('apellido', c.apellido)}</td></tr>
+            <tr><td class="ficha-lbl">DNI</td><td class="ficha-val" colspan="10">${inp('dni', c.dni)}</td></tr>
+            <tr><td class="ficha-lbl">CUIL</td><td class="ficha-val" colspan="10">${inp('cuil', c.cuil)}</td></tr>
+            <tr><td class="ficha-lbl">Fecha nacimiento</td><td class="ficha-val" colspan="10">${inp('fecha_nacimiento', c.fecha_nacimiento, 'date')}</td></tr>
+            <tr><td class="ficha-lbl">CEL</td><td class="ficha-val" colspan="10">${inp('celular', c.celular)}</td></tr>
+            <tr><td class="ficha-lbl">DOMICILIO</td><td class="ficha-val" colspan="10">${inp('domicilio', c.domicilio)}</td></tr>
+            <tr><td class="ficha-lbl">PUESTO</td><td class="ficha-val" colspan="10">${inp('puesto_candidato', c.puesto_candidato || b.puesto)}</td></tr>
+            <tr><td class="ficha-lbl">RAZÓN SOCIAL</td><td class="ficha-val" colspan="10">${inp('razon_social', c.razon_social)}</td></tr>
+            <tr class="ficha-estado-row ${estadoClass}">
+                <td colspan="11">
+                    <div class="ficha-estado-inner">
+                        <span style="font-weight:800;text-transform:uppercase;letter-spacing:.5px;font-size:11px">Estado:</span>
+                        ${isLocked ? `<strong>${estadoTexto}</strong>` : `
+                            <select class="ficha-input" style="width:auto;font-weight:700" onchange="updateCandChoferResultado(${c.id},this.value)">
+                                <option value="Pendiente" ${resChofer === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                                <option value="Para ingresar" ${resChofer === 'Para ingresar' ? 'selected' : ''}>Para ingresar</option>
+                                <option value="No apto" ${resChofer === 'No apto' ? 'selected' : ''}>No apto</option>
+                            </select>
+                            ${resChofer === 'Para ingresar' ? `<input type="date" class="ficha-input" style="width:auto" value="${c.fecha_ingreso_chofer || ''}" onchange="updateCandChoferFecha(${c.id},this.value)">` : ''}
+                        `}
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>`;
+}
+
+function renderFichaCard(c, b) {
+    const isLocked = (b.status === 'Cerrada' || b.status === 'Finalizada') && !isAdmin();
+    const archivosHtml = (b.archivos || []).length > 0
+        ? b.archivos.map(a => `
+            <div class="pdf-item">
+                <span class="pdf-item-name" onclick="abrirPDF('${a.url}')"><i class="fas fa-file-pdf" style="font-size:10px"></i> ${a.nombre}</span>
+                ${!isLocked ? `<button onclick="eliminarPDF(${a.id},'${a.url}')" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:10px">✕</button>` : ''}
+            </div>`).join('')
+        : `<span class="tip" style="font-size:11px">Sin archivos PDF de esta búsqueda</span>`;
+
+    return `
+    <div class="ficha-card" id="ficha-card-${c.id}">
+        <div class="ficha-card-hdr">
+            <div>
+                <div class="ficha-card-puesto">
+                    <i class="fas fa-truck" style="font-size:11px;color:var(--muted)"></i> ${b.puesto}
+                    <span class="tag ${tagClass(b.status)}">${b.status}</span>
+                </div>
+                <div class="ficha-card-meta">${b.numero} · Selector: <strong>${b.selector}</strong> · <span class="motivo-chip ${motivoClass(b.motivo)}">${b.motivo}</span></div>
+            </div>
+            <div class="ficha-card-actions">
+                ${!isLocked ? `<button class="btn-sm btn-danger" onclick="removeCand(${c.id})" title="Eliminar postulante"><i class="fas fa-trash" style="font-size:10px"></i></button>` : ''}
+            </div>
+        </div>
+        <div style="overflow-x:auto">${buildFichaTableHtml(c, b)}</div>
+        <div class="ficha-card-files">
+            <div class="section-hdr" style="margin-bottom:3px">Archivos PDF (de la búsqueda)</div>
+            <div class="cell-scroll" style="max-height:44px">${archivosHtml}</div>
+            ${!isLocked ? `
+            <label class="pdf-upload-btn">
+                <i class="fas fa-upload" style="font-size:10px"></i> Subir PDF
+                <input type="file" accept=".pdf,.doc,.docx" class="pdf-file-input" onchange="subirPDF(${b.id},this)">
+            </label>` : ''}
+        </div>
+    </div>`;
+}
+
+function renderFichas() {
+    const base = busquedas.filter(b => catOf(b) === 'choferes');
+    const list = filteredIds ? base.filter(b => filteredIds.includes(b.id)) : base;
+    const choferRes = document.getElementById('f-chofer-resultado')?.value || '';
+
+    let cards = [];
+    list.forEach(b => (b.candidatos || []).forEach(c => cards.push({ c, b })));
+    if (choferRes) cards = cards.filter(({ c }) => (c.resultado_chofer || 'Pendiente') === choferRes);
+
+    const order = { 'Pendiente': 0, 'Para ingresar': 1, 'No apto': 2 };
+    cards.sort((x, y) => (order[x.c.resultado_chofer || 'Pendiente'] - order[y.c.resultado_chofer || 'Pendiente']) || (y.c.id - x.c.id));
+
+    const totalPost    = cards.length;
+    const pendientes   = cards.filter(x => (x.c.resultado_chofer || 'Pendiente') === 'Pendiente').length;
+    const paraIngresar = cards.filter(x => x.c.resultado_chofer === 'Para ingresar').length;
+    const noApto       = cards.filter(x => x.c.resultado_chofer === 'No apto').length;
+    document.getElementById('kpi-row-fichas').innerHTML = `
+        <div class="kpi"><div class="kpi-num">${totalPost}</div><div class="kpi-lbl">Postulantes</div></div>
+        <div class="kpi"><div class="kpi-num" style="color:var(--orange)">${pendientes}</div><div class="kpi-lbl">Pendientes</div></div>
+        <div class="kpi"><div class="kpi-num" style="color:var(--green)">${paraIngresar}</div><div class="kpi-lbl">Para ingresar</div></div>
+        <div class="kpi"><div class="kpi-num" style="color:var(--red)">${noApto}</div><div class="kpi-lbl">No aptos</div></div>`;
+
+    const grid = document.getElementById('fichas-grid');
+    grid.innerHTML = cards.length > 0
+        ? cards.map(({ c, b }) => renderFichaCard(c, b)).join('')
+        : `<span class="tip">No hay postulantes cargados todavía. Primero creá una búsqueda de Chofer/Ayudante con "Nueva Búsqueda" y después usá "Nuevo Postulante".</span>`;
+
+    updateDeptoFilter();
+}
+
 function toggleComentarios(id, btn) {
     const log = document.getElementById('est-log-' + id);
     const icon = document.getElementById('est-icon-' + id);
@@ -1157,7 +1315,6 @@ function applyFilters() {
     const depto  = document.getElementById('f-depto').value;
     const status = document.getElementById('f-status').value;
     const search = (document.getElementById('f-search').value || '').trim().toLowerCase();
-    const choferRes = currentCategoria === 'choferes' ? (document.getElementById('f-chofer-resultado')?.value || '') : '';
     filteredIds = busquedas
         .filter(b => catOf(b) === currentCategoria)
         .filter(b => {
@@ -1165,17 +1322,13 @@ function applyFilters() {
             if (tipo   && (b.tipo || '') !== tipo)     return false;
             if (depto  && (b.depto || '') !== depto)   return false;
             if (status && (b.status || '') !== status) return false;
-            if (choferRes) {
-                const match = (b.candidatos || []).some(c => (c.resultado_chofer || 'Pendiente') === choferRes);
-                if (!match) return false;
-            }
             if (search) {
                 const hay = ((b.puesto || '') + ' ' + (b.depto || '') + ' ' + (b.selector || '')).toLowerCase();
                 if (!hay.includes(search)) return false;
             }
             return true;
         }).map(b => b.id);
-    renderTable();
+    refreshView();
 }
 
 function updateDeptoFilter() {
@@ -1202,7 +1355,7 @@ async function toggleHerramienta(id, herramienta, checked) {
     }
     if (error) { toast('Error al guardar: ' + (error.message || error.code), true); return; }
     if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE)', true); return; }
-    await loadData(); renderTable(); toast('Herramientas actualizadas ✓');
+    await loadData(); refreshView(); toast('Herramientas actualizadas ✓');
 }
 
 async function updateField(id, field, val) {
@@ -1213,7 +1366,7 @@ async function updateField(id, field, val) {
     if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE en busquedas)', true); return; }
     await loadData();
     if (field === 'ingreso') await checkAndFinalizeSearches();
-    renderTable();
+    refreshView();
     toast('Guardado ✓');
 }
 
@@ -1224,14 +1377,14 @@ async function addEstadoEntry(id) {
     const { error } = await sb.from('estado_log').insert({ busqueda_id: id, texto, fecha: today() });
     if (error) { toast('Error al guardar', true); return; }
     input.value = '';
-    await loadData(); renderTable(); toast('Comentario agregado ✓');
+    await loadData(); refreshView(); toast('Comentario agregado ✓');
 }
 
 async function removeEstadoEntry(entryId) {
     if (!isAdmin()) { toast('Solo un administrador puede eliminar comentarios', true); return; }
     if (!confirm('¿Eliminar este comentario? Esta acción no se puede deshacer.')) return;
     await sb.from('estado_log').delete().eq('id', entryId);
-    await loadData(); renderTable(); toast('Eliminado');
+    await loadData(); refreshView(); toast('Eliminado');
 }
 
 function toggleCandModalFechas() {
@@ -1244,7 +1397,28 @@ function toggleCandModalFechas() {
 }
 
 function openCandModal(id) {
+    document.getElementById('cand-grp-busqueda').classList.add('hidden');
     document.getElementById('cand-bid').value = id;
+    document.getElementById('cand-nombre').value = '';
+    document.getElementById('cand-estado').value = 'Enviado';
+    document.getElementById('cand-fecha-envio').value = today();
+    document.getElementById('cand-fecha-entrevista').value = '';
+    document.getElementById('cand-fecha-rechazo').value = '';
+    toggleCandModalFechas();
+    openModal('modal-cand');
+}
+
+// ── Nuevo Postulante (desde la vista de Fichas / Choferes y Ayudantes) ──
+function openNuevoPostulanteModal() {
+    const opts = busquedas.filter(b => catOf(b) === 'choferes');
+    if (opts.length === 0) {
+        toast('Primero creá una búsqueda de Chofer/Ayudante con "Nueva Búsqueda"', true);
+        return;
+    }
+    const selEl = document.getElementById('cand-busqueda-select');
+    selEl.innerHTML = opts.map(b => `<option value="${b.id}">${b.puesto} · ${b.selector} (${b.numero})</option>`).join('');
+    document.getElementById('cand-grp-busqueda').classList.remove('hidden');
+    document.getElementById('cand-bid').value = opts[0].id;
     document.getElementById('cand-nombre').value = '';
     document.getElementById('cand-estado').value = 'Enviado';
     document.getElementById('cand-fecha-envio').value = today();
@@ -1274,13 +1448,13 @@ async function saveCand() {
         toast('Error: ' + (error.message || error.details || error.hint || error.code || 'desconocido'), true);
         return;
     }
-    closeModal('modal-cand'); await loadData(); renderTable(); toast('Candidato agregado ✓');
+    closeModal('modal-cand'); await loadData(); refreshView(); toast('Candidato agregado ✓');
 }
 
 async function removeCand(candId) {
     if (!confirm('¿Eliminar este candidato? Esta acción no se puede deshacer.')) return;
     await sb.from('candidatos').delete().eq('id', candId);
-    await loadData(); renderTable(); toast('Candidato eliminado');
+    await loadData(); refreshView(); toast('Candidato eliminado');
 }
 
 // ── FIX PRINCIPAL: updateCandEstado ya no manda fecha_rechazo=null cuando no existe la col ──
@@ -1318,21 +1492,21 @@ async function updateCandEstado(candId, estado) {
             const { data: d2, error: e2 } = await sb.from('candidatos').update(updateSinRechazo).eq('id', candId).select();
             if (e2) { toast('Error: ' + (e2.message || e2.code), true); return; }
             if (!d2 || d2.length === 0) { toast('No se actualizó (revisar policy UPDATE en candidatos)', true); return; }
-            await loadData(); renderTable(); toast('Estado actualizado ✓');
+            await loadData(); refreshView(); toast('Estado actualizado ✓');
             return;
         }
         toast('Error: ' + (error.message || error.code), true);
         return;
     }
     if (!data || data.length === 0) { toast('No se actualizó (revisar policy UPDATE en candidatos)', true); return; }
-    await loadData(); renderTable(); toast('Estado actualizado ✓');
+    await loadData(); refreshView(); toast('Estado actualizado ✓');
 }
 
 async function updateCandFecha(candId, field, val) {
     const { data, error } = await sb.from('candidatos').update({ [field]: val || null }).eq('id', candId).select();
     if (error) { toast('Error al guardar fecha: ' + (error.message || error.code), true); return; }
     if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE en candidatos)', true); return; }
-    await loadData(); renderTable(); toast('Fecha actualizada ✓');
+    await loadData(); refreshView(); toast('Fecha actualizada ✓');
 }
 
 // ── Choferes y Ayudantes: estado de ingreso por postulante ──
@@ -1346,7 +1520,7 @@ async function updateCandChoferResultado(candId, resultado) {
     }
     if (error) { toast('Error: ' + (error.message || error.code), true); return; }
     if (!data || data.length === 0) { toast('No se actualizó (revisar policy UPDATE en candidatos)', true); return; }
-    await loadData(); renderTable(); toast('Estado actualizado ✓');
+    await loadData(); refreshView(); toast('Estado actualizado ✓');
 }
 
 async function updateCandChoferFecha(candId, val) {
@@ -1357,20 +1531,12 @@ async function updateCandChoferFecha(candId, val) {
     }
     if (error) { toast('Error al guardar fecha: ' + (error.message || error.code), true); return; }
     if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE en candidatos)', true); return; }
-    await loadData(); renderTable(); toast('Fecha actualizada ✓');
+    await loadData(); refreshView(); toast('Fecha actualizada ✓');
 }
 
 // ══════════════════════════════════════════════
-//  FICHA COMPLETA DEL POSTULANTE (Choferes y Ayudantes)
-//  Replica la planilla: datos personales + Ambientales +
-//  Psicotécnico + Preocupacional + Antecedentes + Manipulación
+//  FICHA COMPLETA DEL POSTULANTE — modal (opcional, uso puntual)
 // ══════════════════════════════════════════════
-function fmtFechaCorta(iso) {
-    if (!iso) return '';
-    const [y, m, d] = iso.split('-');
-    return `${d}/${m}`;
-}
-
 function openFichaModal(candId) {
     document.getElementById('ficha-cand-id').value = candId;
     renderFichaModalContent(candId);
@@ -1382,82 +1548,7 @@ function renderFichaModalContent(candId) {
     const c = b ? b.candidatos.find(cc => cc.id === candId) : null;
     const box = document.getElementById('ficha-content');
     if (!c || !b) { box.innerHTML = '<span class="tip">No se encontró el candidato</span>'; return; }
-
-    const isLocked = (b.status === 'Cerrada' || b.status === 'Finalizada') && !isAdmin();
-    const inp = (field, val, type = 'text', ph = '') => isLocked
-        ? `<span>${val || '—'}</span>`
-        : `<input class="ficha-input" type="${type}" value="${val || ''}" placeholder="${ph}" onchange="updateFichaField(${c.id},'${field}',this.value)">`;
-    const sel = (field, val, opts) => isLocked
-        ? `<span>${val || 'Pendiente'}</span>`
-        : `<select class="ficha-input" onchange="updateFichaField(${c.id},'${field}',this.value)">${opts.map(o => `<option value="${o}" ${(val || 'Pendiente') === o ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
-
-    const resChofer = c.resultado_chofer || 'Pendiente';
-    const estadoClass = resChofer === 'No apto' ? 'estado-noapto' : resChofer === 'Pendiente' ? 'estado-pendiente' : '';
-    const estadoTexto = resChofer === 'Para ingresar'
-        ? `Para ingresar${c.fecha_ingreso_chofer ? ' ' + fmtFechaCorta(c.fecha_ingreso_chofer) : ''}`
-        : resChofer;
-
-    box.innerHTML = `
-    <div style="overflow-x:auto">
-    <table class="ficha-table">
-        <thead>
-            <tr>
-                <th style="min-width:110px">ÁREA:</th>
-                <th style="min-width:130px">${inp('area', c.area, 'text', 'Ej: Logística')}</th>
-                <th colspan="3">AMBIENTALES</th>
-                <th colspan="2">PSICOTÉCNICO</th>
-                <th colspan="2">PREOCUPACIONAL</th>
-                <th style="min-width:110px">ANTECEDENTES<br>PENALES</th>
-                <th style="min-width:120px">MANIPULACIÓN<br>DE ALIMENTOS</th>
-            </tr>
-            <tr class="ficha-subhdr">
-                <th></th><th></th>
-                <th>Fecha de envío</th><th>Fecha estimada de resultados</th><th>Resultados</th>
-                <th>Fecha Administración</th><th>Resultado</th>
-                <th>Fecha</th><th>Resultado</th>
-                <th></th><th></th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td class="ficha-lbl">NOMBRE</td>
-                <td class="ficha-val">${inp('nombre', c.nombre)}</td>
-                <td>${inp('amb_fecha_envio', c.amb_fecha_envio, 'date')}</td>
-                <td>${inp('amb_fecha_estimada', c.amb_fecha_estimada, 'date')}</td>
-                <td>${sel('amb_resultado', c.amb_resultado, FICHA_SIMPLE_OPTS)}</td>
-                <td>${inp('psico_fecha', c.psico_fecha, 'date')}</td>
-                <td>${sel('psico_resultado', c.psico_resultado, FICHA_PSICO_OPTS)}</td>
-                <td>${inp('preocup_fecha', c.preocup_fecha, 'date')}</td>
-                <td>${sel('preocup_resultado', c.preocup_resultado, FICHA_SIMPLE_OPTS)}</td>
-                <td>${sel('antecedentes_resultado', c.antecedentes_resultado, FICHA_SIMPLE_OPTS)}</td>
-                <td>${sel('manipulacion_resultado', c.manipulacion_resultado, FICHA_SIMPLE_OPTS)}</td>
-            </tr>
-            <tr><td class="ficha-lbl">APELLIDO</td><td class="ficha-val" colspan="10">${inp('apellido', c.apellido)}</td></tr>
-            <tr><td class="ficha-lbl">DNI</td><td class="ficha-val" colspan="10">${inp('dni', c.dni)}</td></tr>
-            <tr><td class="ficha-lbl">CUIL</td><td class="ficha-val" colspan="10">${inp('cuil', c.cuil)}</td></tr>
-            <tr><td class="ficha-lbl">Fecha nacimiento</td><td class="ficha-val" colspan="10">${inp('fecha_nacimiento', c.fecha_nacimiento, 'date')}</td></tr>
-            <tr><td class="ficha-lbl">CEL</td><td class="ficha-val" colspan="10">${inp('celular', c.celular)}</td></tr>
-            <tr><td class="ficha-lbl">DOMICILIO</td><td class="ficha-val" colspan="10">${inp('domicilio', c.domicilio)}</td></tr>
-            <tr><td class="ficha-lbl">PUESTO</td><td class="ficha-val" colspan="10">${inp('puesto_candidato', c.puesto_candidato || b.puesto)}</td></tr>
-            <tr><td class="ficha-lbl">RAZÓN SOCIAL</td><td class="ficha-val" colspan="10">${inp('razon_social', c.razon_social)}</td></tr>
-            <tr class="ficha-estado-row ${estadoClass}">
-                <td colspan="11">
-                    <div class="ficha-estado-inner">
-                        <span style="font-weight:800;text-transform:uppercase;letter-spacing:.5px;font-size:11px">Estado:</span>
-                        ${isLocked ? `<strong>${estadoTexto}</strong>` : `
-                            <select class="ficha-input" style="width:auto;font-weight:700" onchange="updateCandChoferResultado(${c.id},this.value).then(()=>renderFichaModalContent(${c.id}))">
-                                <option value="Pendiente" ${resChofer === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
-                                <option value="Para ingresar" ${resChofer === 'Para ingresar' ? 'selected' : ''}>Para ingresar</option>
-                                <option value="No apto" ${resChofer === 'No apto' ? 'selected' : ''}>No apto</option>
-                            </select>
-                            ${resChofer === 'Para ingresar' ? `<input type="date" class="ficha-input" style="width:auto" value="${c.fecha_ingreso_chofer || ''}" onchange="updateCandChoferFecha(${c.id},this.value).then(()=>renderFichaModalContent(${c.id}))">` : ''}
-                        `}
-                    </div>
-                </td>
-            </tr>
-        </tbody>
-    </table>
-    </div>
+    box.innerHTML = `<div style="overflow-x:auto">${buildFichaTableHtml(c, b)}</div>
     <div class="tip" style="margin-top:10px;display:block">
         <i class="fas fa-info-circle"></i> Si algún campo no se guarda, es probable que falte agregar la columna correspondiente en la tabla <strong>candidatos</strong> de Supabase (ver aviso emergente al guardar).
     </div>`;
@@ -1471,8 +1562,10 @@ async function updateFichaField(candId, field, val) {
     }
     if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE en candidatos)', true); return; }
     await loadData();
-    renderTable();
-    renderFichaModalContent(candId);
+    refreshView();
+    if (document.getElementById('ficha-cand-id')?.value == candId && !document.getElementById('modal-ficha').classList.contains('hidden')) {
+        renderFichaModalContent(candId);
+    }
     toast('Guardado ✓');
 }
 
@@ -1492,12 +1585,12 @@ async function savePsico() {
     if (!nombre) return;
     const { error } = await sb.from('psicotecnicos').insert({ busqueda_id: id, nombre, resultado, selector_psico, realizado_por, auth_por });
     if (error) { toast('Error al guardar', true); return; }
-    closeModal('modal-psico'); await loadData(); renderTable(); toast('Psicotécnico agregado ✓');
+    closeModal('modal-psico'); await loadData(); refreshView(); toast('Psicotécnico agregado ✓');
 }
 async function removePsico(psicoId) {
     if (!confirm('¿Eliminar este psicotécnico? Esta acción no se puede deshacer.')) return;
     await sb.from('psicotecnicos').delete().eq('id', psicoId);
-    await loadData(); renderTable(); toast('Eliminado');
+    await loadData(); refreshView(); toast('Eliminado');
 }
 
 function openVerifModal(id) {
@@ -1525,7 +1618,7 @@ async function saveVerif() {
         ({ error } = await sb.from('verificaciones').insert({ busqueda_id: id, tipo, resultado, selector_verif, observaciones }));
     }
     if (error) { toast('Error al guardar: ' + (error.message || error.code), true); return; }
-    closeModal('modal-verif'); await loadData(); renderTable(); toast('Verificación agregada ✓');
+    closeModal('modal-verif'); await loadData(); refreshView(); toast('Verificación agregada ✓');
 }
 
 // ── Editar estado inline + congelar/reactivar contador ──
@@ -1544,13 +1637,13 @@ async function updateVerifEstado(verifId, resultado) {
     }
     if (error) { toast('Error: ' + (error.message || error.code), true); return; }
     if (!data || data.length === 0) { toast('No se actualizó (revisar policy UPDATE en verificaciones)', true); return; }
-    await loadData(); renderTable(); toast('Estado actualizado ✓');
+    await loadData(); refreshView(); toast('Estado actualizado ✓');
 }
 
 async function removeVerif(verifId) {
     if (!confirm('¿Eliminar esta verificación? Esta acción no se puede deshacer.')) return;
     await sb.from('verificaciones').delete().eq('id', verifId);
-    await loadData(); renderTable(); toast('Eliminado');
+    await loadData(); refreshView(); toast('Eliminado');
 }
 
 async function addNew() {
@@ -1579,7 +1672,7 @@ async function addNew() {
     }
     if (error) { toast('Error al crear búsqueda', true); return; }
     await sb.from('historial').insert({ busqueda_id: data.id, texto: 'Apertura de vacante', fecha: new Date().toISOString() });
-    closeModal('modal-nueva'); await loadData(); renderTable(); toast('Búsqueda creada ✓');
+    closeModal('modal-nueva'); await loadData(); refreshView(); toast('Búsqueda creada ✓');
 }
 
 async function reabrir(id) {
@@ -1612,7 +1705,7 @@ async function reabrir(id) {
     const updOrig = { status: 'Cerrada' };
     if (fechaBaja && /^\d{4}-\d{2}-\d{2}$/.test(fechaBaja.trim())) updOrig.fecha_baja = fechaBaja.trim();
     await sb.from('busquedas').update(updOrig).eq('id', id);
-    await loadData(); renderTable();
+    await loadData(); refreshView();
     toast('Búsqueda reabierta como ' + nueva.numero + ' ✓');
 }
 
@@ -1620,7 +1713,7 @@ async function eliminar(id) {
     if (!isAdmin()) { toast('Solo un administrador puede eliminar búsquedas', true); return; }
     if (!confirm('¿Eliminar esta búsqueda? Esta acción no se puede deshacer.')) return;
     await sb.from('busquedas').delete().eq('id', id);
-    await loadData(); renderTable(); toast('Búsqueda eliminada');
+    await loadData(); refreshView(); toast('Búsqueda eliminada');
 }
 
 async function subirPDF(busquedaId, input) {
@@ -1632,7 +1725,7 @@ async function subirPDF(busquedaId, input) {
     if (upErr) { toast('Error al subir: ' + upErr.message, true); return; }
     const { data: { session } } = await sb.auth.getSession();
     await sb.from('archivos').insert({ busqueda_id: busquedaId, nombre: file.name, url: path, subido_por: session.user.id });
-    await loadData(); renderTable(); toast('PDF subido ✓');
+    await loadData(); refreshView(); toast('PDF subido ✓');
     input.value = '';
 }
 async function abrirPDF(storagePath) {
@@ -1644,20 +1737,20 @@ async function eliminarPDF(archivoId, storagePath) {
     if (!confirm('¿Eliminar este archivo? Esta acción no se puede deshacer.')) return;
     await sb.storage.from('Busquedas-pdfs').remove([storagePath]);
     await sb.from('archivos').delete().eq('id', archivoId);
-    await loadData(); renderTable(); toast('Archivo eliminado');
+    await loadData(); refreshView(); toast('Archivo eliminado');
 }
 
 function showView(v, btn) {
     if ((v === 'stats' || v === 'charts') && !isAdmin()) { toast('Acceso restringido a administradores', true); return; }
-    // 'pipeline' y 'choferes' comparten el mismo DOM (#view-pipeline), solo cambia la categoría
-    const domView = (v === 'choferes') ? 'pipeline' : v;
-    ['pipeline', 'stats', 'charts'].forEach(id => document.getElementById('view-' + id).classList.toggle('hidden', id !== domView));
+    // 'pipeline' usa #view-pipeline (tabla); 'choferes' usa #view-fichas (tarjetas)
+    const domView = (v === 'choferes') ? 'fichas' : v;
+    ['pipeline', 'fichas', 'stats', 'charts'].forEach(id => document.getElementById('view-' + id).classList.toggle('hidden', id !== domView));
     document.querySelectorAll('.inline-nav-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
     const titles = {
         pipeline: ['Pipeline de Selección', 'Control de búsquedas, seguimiento y feedback'],
-        choferes: ['Choferes y Ayudantes', 'Pipeline exclusivo de choferes y ayudantes'],
+        choferes: ['Choferes y Ayudantes', 'Fichas de postulantes a chofer y ayudante'],
         stats:    ['Estadísticas', 'Análisis de rendimiento y métricas'],
         charts:   ['Gráficos', 'Visualizaciones interactivas del pipeline']
     };
@@ -1669,7 +1762,7 @@ function showView(v, btn) {
         currentCategoria = (v === 'choferes') ? 'choferes' : 'general';
         filteredIds = null;
         ['f-selector','f-tipo','f-depto','f-status','f-search','f-chofer-resultado'].forEach(fid => { const el = document.getElementById(fid); if (el) el.value = ''; });
-        renderTable();
+        refreshView();
     }
     if (v === 'stats')  renderStats('general');
     if (v === 'charts') { destroyCharts(); renderCharts('general'); }
