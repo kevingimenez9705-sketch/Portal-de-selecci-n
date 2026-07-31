@@ -161,6 +161,7 @@
         details[open] summary i { transform: rotate(90deg); }
         .motivo-chip { font-size: 11px; padding: 2px 7px; border-radius: 100px; font-weight: 700; background: #e9edf5; display: inline-block; }
         .motivo-expansion { background: #cfe2ff; color: #0a367a; } .motivo-rotacion { background: #ffd6a5; color: #7c3d00; } .motivo-pdf { background: #d8f3dc; color: #1b4332; }
+        .motivo-sov { background: #e2d6f5; color: #4a1272; }
         .ubic-pill { font-size: 11px; padding: 1px 6px; border-radius: 5px; background: #e9edf5; display: inline-block; margin-top: 2px; }
         .sep { height: 1px; background: var(--border); margin: 6px 0; }
         .tip { font-size: 11px; color: var(--muted); font-style: italic; }
@@ -195,7 +196,7 @@
         .chart-wrap-sm { position: relative; height: 170px; }
         .chart-wrap-lg { position: relative; height: 260px; }
         .chart-wrap-xl { position: relative; height: 340px; }
-        .mini-kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+        .mini-kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; margin-bottom: 20px; }
         .mini-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; box-shadow: var(--shadow-sm); }
         .mini-kpi-num { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; line-height: 1; color: var(--accent-dark); }
         .mini-kpi-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-top: 5px; }
@@ -425,12 +426,12 @@
                     <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Soledad</option><option>Juan Pablo</option><option>Angel</option><option>Noelia</option>
                 </select>
             </div>
-            <div class="form-group"><label>Departamento</label><input class="form-input" id="n-depto" placeholder="Ej: Administración"></div>
+            <div class="form-group"><label>Departamento</label><input class="form-input" id="n-depto" placeholder="Ej: Administración" list="depto-datalist"><datalist id="depto-datalist"></datalist></div>
             <div class="form-group"><label>Tipo</label>
                 <select class="form-input" id="n-tipo"><option value="Staff">Staff</option><option value="Fábrica">Fábrica</option></select>
             </div>
             <div class="form-group"><label>Motivo</label>
-                <select class="form-input" id="n-motivo"><option>Expansión</option><option>Rotación</option><option>Reemplazo</option></select>
+                <select class="form-input" id="n-motivo"><option>Expansión</option><option>Rotación</option><option>Reemplazo</option><option>SOV</option></select>
             </div>
             <div class="form-group"><label>Nivel</label>
                 <input class="form-input" id="n-nivel" placeholder="Ej: Otros, Jefe/Encargado, Gerente..." list="nivel-datalist">
@@ -789,6 +790,7 @@ function demoraClass(dias, nivel) {
 function motivoClass(m) {
     if (m === 'Expansión') return 'motivo-expansion';
     if (m === 'Rotación') return 'motivo-rotacion';
+    if (m === 'SOV') return 'motivo-sov';
     return 'motivo-pdf';
 }
 function psicoClass(r) {
@@ -802,6 +804,70 @@ function verifClass(r) {
     if (r === 'Observado') return 'res-reservas';
     if (r === 'No Apto' || r === 'Rechazado') return 'res-noapto';
     return 'res-obs';
+}
+
+// Bloque de psicotécnicos, reutilizado en la tabla Pipeline y en la ficha de Choferes/Ayudantes.
+function renderPsicoBlock(b, isLocked) {
+    const psicoHtml = b.psicotecnicos.length > 0
+        ? b.psicotecnicos.map(p => `
+            <div class="psico-item">
+                <span class="psico-nombre">${p.nombre}</span>
+                <span>
+                    <span class="psico-result ${psicoClass(p.resultado)}">${p.resultado}</span>
+                    ${p.selector_psico ? `<span class="psico-quien"><i class="fas fa-user" style="font-size:8px"></i> Realizó: <strong>${p.selector_psico}</strong></span>` : ''}
+                    ${p.realizado_por ? `<span class="psico-quien">Evaluador: ${p.realizado_por}</span>` : ''}
+                    ${p.auth ? `<span class="psico-quien">Auth: ${p.auth}</span>` : ''}
+                    ${!isLocked ? `<button onclick="removePsico(${p.id})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:9px">✕</button>` : ''}
+                </span>
+            </div>`).join('')
+        : `<span class="tip">Sin psicotécnicos</span>`;
+    return `
+    <details>
+        <summary><i class="fas fa-chevron-right"></i> Psicotécnicos (${b.psicotecnicos.length})</summary>
+        <div style="padding-top:5px" class="cell-scroll">
+            ${psicoHtml}
+            ${!isLocked ? `<button class="btn-sm" style="margin-top:5px" onclick="openPsicoModal(${b.id})"><i class="fas fa-plus" style="font-size:8px"></i> Agregar</button>` : ''}
+        </div>
+    </details>`;
+}
+
+// Bloque de verificaciones (incluye Nosis), reutilizado en la tabla Pipeline y en la ficha de Choferes/Ayudantes.
+function renderVerifBlock(b, isLocked) {
+    const verifHtml = b.verificaciones.length > 0
+        ? b.verificaciones.map(v => {
+            const enCurso = verifEnCurso(v.resultado);
+            let counterHtml = '';
+            if (v.fecha_inicio) {
+                const d = enCurso ? daysDiff(v.fecha_inicio) : daysDiff(v.fecha_inicio, v.fecha_fin || null);
+                counterHtml = `<span class="verif-counter ${enCurso ? 'verif-counter-run' : 'verif-counter-done'}" title="${enCurso ? 'En curso desde ' + v.fecha_inicio : 'Resuelto en ' + d + ' días háb. (' + v.fecha_inicio + ' → ' + (v.fecha_fin || '—') + ')'}">
+                    <i class="fas fa-${enCurso ? 'hourglass-half' : 'flag-checkered'}" style="font-size:8px"></i> ${d}hd
+                </span>`;
+            }
+            return `
+            <div class="psico-item">
+                <span class="psico-nombre">${v.tipo}</span>
+                <span style="text-align:right">
+                    ${isLocked
+                        ? `<span class="psico-result ${verifClass(v.resultado)}">${v.resultado}</span>`
+                        : `<select class="inline-select" style="font-size:11px" onchange="updateVerifEstado(${v.id},this.value)">
+                            ${['Pendiente','En proceso','OK','Observado','No Apto'].map(o => `<option value="${o}" ${v.resultado === o ? 'selected' : ''}>${o === 'OK' ? 'OK / Apto' : o}</option>`).join('')}
+                           </select>`}
+                    ${counterHtml ? `<span style="display:block">${counterHtml}</span>` : ''}
+                    ${v.selector_verif ? `<span class="psico-quien"><i class="fas fa-user" style="font-size:8px"></i> Realizó: <strong>${v.selector_verif}</strong></span>` : ''}
+                    ${v.observaciones ? `<span class="psico-quien">Obs: ${v.observaciones}</span>` : ''}
+                    ${!isLocked ? `<button onclick="removeVerif(${v.id})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:9px">✕</button>` : ''}
+                </span>
+            </div>`;
+        }).join('')
+        : `<span class="tip">Sin verificaciones</span>`;
+    return `
+    <details>
+        <summary><i class="fas fa-chevron-right"></i> Verificaciones / Nosis (${b.verificaciones.length})</summary>
+        <div style="padding-top:5px" class="cell-scroll">
+            ${verifHtml}
+            ${!isLocked ? `<button class="btn-sm" style="margin-top:5px" onclick="openVerifModal(${b.id})"><i class="fas fa-plus" style="font-size:8px"></i> Agregar</button>` : ''}
+        </div>
+    </details>`;
 }
 function tagClass(s) {
     if (s === 'Proceso') return 'tag-proceso';
@@ -857,50 +923,6 @@ function renderTable() {
         const isLocked = locked(b);
         const diasEnEmpresa = b.ingreso ? daysDiff(b.ingreso, b.fecha_baja || null) : 0;
         const cantComentarios = (b.estado_busqueda || []).length;
-
-        // PSICO
-        const psicoHtml = b.psicotecnicos.length > 0
-            ? b.psicotecnicos.map(p => `
-                <div class="psico-item">
-                    <span class="psico-nombre">${p.nombre}</span>
-                    <span>
-                        <span class="psico-result ${psicoClass(p.resultado)}">${p.resultado}</span>
-                        ${p.selector_psico ? `<span class="psico-quien"><i class="fas fa-user" style="font-size:8px"></i> Realizó: <strong>${p.selector_psico}</strong></span>` : ''}
-                        ${p.realizado_por ? `<span class="psico-quien">Evaluador: ${p.realizado_por}</span>` : ''}
-                        ${p.auth ? `<span class="psico-quien">Auth: ${p.auth}</span>` : ''}
-                        ${!isLocked ? `<button onclick="removePsico(${p.id})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:9px">✕</button>` : ''}
-                    </span>
-                </div>`).join('')
-            : `<span class="tip">Sin psicotécnicos</span>`;
-
-        // VERIFICACIONES
-        const verifHtml = b.verificaciones.length > 0
-            ? b.verificaciones.map(v => {
-                const enCurso = verifEnCurso(v.resultado);
-                let counterHtml = '';
-                if (v.fecha_inicio) {
-                    const d = enCurso ? daysDiff(v.fecha_inicio) : daysDiff(v.fecha_inicio, v.fecha_fin || null);
-                    counterHtml = `<span class="verif-counter ${enCurso ? 'verif-counter-run' : 'verif-counter-done'}" title="${enCurso ? 'En curso desde ' + v.fecha_inicio : 'Resuelto en ' + d + ' días háb. (' + v.fecha_inicio + ' → ' + (v.fecha_fin || '—') + ')'}">
-                        <i class="fas fa-${enCurso ? 'hourglass-half' : 'flag-checkered'}" style="font-size:8px"></i> ${d}hd
-                    </span>`;
-                }
-                return `
-                <div class="psico-item">
-                    <span class="psico-nombre">${v.tipo}</span>
-                    <span style="text-align:right">
-                        ${isLocked
-                            ? `<span class="psico-result ${verifClass(v.resultado)}">${v.resultado}</span>`
-                            : `<select class="inline-select" style="font-size:11px" onchange="updateVerifEstado(${v.id},this.value)">
-                                ${['Pendiente','En proceso','OK','Observado','No Apto'].map(o => `<option value="${o}" ${v.resultado === o ? 'selected' : ''}>${o === 'OK' ? 'OK / Apto' : o}</option>`).join('')}
-                               </select>`}
-                        ${counterHtml ? `<span style="display:block">${counterHtml}</span>` : ''}
-                        ${v.selector_verif ? `<span class="psico-quien"><i class="fas fa-user" style="font-size:8px"></i> Realizó: <strong>${v.selector_verif}</strong></span>` : ''}
-                        ${v.observaciones ? `<span class="psico-quien">Obs: ${v.observaciones}</span>` : ''}
-                        ${!isLocked ? `<button onclick="removeVerif(${v.id})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:9px">✕</button>` : ''}
-                    </span>
-                </div>`;
-            }).join('')
-            : `<span class="tip">Sin verificaciones</span>`;
 
         // CANDIDATOS
         const candHtml = b.candidatos.length > 0
@@ -1112,20 +1134,8 @@ function renderTable() {
             <td>
                 ${estadoHtml}
                 <div class="sep"></div>
-                <details>
-                    <summary><i class="fas fa-chevron-right"></i> Psicotécnicos (${b.psicotecnicos.length})</summary>
-                    <div style="padding-top:5px" class="cell-scroll">
-                        ${psicoHtml}
-                        ${!isLocked ? `<button class="btn-sm" style="margin-top:5px" onclick="openPsicoModal(${b.id})"><i class="fas fa-plus" style="font-size:8px"></i> Agregar</button>` : ''}
-                    </div>
-                </details>
-                <details>
-                    <summary><i class="fas fa-chevron-right"></i> Verificaciones (${b.verificaciones.length})</summary>
-                    <div style="padding-top:5px" class="cell-scroll">
-                        ${verifHtml}
-                        ${!isLocked ? `<button class="btn-sm" style="margin-top:5px" onclick="openVerifModal(${b.id})"><i class="fas fa-plus" style="font-size:8px"></i> Agregar</button>` : ''}
-                    </div>
-                </details>
+                ${renderPsicoBlock(b, isLocked)}
+                ${renderVerifBlock(b, isLocked)}
             </td>
             <td>
                 <div class="section-hdr">Candidatos enviados al área</div>
@@ -1314,6 +1324,11 @@ function renderFichaCard(c, b) {
             </div>
         </div>
         <div style="overflow-x:auto">${buildFichaTableHtml(c, b)}</div>
+        <div style="margin-top:8px">
+            <div class="section-hdr">Psicotécnicos y verificaciones (de la búsqueda ${b.numero})</div>
+            ${renderPsicoBlock(b, isLocked)}
+            ${renderVerifBlock(b, isLocked)}
+        </div>
         <div class="ficha-card-files">
             <div class="section-hdr" style="margin-bottom:3px">Archivos PDF (de la búsqueda)</div>
             <div class="cell-scroll" style="max-height:44px">${archivosHtml}</div>
@@ -1452,6 +1467,10 @@ function updateDeptoFilter() {
     const sel = document.getElementById('f-depto');
     const cur = sel.value;
     sel.innerHTML = '<option value="">Todos los dptos.</option>' + deptos.map(d => `<option ${d === cur ? 'selected' : ''}>${d}</option>`).join('');
+
+    // Lista de departamentos ya cargados, para sugerir en "Nueva Búsqueda" (input con datalist).
+    const todosDeptos = [...new Set(busquedas.map(b => b.depto).filter(Boolean))].sort();
+    document.getElementById('depto-datalist').innerHTML = todosDeptos.map(d => `<option value="${d}">`).join('');
 }
 
 // ══════════════════════════════════════════════
@@ -1990,6 +2009,15 @@ function renderChartsGeneral() {
         dias: daysDiff(b.ingreso, b.fecha_baja || null), puesto: b.puesto
     })).sort((a, b) => b.dias - a.dias);
 
+    // ── Tasa de cobertura (búsquedas cerradas/finalizadas sobre el total) — Staff = personal de Oficina ──
+    const coberturaStaff   = staff   ? Math.round((busquedas.filter(b => b.tipo === 'Staff'   && (b.status === 'Cerrada' || b.status === 'Finalizada')).length / staff)   * 100) : 0;
+    const coberturaFabrica = fabrica ? Math.round((busquedas.filter(b => b.tipo === 'Fábrica' && (b.status === 'Cerrada' || b.status === 'Finalizada')).length / fabrica) * 100) : 0;
+
+    // ── Tasa de permanencia: % de ingresados que llegaron a los 90 días hábiles en la empresa ──
+    const conIngreso    = busquedas.filter(b => b.ingreso).length;
+    const retenidos90   = busquedas.filter(b => b.ingreso && daysDiff(b.ingreso, b.fecha_baja || null) >= 90).length;
+    const tasaPermanencia = conIngreso ? Math.round((retenidos90 / conIngreso) * 100) : 0;
+
     // ── Demora promedio por nivel (Otros / Jefe-Encargado / Gerente-Director) ──
     const NIVELES = ['Otros', 'Jefe/Encargado', 'Gerente/Director'];
     const demoraPorNivel = NIVELES.map(n => {
@@ -2006,7 +2034,25 @@ function renderChartsGeneral() {
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--orange)">${totalCands}</div><div class="mini-kpi-lbl">Candidatos</div><div class="mini-kpi-sub">⌀ ${(totalCands / Math.max(busquedas.length, 1)).toFixed(1)} por búsqueda</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:#92400e">${finalizadas}</div><div class="mini-kpi-lbl">Finalizadas</div><div class="mini-kpi-sub">≥ 90 días háb. en empresa</div></div>
     </div>
-    <div class="charts-grid-2">
+    <div style="margin-top:20px">
+        <div class="chart-card">
+            <div class="chart-card-title"><i class="fas fa-bullseye"></i> Cobertura y Permanencia</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;flex-wrap:wrap">
+                <div>
+                    <div class="section-hdr" style="margin-bottom:8px">Tasa de cobertura (cerradas/finalizadas sobre el total)</div>
+                    <div class="bar-row"><div class="bar-row-top"><span>Total</span><span>${tasaCierre}%</span></div><div class="bar-track"><div class="bar-fill" style="width:${tasaCierre}%"></div></div></div>
+                    <div class="bar-row"><div class="bar-row-top"><span>Staff (Oficina)</span><span>${coberturaStaff}%</span></div><div class="bar-track"><div class="bar-fill bar-fill-staff" style="width:${coberturaStaff}%"></div></div></div>
+                    <div class="bar-row"><div class="bar-row-top"><span>Fábrica</span><span>${coberturaFabrica}%</span></div><div class="bar-track"><div class="bar-fill bar-fill-fab" style="width:${coberturaFabrica}%"></div></div></div>
+                </div>
+                <div style="text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center">
+                    <div style="font-family:'Syne',sans-serif;font-size:38px;font-weight:800;color:var(--accent-dark)">${tasaPermanencia}%</div>
+                    <div class="mini-kpi-lbl" style="margin-top:4px">Tasa de Permanencia</div>
+                    <div class="mini-kpi-sub">${retenidos90} de ${conIngreso} ingresos llegaron a 90 días háb.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="charts-grid-2" style="margin-top:20px">
         <div class="chart-card"><div class="chart-card-title"><i class="fas fa-tag"></i> Por Motivo</div><div class="chart-wrap-sm"><canvas id="ch-motivo"></canvas></div></div>
         <div class="chart-card"><div class="chart-card-title"><i class="fas fa-layer-group"></i> Por Nivel</div><div class="chart-wrap-sm"><canvas id="ch-nivel"></canvas></div></div>
     </div>
@@ -2033,7 +2079,8 @@ function renderChartsGeneral() {
 
     const palette = ['#161b24','#005f73','#2d6a4f','#ca6702','#9b2226','#b5a300','#4a1272','#0a367a'];
     const cd = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { font: { family: 'DM Sans', size: 11 }, color: '#161b24' } } } };
-    chartInstances['motivo'] = new Chart(document.getElementById('ch-motivo'), { type: 'doughnut', data: { labels: Object.keys(byMotivo), datasets: [{ data: Object.values(byMotivo), backgroundColor: ['#cfe2ff','#ffd6a5','#d8f3dc'], borderWidth: 2 }] }, options: { ...cd, cutout: '55%' } });
+    const MOTIVO_COLORS = { 'Expansión': '#cfe2ff', 'Rotación': '#ffd6a5', 'SOV': '#e2d6f5', 'Reemplazo': '#d8f3dc' };
+    chartInstances['motivo'] = new Chart(document.getElementById('ch-motivo'), { type: 'doughnut', data: { labels: Object.keys(byMotivo), datasets: [{ data: Object.values(byMotivo), backgroundColor: Object.keys(byMotivo).map(m => MOTIVO_COLORS[m] || '#d8f3dc'), borderWidth: 2 }] }, options: { ...cd, cutout: '55%' } });
     chartInstances['nivel']  = new Chart(document.getElementById('ch-nivel'),  { type: 'bar', data: { labels: Object.keys(byNivel), datasets: [{ label: 'Cantidad', data: Object.values(byNivel), backgroundColor: ['#ca6702cc','#005f73cc','#9b2226cc'], borderRadius: 6 }] }, options: { ...cd, plugins: { legend: { display: false } }, indexAxis: 'y', scales: { x: { beginAtZero: true, ticks: { precision: 0 } }, y: { grid: { display: false } } } } });
     chartInstances['demoraNivel'] = new Chart(document.getElementById('ch-demora-nivel'), { type: 'bar', data: { labels: demoraPorNivel.map(d => `${d.nivel} (${d.count})`), datasets: [
         { label: 'Demora promedio (hd)', data: demoraPorNivel.map(d => d.avg), backgroundColor: demoraPorNivel.map(d => d.avg > d.limite ? '#9b2226cc' : '#2d6a4fcc'), borderColor: demoraPorNivel.map(d => d.avg > d.limite ? '#9b2226' : '#2d6a4f'), borderWidth: 2, borderRadius: 6 },
@@ -2059,12 +2106,34 @@ function renderChartsTiempo() {
     const byNivel = {};
     cerradas.forEach(b => { if (!byNivel[b.nivel]) byNivel[b.nivel] = []; byNivel[b.nivel].push(daysDiff(b.inicio, b.ingreso)); });
     const nivelAvg = Object.entries(byNivel).map(([n, d]) => ({ nivel: n, avg: Math.round(d.reduce((a, c) => a + c, 0) / d.length), limite: DEMORA_LIMITE[n] || 15 }));
+
+    // ── % de búsquedas cerradas dentro de plazo vs excedidas ──
+    const enTiempo    = cerradas.filter(b => daysDiff(b.inicio, b.ingreso) <= (DEMORA_LIMITE[b.nivel] || 15)).length;
+    const excedidas   = cerradas.length - enTiempo;
+    const pctEnTiempo = cerradas.length ? Math.round((enTiempo / cerradas.length) * 100) : 0;
+
+    // ── Demora: cuánto tardó el equipo de Selección (envío al sector) vs el cliente interno (decisión del sector), por selector ──
+    const bySelDemora = {};
+    busquedas.forEach(b => {
+        const t = tramosDemora(b);
+        if (t.t2NA) return;
+        if (!bySelDemora[b.selector]) bySelDemora[b.selector] = { t1: [], t2: [] };
+        if (!t.t1Run) bySelDemora[b.selector].t1.push(t.t1);
+        if (!t.t2Run) bySelDemora[b.selector].t2.push(t.t2);
+    });
+    const demoraEquipoCliente = Object.entries(bySelDemora).map(([sel, d]) => ({
+        sel,
+        equipo:  d.t1.length ? Math.round(d.t1.reduce((a, c) => a + c, 0) / d.t1.length) : 0,
+        cliente: d.t2.length ? Math.round(d.t2.reduce((a, c) => a + c, 0) / d.t2.length) : 0
+    }));
+
     document.getElementById('charts-content').innerHTML = `
     <div class="mini-kpi-row">
         <div class="mini-kpi"><div class="mini-kpi-num">${avgDias}hd</div><div class="mini-kpi-lbl">Tiempo promedio</div><div class="mini-kpi-sub">${cerradas.length} búsquedas cerradas</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${minDias}hd</div><div class="mini-kpi-lbl">Más rápida</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--red)">${maxDias}hd</div><div class="mini-kpi-lbl">Más lenta</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--orange)">${busquedas.filter(b => { const d = daysDiff(b.inicio); return d > (DEMORA_LIMITE[b.nivel] || 15) && b.status === 'Proceso'; }).length}</div><div class="mini-kpi-lbl">Fuera de plazo</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${pctEnTiempo}%</div><div class="mini-kpi-lbl">Cerradas en tiempo</div><div class="mini-kpi-sub">${enTiempo} en tiempo · ${excedidas} excedidas</div></div>
     </div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:12px;padding:6px 12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;display:inline-block">
         <i class="fas fa-info-circle"></i> Todos los tiempos expresados en <strong>días hábiles (hd)</strong> — lunes a viernes
@@ -2073,6 +2142,8 @@ function renderChartsTiempo() {
         <div class="chart-card"><div class="chart-card-title"><i class="fas fa-clock"></i> Distribución de Tiempos de Cierre (días hábiles)</div><div class="chart-wrap"><canvas id="ch-dist"></canvas></div></div>
         <div class="chart-card"><div class="chart-card-title"><i class="fas fa-user-clock"></i> Tiempo Prom. por Selector (días hábiles)</div><div class="chart-wrap"><canvas id="ch-seltime"></canvas></div></div>
         <div class="chart-card full"><div class="chart-card-title"><i class="fas fa-layer-group"></i> Tiempo Real vs Límite por Nivel (días hábiles)</div><div class="chart-wrap"><canvas id="ch-nivellib"></canvas></div></div>
+        <div class="chart-card"><div class="chart-card-title"><i class="fas fa-check-double"></i> % En Tiempo vs Excedidas</div><div class="chart-wrap-sm"><canvas id="ch-entiempo"></canvas></div></div>
+        <div class="chart-card full"><div class="chart-card-title"><i class="fas fa-people-arrows"></i> Demora: Equipo (envío al sector) vs Cliente Interno (decisión del sector)</div><div class="chart-wrap"><canvas id="ch-equipocliente"></canvas></div></div>
     </div>
     <div style="margin-top:20px"><div class="chart-card"><div class="chart-card-title"><i class="fas fa-list-ol"></i> Ranking más rápidas</div>
     <div>${cerradas.sort((a, b) => daysDiff(a.inicio, a.ingreso) - daysDiff(b.inicio, b.ingreso)).slice(0, 6).map((b, i) => { const d = daysDiff(b.inicio, b.ingreso); const lim = DEMORA_LIMITE[b.nivel] || 15; return `<div class="rank-row"><span class="rank-pos">#${i + 1}</span><span class="rank-name">${b.puesto} <span style="font-size:11px;color:var(--muted)">· ${b.selector}</span></span><span class="rank-stat" style="color:${d <= lim ? 'var(--green)' : 'var(--red)'}">${d}hd</span><span style="font-size:11px;color:var(--muted);margin-left:6px">lim. ${lim}hd</span></div>`; }).join('')}</div>
@@ -2080,6 +2151,11 @@ function renderChartsTiempo() {
     chartInstances['dist']     = new Chart(document.getElementById('ch-dist'),     { type: 'bar', data: { labels: Object.keys(rangos), datasets: [{ label: 'Búsquedas', data: Object.values(rangos), backgroundColor: ['#d1e7dd','#cfe2ff','#fff3cd','#ffd6a5','#f8d7da'], borderColor: ['#0a3622','#0a367a','#664d03','#7c3d00','#721c24'], borderWidth: 2, borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
     chartInstances['seltime']  = new Chart(document.getElementById('ch-seltime'),  { type: 'bar', data: { labels: selAvg.map(s => s.sel), datasets: [{ label: 'Días háb. promedio', data: selAvg.map(s => s.avg), backgroundColor: selAvg.map(s => s.avg > 14 ? '#f8d7da' : '#d1e7dd'), borderColor: selAvg.map(s => s.avg > 14 ? '#721c24' : '#0a3622'), borderWidth: 2, borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
     chartInstances['nivellib'] = new Chart(document.getElementById('ch-nivellib'), { type: 'bar', data: { labels: nivelAvg.map(n => n.nivel), datasets: [{ label: 'Tiempo real (hd)', data: nivelAvg.map(n => n.avg), backgroundColor: '#005f73cc', borderRadius: 4 }, { label: 'Límite establecido (hd)', data: nivelAvg.map(n => n.limite), backgroundColor: '#9b222633', borderColor: '#9b2226', borderWidth: 2, borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
+    chartInstances['entiempo'] = new Chart(document.getElementById('ch-entiempo'), { type: 'doughnut', data: { labels: ['En tiempo', 'Excedidas'], datasets: [{ data: [enTiempo, excedidas], backgroundColor: ['#2d6a4fcc', '#9b2226cc'], borderColor: ['#2d6a4f', '#9b2226'], borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '55%', plugins: { legend: { labels: { font: { family: 'DM Sans', size: 11 } } } } } });
+    chartInstances['equipocliente'] = new Chart(document.getElementById('ch-equipocliente'), { type: 'bar', data: { labels: demoraEquipoCliente.map(d => d.sel), datasets: [
+        { label: 'Equipo (envío al sector)', data: demoraEquipoCliente.map(d => d.equipo), backgroundColor: '#005f73cc', borderColor: '#005f73', borderWidth: 2, borderRadius: 6 },
+        { label: 'Cliente interno (decisión del sector)', data: demoraEquipoCliente.map(d => d.cliente), backgroundColor: '#ca6702cc', borderColor: '#ca6702', borderWidth: 2, borderRadius: 6 }
+    ] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { font: { family: 'DM Sans', size: 11 } } } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
 }
 
 function renderChartsSelectores() {
