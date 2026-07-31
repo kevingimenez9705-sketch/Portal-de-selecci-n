@@ -127,6 +127,9 @@
         .cand-tl-badge-done { background: #d1fae5; color: #065f46; }
         .cand-tl-badge-rejected { background: #f8d7da; color: #721c24; }
         .cand-tl-badge-alerta { background: var(--danger); color: var(--danger-text); animation: alertapulse 1.6s infinite; }
+        .cand-tl-desc { font-size: 9px; font-weight: 600; opacity: .8; }
+        .cand-justificar { margin-top: 5px; }
+        .cand-justificar summary { font-size: 10px !important; color: var(--muted); }
         .modal-bg { position: fixed; inset: 0; background: rgba(14,17,26,.55); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; backdrop-filter: blur(3px); }
         .modal-bg.hidden { display: none; }
         .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; width: 100%; max-width: 560px; padding: 28px; box-shadow: var(--shadow-lg); max-height: 90vh; overflow-y: auto; }
@@ -586,10 +589,15 @@ const SELECTORES = ['Silvina','Romina','Claudia','Soledad','Juan Pablo','Angel',
 const DEMORA_LIMITE = { 'Gerente/Director': 45, 'Jefe/Encargado': 30, 'Otros': 15 };
 const ALERTA_SECTOR_LIMITE_HD = 3; // 72hs hábiles sin respuesta del sector desde "Enviado al sector"
 
-// Búsqueda en Proceso con al menos un candidato "Enviado al área" hace 3+ días hábiles sin respuesta.
+// Búsqueda en Proceso con al menos un candidato "Enviado al área" hace 3+ días hábiles sin respuesta
+// (descontando los días hábiles justificados que no dependen del equipo).
 function alertaSectorVencido(b) {
     if (b.status !== 'Proceso') return false;
-    return (b.candidatos || []).some(c => c.estado === 'Enviado' && c.fecha_envio && daysDiff(c.fecha_envio) >= ALERTA_SECTOR_LIMITE_HD);
+    return (b.candidatos || []).some(c => {
+        if (c.estado !== 'Enviado' || !c.fecha_envio) return false;
+        const d = Math.max(0, daysDiff(c.fecha_envio) - (c.demora_descuento_dias || 0));
+        return d >= ALERTA_SECTOR_LIMITE_HD;
+    });
 }
 const VERIF_EN_CURSO = ['Pendiente','En proceso'];
 function verifEnCurso(r) { return VERIF_EN_CURSO.includes(r); }
@@ -960,16 +968,28 @@ function renderTable() {
                 let tlHtml = '';
                 if (c.fecha_envio) {
                     if (c.estado === 'Enviado') {
-                        const d = daysDiff(c.fecha_envio);
+                        const dRaw = daysDiff(c.fecha_envio);
+                        const descuento = c.demora_descuento_dias || 0;
+                        const d = Math.max(0, dRaw - descuento);
                         const vencido = d >= ALERTA_SECTOR_LIMITE_HD;
                         tlHtml = `<div class="cand-timeline">
                             <span class="cand-tl-dot cand-tl-dot-blue"></span>
                             <div class="cand-tl-line"></div>
-                            <span class="cand-tl-badge ${vencido ? 'cand-tl-badge-alerta' : 'cand-tl-badge-wait'}">${vencido ? '⚠' : '⏳'} ${d === 0 ? 'Hoy' : d + 'hd esperando'}</span>
+                            <span class="cand-tl-badge ${vencido ? 'cand-tl-badge-alerta' : 'cand-tl-badge-wait'}">${vencido ? '⚠' : '⏳'} ${d === 0 ? 'Hoy' : d + 'hd esperando'}${descuento > 0 ? ` <span class="cand-tl-desc" title="${(c.demora_descuento_motivo || '').replace(/"/g, '&quot;')}">(-${descuento}hd descontado)</span>` : ''}</span>
                             <div class="cand-tl-line"></div>
                             <span class="cand-tl-dot cand-tl-dot-green" style="opacity:.3"></span>
                         </div>
-                        ${vencido && !isLocked ? `<button class="btn-sm" style="margin-top:4px" onclick="reabrirPorDemora(${b.id})" title="Pasaron ${d}hd desde que se envió al área sin respuesta"><i class="fas fa-redo" style="font-size:8px"></i> +${ALERTA_SECTOR_LIMITE_HD}hd sin respuesta · Reabrir con contador en 0</button>` : ''}`;
+                        ${vencido && !isLocked ? `<button class="btn-sm" style="margin-top:4px" onclick="reabrirPorDemora(${b.id})" title="Pasaron ${d}hd desde que se envió al área sin respuesta"><i class="fas fa-redo" style="font-size:8px"></i> +${ALERTA_SECTOR_LIMITE_HD}hd sin respuesta · Reabrir con contador en 0</button>` : ''}
+                        ${!isLocked ? `
+                        <details class="cand-justificar">
+                            <summary><i class="fas fa-comment-medical" style="font-size:9px"></i> ${descuento > 0 ? `Demora justificada: -${descuento}hd` : 'Justificar demora (descontar días que no dependen del equipo)'}</summary>
+                            <div style="display:flex;gap:4px;align-items:center;margin-top:5px;flex-wrap:wrap">
+                                <input type="number" min="0" class="inline-input" style="width:50px;border:1px solid var(--border);background:#fff" id="justif-dias-${c.id}" value="${descuento || 0}">
+                                <span style="font-size:10px;color:var(--muted)">hd a descontar</span>
+                            </div>
+                            <input type="text" class="inline-input" style="border:1px solid var(--border);background:#fff;margin-top:4px;width:100%" id="justif-motivo-${c.id}" placeholder="Motivo (ej: candidato de licencia, feriado)" value="${(c.demora_descuento_motivo || '').replace(/"/g, '&quot;')}">
+                            <button class="btn-sm" style="margin-top:5px" onclick="guardarJustificacion(${c.id})">Guardar</button>
+                        </details>` : (descuento > 0 ? `<div class="tip" style="font-size:10px;margin-top:3px">Demora justificada: -${descuento}hd (${c.demora_descuento_motivo || 'sin motivo'})</div>` : '')}`;
                     } else if (c.estado === 'Entrevista' && c.fecha_entrevista) {
                         const d = daysDiff(c.fecha_envio, c.fecha_entrevista);
                         tlHtml = `<div class="cand-timeline">
@@ -1400,6 +1420,16 @@ async function updateCandSelector(candId, selector) {
     if (error) { toast('Error al asignar selector: ' + (error.message || error.code), true); return; }
     if (!data || data.length === 0) { toast('No se asignó (revisar policy UPDATE en candidatos)', true); return; }
     await loadData(); refreshView(); toast('Selector asignado ✓');
+}
+
+// Descuenta días hábiles del conteo de espera de un candidato que no dependen del equipo (ej: candidato de licencia, feriado del sector).
+async function guardarJustificacion(candId) {
+    const dias   = Math.max(0, parseInt(document.getElementById('justif-dias-' + candId).value) || 0);
+    const motivo = document.getElementById('justif-motivo-' + candId).value.trim();
+    const { data, error } = await sb.from('candidatos').update({ demora_descuento_dias: dias, demora_descuento_motivo: motivo || null }).eq('id', candId).select();
+    if (error) { toast('Falta la columna "demora_descuento_dias"/"demora_descuento_motivo" en candidatos (Supabase)', true); return; }
+    if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE en candidatos)', true); return; }
+    await loadData(); refreshView(); toast('Demora justificada ✓');
 }
 
 function renderFichas() {
