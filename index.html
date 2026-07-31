@@ -155,6 +155,7 @@
         details[open] summary i { transform: rotate(90deg); }
         .motivo-chip { font-size: 11px; padding: 2px 7px; border-radius: 100px; font-weight: 700; background: #e8e4de; display: inline-block; }
         .motivo-expansion { background: #cfe2ff; color: #0a367a; } .motivo-rotacion { background: #ffd6a5; color: #7c3d00; } .motivo-pdf { background: #d8f3dc; color: #1b4332; }
+        .motivo-sov { background: #f0d9ff; color: #4a1272; }
         .ubic-pill { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: #ece9e3; display: inline-block; margin-top: 2px; }
         .sep { height: 1px; background: var(--border); margin: 6px 0; }
         .tip { font-size: 11px; color: var(--muted); font-style: italic; }
@@ -338,13 +339,19 @@
                 <option value="">Todos los estados</option>
                 <option>Proceso</option><option>Cerrada</option><option>Pausada</option><option>Finalizada</option>
             </select>
+            <select class="filter-select" id="f-reabierta" onchange="applyFilters()">
+                <option value="">Reabiertas: todas</option>
+                <option value="si">Solo reabiertas</option>
+                <option value="no">Sin reabrir</option>
+            </select>
             <select class="filter-select hidden" id="f-chofer-resultado" onchange="applyFilters()">
                 <option value="">Postulantes: todos</option>
                 <option value="Pendiente">Pendiente</option>
                 <option value="Para ingresar">Para ingresar</option>
                 <option value="No apto">No apto</option>
             </select>
-            <input class="filter-input" id="f-search" placeholder="Buscar puesto..." oninput="applyFilters()">
+            <input class="filter-input" id="f-search" placeholder="Buscar por palabra clave (puesto, depto, selector, motivo, nivel, ubicación, ingresado...)" style="min-width:280px" oninput="applyFilters()">
+            <button class="btn-sm" onclick="descargarNombres()" title="Descargar nombres de las búsquedas visibles"><i class="fas fa-download" style="font-size:10px"></i> Descargar</button>
         </div>
 
         <!-- PIPELINE -->
@@ -360,7 +367,7 @@
                         <th style="width:200px">Candidatos</th>
                         <th style="width:100px">Archivos PDF</th>
                         <th style="width:160px">Ingreso</th>
-                        <th style="width:185px">Demora (hd) · Acciones</th>
+                        <th style="width:185px">Demora (activos) · Acciones</th>
                     </tr></thead>
                     <tbody id="table-body"></tbody>
                 </table>
@@ -409,12 +416,12 @@
                     <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Soledad</option><option>Juan Pablo</option><option>Angel</option><option>Noelia</option>
                 </select>
             </div>
-            <div class="form-group"><label>Departamento</label><input class="form-input" id="n-depto" placeholder="Ej: Administración"></div>
+            <div class="form-group"><label>Departamento</label><input class="form-input" id="n-depto" placeholder="Ej: Administración" list="depto-datalist"><datalist id="depto-datalist"></datalist></div>
             <div class="form-group"><label>Tipo</label>
                 <select class="form-input" id="n-tipo"><option value="Staff">Staff</option><option value="Fábrica">Fábrica</option></select>
             </div>
             <div class="form-group"><label>Motivo</label>
-                <select class="form-input" id="n-motivo"><option>Expansión</option><option>Rotación</option><option>Reemplazo</option></select>
+                <select class="form-input" id="n-motivo"><option>Expansión</option><option>Rotación</option><option>Reemplazo</option><option>SOV</option></select>
             </div>
             <div class="form-group"><label>Nivel</label>
                 <input class="form-input" id="n-nivel" placeholder="Ej: Otros, Jefe/Encargado, Gerente..." list="nivel-datalist">
@@ -649,21 +656,21 @@ function renderDemoraBreakdown(b) {
         <div class="dm-row" title="Días hábiles desde la apertura hasta enviar el perfil al sector${t.t1Run ? ' (en curso · aún sin enviar)' : ''}">
             <span class="dm-ico" style="color:var(--blue)"><i class="fas fa-paper-plane"></i></span>
             <div class="dm-body">
-                <span class="dm-val">${t.t1}<span class="dm-u">hd</span>${live(t.t1Run)}</span>
+                <span class="dm-val">${t.t1}<span class="dm-u">activos</span>${live(t.t1Run)}</span>
                 <span class="dm-lbl">Envío al sector</span>
             </div>
         </div>
         <div class="dm-row" title="${t.t2NA ? 'Aún no se envió el perfil al sector' : 'Días hábiles que tardó el sector en cerrar o rechazar el perfil' + (t.t2Run ? ' (en curso)' : '')}">
             <span class="dm-ico" style="color:var(--orange)"><i class="fas fa-building"></i></span>
             <div class="dm-body">
-                <span class="dm-val">${t2val}<span class="dm-u">hd</span>${live(t.t2Run)}</span>
+                <span class="dm-val">${t2val}<span class="dm-u">activos</span>${live(t.t2Run)}</span>
                 <span class="dm-lbl">Decisión del sector</span>
             </div>
         </div>
         <div class="dm-row dm-total" title="Demora total del proceso: envío al sector + decisión del sector (días hábiles)">
             <span class="dm-ico"><i class="fas fa-equals"></i></span>
             <div class="dm-body">
-                <span class="dm-val">${t.total}<span class="dm-u">hd</span></span>
+                <span class="dm-val">${t.total}<span class="dm-u">activos</span></span>
                 <span class="dm-lbl">Total proceso</span>
             </div>
         </div>
@@ -760,6 +767,7 @@ function demoraClass(dias, nivel) {
 function motivoClass(m) {
     if (m === 'Expansión') return 'motivo-expansion';
     if (m === 'Rotación') return 'motivo-rotacion';
+    if (m === 'SOV') return 'motivo-sov';
     return 'motivo-pdf';
 }
 function psicoClass(r) {
@@ -852,7 +860,7 @@ function renderTable() {
                 if (v.fecha_inicio) {
                     const d = enCurso ? daysDiff(v.fecha_inicio) : daysDiff(v.fecha_inicio, v.fecha_fin || null);
                     counterHtml = `<span class="verif-counter ${enCurso ? 'verif-counter-run' : 'verif-counter-done'}" title="${enCurso ? 'En curso desde ' + v.fecha_inicio : 'Resuelto en ' + d + ' días háb. (' + v.fecha_inicio + ' → ' + (v.fecha_fin || '—') + ')'}">
-                        <i class="fas fa-${enCurso ? 'hourglass-half' : 'flag-checkered'}" style="font-size:8px"></i> ${d}hd
+                        <i class="fas fa-${enCurso ? 'hourglass-half' : 'flag-checkered'}" style="font-size:8px"></i> ${d}activos
                     </span>`;
                 }
                 return `
@@ -883,7 +891,7 @@ function renderTable() {
                         tlHtml = `<div class="cand-timeline">
                             <span class="cand-tl-dot cand-tl-dot-blue"></span>
                             <div class="cand-tl-line"></div>
-                            <span class="cand-tl-badge cand-tl-badge-wait">⏳ ${d === 0 ? 'Hoy' : d + 'hd esperando'}</span>
+                            <span class="cand-tl-badge cand-tl-badge-wait">⏳ ${d === 0 ? 'Hoy' : d + 'activos esperando'}</span>
                             <div class="cand-tl-line"></div>
                             <span class="cand-tl-dot cand-tl-dot-green" style="opacity:.3"></span>
                         </div>`;
@@ -892,7 +900,7 @@ function renderTable() {
                         tlHtml = `<div class="cand-timeline">
                             <span class="cand-tl-dot cand-tl-dot-blue"></span>
                             <div class="cand-tl-line"></div>
-                            <span class="cand-tl-badge cand-tl-badge-done">✓ ${d === 0 ? 'mismo día' : d + 'hd hasta entrevista'}</span>
+                            <span class="cand-tl-badge cand-tl-badge-done">✓ ${d === 0 ? 'mismo día' : d + 'activos hasta entrevista'}</span>
                             <div class="cand-tl-line"></div>
                             <span class="cand-tl-dot cand-tl-dot-green"></span>
                         </div>`;
@@ -901,7 +909,7 @@ function renderTable() {
                         tlHtml = `<div class="cand-timeline">
                             <span class="cand-tl-dot cand-tl-dot-blue"></span>
                             <div class="cand-tl-line"></div>
-                            <span class="cand-tl-badge cand-tl-badge-rejected">✗ ${d === 0 ? 'mismo día' : d + 'hd hasta rechazo'}</span>
+                            <span class="cand-tl-badge cand-tl-badge-rejected">✗ ${d === 0 ? 'mismo día' : d + 'activos hasta rechazo'}</span>
                             <div class="cand-tl-line"></div>
                             <span class="cand-tl-dot cand-tl-dot-red"></span>
                         </div>`;
@@ -910,7 +918,7 @@ function renderTable() {
                         tlHtml = `<div class="cand-timeline">
                             <span class="cand-tl-dot cand-tl-dot-blue"></span>
                             <div class="cand-tl-line"></div>
-                            <span class="cand-tl-badge" style="background:#fef3c7;color:#92400e">↩ ${d === 0 ? 'mismo día' : d + 'hd hasta baja'}</span>
+                            <span class="cand-tl-badge" style="background:#fef3c7;color:#92400e">↩ ${d === 0 ? 'mismo día' : d + 'activos hasta baja'}</span>
                             <div class="cand-tl-line"></div>
                             <span class="cand-tl-dot" style="background:#f59e0b"></span>
                         </div>`;
@@ -994,7 +1002,7 @@ function renderTable() {
                         <div class="estado-entry-text">${e.texto}</div>
                         <div class="estado-entry-meta">
                             <i class="fas fa-clock" style="font-size:9px"></i>
-                            ${daysDiff(e.fecha) === 0 ? 'Hoy' : 'hace ' + daysDiff(e.fecha) + 'hd'} · ${e.fecha}
+                            ${daysDiff(e.fecha) === 0 ? 'Hoy' : 'hace ' + daysDiff(e.fecha) + 'activos'} · ${e.fecha}
                             ${isAdmin() ? `<button onclick="removeEstadoEntry(${e.id})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:10px;margin-left:4px" title="Solo admin">✕</button>` : ''}
                         </div>
                     </div>
@@ -1178,13 +1186,14 @@ function buildFichaTableHtml(c, b) {
                 <th colspan="2">PREOCUPACIONAL</th>
                 <th style="min-width:100px">ANTECEDENTES<br>PENALES</th>
                 <th style="min-width:110px">MANIPULACIÓN<br>DE ALIMENTOS</th>
+                <th style="min-width:90px">NOSIS</th>
             </tr>
             <tr class="ficha-subhdr">
                 <th></th><th></th>
                 <th>Fecha de envío</th><th>Fecha estimada</th><th>Resultados</th>
                 <th>Fecha Adm.</th><th>Resultado</th>
                 <th>Fecha</th><th>Resultado</th>
-                <th></th><th></th>
+                <th></th><th></th><th></th>
             </tr>
         </thead>
         <tbody>
@@ -1200,17 +1209,18 @@ function buildFichaTableHtml(c, b) {
                 <td>${sel('preocup_resultado', c.preocup_resultado, FICHA_SIMPLE_OPTS)}</td>
                 <td>${sel('antecedentes_resultado', c.antecedentes_resultado, FICHA_SIMPLE_OPTS)}</td>
                 <td>${sel('manipulacion_resultado', c.manipulacion_resultado, FICHA_SIMPLE_OPTS)}</td>
+                <td>${sel('nosis_resultado', c.nosis_resultado, FICHA_SIMPLE_OPTS)}</td>
             </tr>
-            <tr><td class="ficha-lbl">APELLIDO</td><td class="ficha-val" colspan="10">${inp('apellido', c.apellido)}</td></tr>
-            <tr><td class="ficha-lbl">DNI</td><td class="ficha-val" colspan="10">${inp('dni', c.dni)}</td></tr>
-            <tr><td class="ficha-lbl">CUIL</td><td class="ficha-val" colspan="10">${inp('cuil', c.cuil)}</td></tr>
-            <tr><td class="ficha-lbl">Fecha nacimiento</td><td class="ficha-val" colspan="10">${inp('fecha_nacimiento', c.fecha_nacimiento, 'date')}</td></tr>
-            <tr><td class="ficha-lbl">CEL</td><td class="ficha-val" colspan="10">${inp('celular', c.celular)}</td></tr>
-            <tr><td class="ficha-lbl">DOMICILIO</td><td class="ficha-val" colspan="10">${inp('domicilio', c.domicilio)}</td></tr>
-            <tr><td class="ficha-lbl">PUESTO</td><td class="ficha-val" colspan="10">${inp('puesto_candidato', c.puesto_candidato || b.puesto)}</td></tr>
-            <tr><td class="ficha-lbl">RAZÓN SOCIAL</td><td class="ficha-val" colspan="10">${inp('razon_social', c.razon_social)}</td></tr>
+            <tr><td class="ficha-lbl">APELLIDO</td><td class="ficha-val" colspan="11">${inp('apellido', c.apellido)}</td></tr>
+            <tr><td class="ficha-lbl">DNI</td><td class="ficha-val" colspan="11">${inp('dni', c.dni)}</td></tr>
+            <tr><td class="ficha-lbl">CUIL</td><td class="ficha-val" colspan="11">${inp('cuil', c.cuil)}</td></tr>
+            <tr><td class="ficha-lbl">Fecha nacimiento</td><td class="ficha-val" colspan="11">${inp('fecha_nacimiento', c.fecha_nacimiento, 'date')}</td></tr>
+            <tr><td class="ficha-lbl">CEL</td><td class="ficha-val" colspan="11">${inp('celular', c.celular)}</td></tr>
+            <tr><td class="ficha-lbl">DOMICILIO</td><td class="ficha-val" colspan="11">${inp('domicilio', c.domicilio)}</td></tr>
+            <tr><td class="ficha-lbl">PUESTO</td><td class="ficha-val" colspan="11">${inp('puesto_candidato', c.puesto_candidato || b.puesto)}</td></tr>
+            <tr><td class="ficha-lbl">RAZÓN SOCIAL</td><td class="ficha-val" colspan="11">${inp('razon_social', c.razon_social)}</td></tr>
             <tr class="ficha-estado-row ${estadoClass}">
-                <td colspan="11">
+                <td colspan="12">
                     <div class="ficha-estado-inner">
                         <span style="font-weight:800;text-transform:uppercase;letter-spacing:.5px;font-size:11px">Estado:</span>
                         ${isLocked ? `<strong>${estadoTexto}</strong>` : `
@@ -1319,26 +1329,56 @@ function renderKPIs() {
         <div class="kpi"><div class="kpi-num" style="color:var(--red)">${vencidas}</div><div class="kpi-lbl">Fuera de plazo</div></div>`;
 }
 
+function normalizeStr(s) {
+    return (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
 function applyFilters() {
-    const sel    = document.getElementById('f-selector').value;
-    const tipo   = document.getElementById('f-tipo').value;
-    const depto  = document.getElementById('f-depto').value;
-    const status = document.getElementById('f-status').value;
-    const search = (document.getElementById('f-search').value || '').trim().toLowerCase();
+    const sel      = document.getElementById('f-selector').value;
+    const tipo     = document.getElementById('f-tipo').value;
+    const depto    = document.getElementById('f-depto').value;
+    const status   = document.getElementById('f-status').value;
+    const reabierta = document.getElementById('f-reabierta')?.value || '';
+    const search   = normalizeStr(document.getElementById('f-search').value.trim());
     filteredIds = busquedas
         .filter(inCategoria)
         .filter(b => {
-            if (sel    && (b.selector || '') !== sel)  return false;
-            if (tipo   && (b.tipo || '') !== tipo)     return false;
-            if (depto  && (b.depto || '') !== depto)   return false;
-            if (status && (b.status || '') !== status) return false;
+            if (sel      && (b.selector || '') !== sel)  return false;
+            if (tipo     && (b.tipo || '') !== tipo)     return false;
+            if (depto    && (b.depto || '') !== depto)   return false;
+            if (status   && (b.status || '') !== status) return false;
+            if (reabierta === 'si' && !b.reopened_from) return false;
+            if (reabierta === 'no' && b.reopened_from)  return false;
             if (search) {
-                const hay = ((b.puesto || '') + ' ' + (b.depto || '') + ' ' + (b.selector || '')).toLowerCase();
+                const campos = [
+                    b.numero, b.puesto, b.depto, b.selector, b.tipo, b.motivo, b.nivel,
+                    b.ubicacion, b.jornada, b.status, b.ingreso_nombre, b.cp, b.inicio, b.ingreso,
+                    ...(b.candidatos || []).map(c => c.nombre),
+                    ...(b.estado_busqueda || []).map(e => e.texto),
+                ];
+                const hay = normalizeStr(campos.filter(Boolean).join(' '));
                 if (!hay.includes(search)) return false;
             }
             return true;
         }).map(b => b.id);
     refreshView();
+}
+
+function descargarNombres() {
+    const base = busquedas.filter(inCategoria);
+    const list = filteredIds ? base.filter(b => filteredIds.includes(b.id)) : base;
+    if (list.length === 0) { toast('No hay búsquedas para descargar', true); return; }
+    const contenido = list.map(b => b.puesto || '(sin nombre)').join('\n');
+    const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'busquedas_' + today() + '.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('Descarga generada ✓');
 }
 
 function updateDeptoFilter() {
@@ -1348,6 +1388,10 @@ function updateDeptoFilter() {
     const sel = document.getElementById('f-depto');
     const cur = sel.value;
     sel.innerHTML = '<option value="">Todos los dptos.</option>' + deptos.map(d => `<option ${d === cur ? 'selected' : ''}>${d}</option>`).join('');
+
+    const todosDeptos = [...new Set(busquedas.map(b => b.depto).filter(Boolean))].sort();
+    const datalist = document.getElementById('depto-datalist');
+    if (datalist) datalist.innerHTML = todosDeptos.map(d => `<option value="${d}">`).join('');
 }
 
 // ══════════════════════════════════════════════
@@ -1771,7 +1815,7 @@ function showView(v, btn) {
     if (v === 'pipeline' || v === 'choferes') {
         currentCategoria = (v === 'choferes') ? 'choferes' : 'general';
         filteredIds = null;
-        ['f-selector','f-tipo','f-depto','f-status','f-search','f-chofer-resultado'].forEach(fid => { const el = document.getElementById(fid); if (el) el.value = ''; });
+        ['f-selector','f-tipo','f-depto','f-status','f-reabierta','f-search','f-chofer-resultado'].forEach(fid => { const el = document.getElementById(fid); if (el) el.value = ''; });
         refreshView();
     }
     if (v === 'stats')  renderStats('general');
@@ -1810,7 +1854,7 @@ function renderStats(tab) {
     const selectorHtml = Object.entries(bySelector).map(([name, d]) => {
         const p   = Math.round((d.cerradas / Math.max(d.total, 1)) * 100);
         const avg = d.dias.length ? Math.round(d.dias.reduce((a, b) => a + b, 0) / d.dias.length) : 0;
-        return `<div class="bar-row"><div class="bar-row-top"><span>${name}</span><span>${d.cerradas}/${d.total} cerradas · ⌀ ${avg}hd</span></div><div class="bar-track"><div class="bar-fill ${tab === 'staff' ? 'bar-fill-staff' : tab === 'fabrica' ? 'bar-fill-fab' : ''}" style="width:${p}%"></div></div></div>`;
+        return `<div class="bar-row"><div class="bar-row-top"><span>${name}</span><span>${d.cerradas}/${d.total} cerradas · ⌀ ${avg}activos</span></div><div class="bar-track"><div class="bar-fill ${tab === 'staff' ? 'bar-fill-staff' : tab === 'fabrica' ? 'bar-fill-fab' : ''}" style="width:${p}%"></div></div></div>`;
     }).join('');
     const deptoHtml = Object.entries(byDepto).map(([name, c]) => {
         const p = Math.round((c / total) * 100);
@@ -1878,6 +1922,24 @@ function renderChartsGeneral() {
         return { nivel: n, avg, limite: DEMORA_LIMITE[n] || 15, count: items.length };
     });
 
+    // ── Tasa de Cobertura: general y Staff vs Fábrica (cerradas+finalizadas / total) ──
+    const staffList        = busquedas.filter(b => b.tipo === 'Staff');
+    const fabList          = busquedas.filter(b => b.tipo === 'Fábrica');
+    const coberturaGeneral = tasaCierre;
+    const coberturaStaff   = Math.round((staffList.filter(b => b.status === 'Cerrada' || b.status === 'Finalizada').length / Math.max(staffList.length, 1)) * 100);
+    const coberturaFab     = Math.round((fabList.filter(b => b.status === 'Cerrada' || b.status === 'Finalizada').length / Math.max(fabList.length, 1)) * 100);
+
+    // ── Tasa de Permanencia: ingresados que siguen activos (sin fecha de baja) ──
+    const ingresados      = busquedas.filter(b => b.ingreso);
+    const activosEmpresa  = ingresados.filter(b => !b.fecha_baja);
+    const tasaPermanencia = Math.round((activosEmpresa.length / Math.max(ingresados.length, 1)) * 100);
+
+    // ── Cumplimiento de plazos: cierres que entraron dentro del límite vs los que lo excedieron ──
+    const cerradasConIngreso = busquedas.filter(b => (b.status === 'Cerrada' || b.status === 'Finalizada') && b.ingreso);
+    const enTiempo    = cerradasConIngreso.filter(b => daysDiff(b.inicio, b.ingreso) <= (DEMORA_LIMITE[b.nivel] || 15)).length;
+    const excedidos   = cerradasConIngreso.length - enTiempo;
+    const pctEnTiempo = Math.round((enTiempo / Math.max(cerradasConIngreso.length, 1)) * 100);
+
     document.getElementById('charts-content').innerHTML = `
     <div class="mini-kpi-row">
         <div class="mini-kpi"><div class="mini-kpi-num">${busquedas.length}</div><div class="mini-kpi-lbl">Total</div><div class="mini-kpi-sub">${proceso} en curso · ${pausadas} pausadas</div></div>
@@ -1893,6 +1955,25 @@ function renderChartsGeneral() {
         <div class="chart-card">
             <div class="chart-card-title"><i class="fas fa-stopwatch"></i> Demora Promedio por Nivel del Puesto (días hábiles)</div>
             <div class="chart-wrap"><canvas id="ch-demora-nivel"></canvas></div>
+        </div>
+    </div>
+    <div class="charts-grid-2" style="margin-top:20px">
+        <div class="chart-card">
+            <div class="chart-card-title"><i class="fas fa-shield-alt"></i> Tasa de Cobertura</div>
+            <div class="mini-kpi-sub" style="margin-bottom:8px">General: <strong>${coberturaGeneral}%</strong> · Staff: <strong>${coberturaStaff}%</strong> · Fábrica: <strong>${coberturaFab}%</strong></div>
+            <div class="chart-wrap-sm"><canvas id="ch-cobertura"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-title"><i class="fas fa-user-check"></i> Tasa de Permanencia</div>
+            <div class="mini-kpi-sub" style="margin-bottom:8px"><strong>${tasaPermanencia}%</strong> de los ingresados (${activosEmpresa.length} de ${ingresados.length}) siguen activos, sin fecha de baja</div>
+            <div class="chart-wrap-sm"><canvas id="ch-permanencia"></canvas></div>
+        </div>
+    </div>
+    <div style="margin-top:20px">
+        <div class="chart-card">
+            <div class="chart-card-title"><i class="fas fa-hourglass-half"></i> Cumplimiento de Plazos (búsquedas cerradas)</div>
+            <div class="mini-kpi-sub" style="margin-bottom:8px"><strong>${pctEnTiempo}%</strong> entraron dentro del plazo límite (${enTiempo} de ${cerradasConIngreso.length}) · <strong style="color:var(--red)">${cerradasConIngreso.length - enTiempo}</strong> lo excedieron</div>
+            <div class="chart-wrap-sm"><canvas id="ch-cumplimiento"></canvas></div>
         </div>
     </div>
     <div style="margin-top:20px">
@@ -1912,12 +1993,16 @@ function renderChartsGeneral() {
 
     const palette = ['#1a1714','#005f73','#2d6a4f','#ca6702','#9b2226','#b5a300','#4a1272','#0a367a'];
     const cd = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { font: { family: 'DM Sans', size: 11 }, color: '#1a1714' } } } };
-    chartInstances['motivo'] = new Chart(document.getElementById('ch-motivo'), { type: 'doughnut', data: { labels: Object.keys(byMotivo), datasets: [{ data: Object.values(byMotivo), backgroundColor: ['#cfe2ff','#ffd6a5','#d8f3dc'], borderWidth: 2 }] }, options: { ...cd, cutout: '55%' } });
+    const motivoColors = { 'Expansión': '#cfe2ff', 'Rotación': '#ffd6a5', 'Reemplazo': '#d8f3dc', 'SOV': '#f0d9ff' };
+    chartInstances['motivo'] = new Chart(document.getElementById('ch-motivo'), { type: 'doughnut', data: { labels: Object.keys(byMotivo), datasets: [{ data: Object.values(byMotivo), backgroundColor: Object.keys(byMotivo).map((m, i) => motivoColors[m] || palette[i % palette.length]), borderWidth: 2 }] }, options: { ...cd, cutout: '55%' } });
     chartInstances['nivel']  = new Chart(document.getElementById('ch-nivel'),  { type: 'bar', data: { labels: Object.keys(byNivel), datasets: [{ label: 'Cantidad', data: Object.values(byNivel), backgroundColor: ['#ca6702cc','#005f73cc','#9b2226cc'], borderRadius: 6 }] }, options: { ...cd, plugins: { legend: { display: false } }, indexAxis: 'y', scales: { x: { beginAtZero: true, ticks: { precision: 0 } }, y: { grid: { display: false } } } } });
     chartInstances['demoraNivel'] = new Chart(document.getElementById('ch-demora-nivel'), { type: 'bar', data: { labels: demoraPorNivel.map(d => `${d.nivel} (${d.count})`), datasets: [
-        { label: 'Demora promedio (hd)', data: demoraPorNivel.map(d => d.avg), backgroundColor: demoraPorNivel.map(d => d.avg > d.limite ? '#9b2226cc' : '#2d6a4fcc'), borderColor: demoraPorNivel.map(d => d.avg > d.limite ? '#9b2226' : '#2d6a4f'), borderWidth: 2, borderRadius: 6 },
-        { label: 'Límite (hd)', data: demoraPorNivel.map(d => d.limite), backgroundColor: '#7a716633', borderColor: '#7a7166', borderWidth: 2, borderRadius: 6 }
+        { label: 'Demora promedio (activos)', data: demoraPorNivel.map(d => d.avg), backgroundColor: demoraPorNivel.map(d => d.avg > d.limite ? '#9b2226cc' : '#2d6a4fcc'), borderColor: demoraPorNivel.map(d => d.avg > d.limite ? '#9b2226' : '#2d6a4f'), borderWidth: 2, borderRadius: 6 },
+        { label: 'Límite (activos)', data: demoraPorNivel.map(d => d.limite), backgroundColor: '#7a716633', borderColor: '#7a7166', borderWidth: 2, borderRadius: 6 }
     ] }, options: { ...cd, plugins: { legend: { labels: { font: { family: 'DM Sans', size: 11 } } } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
+    chartInstances['cobertura'] = new Chart(document.getElementById('ch-cobertura'), { type: 'bar', data: { labels: ['General', 'Staff', 'Fábrica'], datasets: [{ label: 'Tasa de cobertura %', data: [coberturaGeneral, coberturaStaff, coberturaFab], backgroundColor: ['#1a1714cc','#005f73cc','#2d6a4fcc'], borderColor: ['#1a1714','#005f73','#2d6a4f'], borderWidth: 2, borderRadius: 6 }] }, options: { ...cd, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.parsed.y + '% cubierto' } } }, scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } }, x: { grid: { display: false } } } } });
+    chartInstances['permanencia'] = new Chart(document.getElementById('ch-permanencia'), { type: 'doughnut', data: { labels: ['Activos (sin baja)', 'Con baja registrada'], datasets: [{ data: [activosEmpresa.length, ingresados.length - activosEmpresa.length], backgroundColor: ['#2d6a4fcc','#9b2226cc'], borderWidth: 2 }] }, options: { ...cd, cutout: '55%' } });
+    chartInstances['cumplimiento'] = new Chart(document.getElementById('ch-cumplimiento'), { type: 'doughnut', data: { labels: ['Dentro de plazo', 'Plazo excedido'], datasets: [{ data: [enTiempo, excedidos], backgroundColor: ['#2d6a4fcc','#ca6702cc'], borderWidth: 2 }] }, options: { ...cd, cutout: '55%' } });
     if (permData.length > 0) {
         const permColors = permData.map(p => p.dias >= 130 ? '#2d6a4f' : p.dias >= 65 ? '#005f73' : p.dias >= 22 ? '#ca6702' : '#9b2226');
         chartInstances['perm'] = new Chart(document.getElementById('ch-perm'), { type: 'bar', data: { labels: permData.map(p => p.nombre), datasets: [{ label: 'Días hábiles en empresa', data: permData.map(p => p.dias), backgroundColor: permColors.map(c => c + 'cc'), borderColor: permColors, borderWidth: 2, borderRadius: 5 }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => { const p = permData[ctx.dataIndex]; const m = p.dias >= 130 ? ' 🏆 6m+' : p.dias >= 65 ? ' ✓ 3m+' : p.dias >= 22 ? ' 1m+' : ''; return ` ${p.dias} días háb. en empresa${m}`; }, afterLabel: ctx => ` Puesto: ${permData[ctx.dataIndex].puesto}` } } }, scales: { x: { beginAtZero: true, ticks: { precision: 0, font: { family: 'DM Mono', size: 10 } }, grid: { color: '#e5e0d8' } }, y: { ticks: { font: { family: 'DM Sans', size: 11 } }, grid: { display: false } } } } });
@@ -1930,35 +2015,58 @@ function renderChartsTiempo() {
     const avgDias  = diasList.length ? Math.round(diasList.reduce((a, c) => a + c, 0) / diasList.length) : 0;
     const minDias  = diasList.length ? Math.min(...diasList) : 0;
     const maxDias  = diasList.length ? Math.max(...diasList) : 0;
-    const rangos   = { '0–7hd': 0, '8–14hd': 0, '15–22hd': 0, '23–30hd': 0, '+30hd': 0 };
-    diasList.forEach(d => { if (d <= 7) rangos['0–7hd']++; else if (d <= 14) rangos['8–14hd']++; else if (d <= 22) rangos['15–22hd']++; else if (d <= 30) rangos['23–30hd']++; else rangos['+30hd']++; });
+    const rangos   = { '0–7 activos': 0, '8–14 activos': 0, '15–22 activos': 0, '23–30 activos': 0, '+30 activos': 0 };
+    diasList.forEach(d => { if (d <= 7) rangos['0–7 activos']++; else if (d <= 14) rangos['8–14 activos']++; else if (d <= 22) rangos['15–22 activos']++; else if (d <= 30) rangos['23–30 activos']++; else rangos['+30 activos']++; });
     const bySel = {};
     cerradas.forEach(b => { if (!bySel[b.selector]) bySel[b.selector] = []; bySel[b.selector].push(daysDiff(b.inicio, b.ingreso)); });
     const selAvg = Object.entries(bySel).map(([s, d]) => ({ sel: s, avg: Math.round(d.reduce((a, c) => a + c, 0) / d.length) })).sort((a, b) => a.avg - b.avg);
     const byNivel = {};
     cerradas.forEach(b => { if (!byNivel[b.nivel]) byNivel[b.nivel] = []; byNivel[b.nivel].push(daysDiff(b.inicio, b.ingreso)); });
     const nivelAvg = Object.entries(byNivel).map(([n, d]) => ({ nivel: n, avg: Math.round(d.reduce((a, c) => a + c, 0) / d.length), limite: DEMORA_LIMITE[n] || 15 }));
+
+    // ── Demora: cuánto tardó el equipo de Selección (T1) vs el cliente interno / sector (T2) ──
+    const tramosAll = busquedas.map(b => ({ sel: b.selector, ...tramosDemora(b) }));
+    const avgT1 = tramosAll.length ? Math.round(tramosAll.reduce((a, t) => a + t.t1, 0) / tramosAll.length) : 0;
+    const t2Validos = tramosAll.filter(t => !t.t2NA);
+    const avgT2 = t2Validos.length ? Math.round(t2Validos.reduce((a, t) => a + t.t2, 0) / t2Validos.length) : 0;
+    const bySelT1 = {};
+    tramosAll.forEach(t => { if (!bySelT1[t.sel]) bySelT1[t.sel] = []; bySelT1[t.sel].push(t.t1); });
+    const selT1Avg = Object.entries(bySelT1).map(([s, arr]) => ({ sel: s, avg: Math.round(arr.reduce((a, c) => a + c, 0) / arr.length) })).sort((a, b) => b.avg - a.avg);
+
     document.getElementById('charts-content').innerHTML = `
     <div class="mini-kpi-row">
-        <div class="mini-kpi"><div class="mini-kpi-num">${avgDias}hd</div><div class="mini-kpi-lbl">Tiempo promedio</div><div class="mini-kpi-sub">${cerradas.length} búsquedas cerradas</div></div>
-        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${minDias}hd</div><div class="mini-kpi-lbl">Más rápida</div></div>
-        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--red)">${maxDias}hd</div><div class="mini-kpi-lbl">Más lenta</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num">${avgDias}activos</div><div class="mini-kpi-lbl">Tiempo promedio</div><div class="mini-kpi-sub">${cerradas.length} búsquedas cerradas</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${minDias}activos</div><div class="mini-kpi-lbl">Más rápida</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--red)">${maxDias}activos</div><div class="mini-kpi-lbl">Más lenta</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--orange)">${busquedas.filter(b => { const d = daysDiff(b.inicio); return d > (DEMORA_LIMITE[b.nivel] || 15) && b.status === 'Proceso'; }).length}</div><div class="mini-kpi-lbl">Fuera de plazo</div></div>
     </div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:12px;padding:6px 12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;display:inline-block">
-        <i class="fas fa-info-circle"></i> Todos los tiempos expresados en <strong>días hábiles (hd)</strong> — lunes a viernes
+        <i class="fas fa-info-circle"></i> Todos los tiempos expresados en <strong>días hábiles (activos)</strong> — lunes a viernes
     </div>
     <div class="charts-grid">
         <div class="chart-card"><div class="chart-card-title"><i class="fas fa-clock"></i> Distribución de Tiempos de Cierre (días hábiles)</div><div class="chart-wrap"><canvas id="ch-dist"></canvas></div></div>
         <div class="chart-card"><div class="chart-card-title"><i class="fas fa-user-clock"></i> Tiempo Prom. por Selector (días hábiles)</div><div class="chart-wrap"><canvas id="ch-seltime"></canvas></div></div>
         <div class="chart-card full"><div class="chart-card-title"><i class="fas fa-layer-group"></i> Tiempo Real vs Límite por Nivel (días hábiles)</div><div class="chart-wrap"><canvas id="ch-nivellib"></canvas></div></div>
     </div>
+    <div class="charts-grid" style="margin-top:20px">
+        <div class="chart-card">
+            <div class="chart-card-title"><i class="fas fa-balance-scale"></i> Demora: Equipo de Selección vs Cliente Interno</div>
+            <div class="mini-kpi-sub" style="margin-bottom:8px">Equipo (envío al sector): <strong>${avgT1} activos</strong> · Cliente interno (decisión del sector): <strong>${avgT2} activos</strong></div>
+            <div class="chart-wrap-sm"><canvas id="ch-demora-equipo-cliente"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-title"><i class="fas fa-user-tie"></i> Demora del Equipo (envío al sector) por Selector</div>
+            <div class="chart-wrap-sm"><canvas id="ch-demora-equipo-selector"></canvas></div>
+        </div>
+    </div>
     <div style="margin-top:20px"><div class="chart-card"><div class="chart-card-title"><i class="fas fa-list-ol"></i> Ranking más rápidas</div>
-    <div>${cerradas.sort((a, b) => daysDiff(a.inicio, a.ingreso) - daysDiff(b.inicio, b.ingreso)).slice(0, 6).map((b, i) => { const d = daysDiff(b.inicio, b.ingreso); const lim = DEMORA_LIMITE[b.nivel] || 15; return `<div class="rank-row"><span class="rank-pos">#${i + 1}</span><span class="rank-name">${b.puesto} <span style="font-size:11px;color:var(--muted)">· ${b.selector}</span></span><span class="rank-stat" style="color:${d <= lim ? 'var(--green)' : 'var(--red)'}">${d}hd</span><span style="font-size:11px;color:var(--muted);margin-left:6px">lim. ${lim}hd</span></div>`; }).join('')}</div>
+    <div>${cerradas.sort((a, b) => daysDiff(a.inicio, a.ingreso) - daysDiff(b.inicio, b.ingreso)).slice(0, 6).map((b, i) => { const d = daysDiff(b.inicio, b.ingreso); const lim = DEMORA_LIMITE[b.nivel] || 15; return `<div class="rank-row"><span class="rank-pos">#${i + 1}</span><span class="rank-name">${b.puesto} <span style="font-size:11px;color:var(--muted)">· ${b.selector}</span></span><span class="rank-stat" style="color:${d <= lim ? 'var(--green)' : 'var(--red)'}">${d}activos</span><span style="font-size:11px;color:var(--muted);margin-left:6px">lim. ${lim}activos</span></div>`; }).join('')}</div>
     </div></div>`;
     chartInstances['dist']     = new Chart(document.getElementById('ch-dist'),     { type: 'bar', data: { labels: Object.keys(rangos), datasets: [{ label: 'Búsquedas', data: Object.values(rangos), backgroundColor: ['#d1e7dd','#cfe2ff','#fff3cd','#ffd6a5','#f8d7da'], borderColor: ['#0a3622','#0a367a','#664d03','#7c3d00','#721c24'], borderWidth: 2, borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
     chartInstances['seltime']  = new Chart(document.getElementById('ch-seltime'),  { type: 'bar', data: { labels: selAvg.map(s => s.sel), datasets: [{ label: 'Días háb. promedio', data: selAvg.map(s => s.avg), backgroundColor: selAvg.map(s => s.avg > 14 ? '#f8d7da' : '#d1e7dd'), borderColor: selAvg.map(s => s.avg > 14 ? '#721c24' : '#0a3622'), borderWidth: 2, borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
-    chartInstances['nivellib'] = new Chart(document.getElementById('ch-nivellib'), { type: 'bar', data: { labels: nivelAvg.map(n => n.nivel), datasets: [{ label: 'Tiempo real (hd)', data: nivelAvg.map(n => n.avg), backgroundColor: '#005f73cc', borderRadius: 4 }, { label: 'Límite establecido (hd)', data: nivelAvg.map(n => n.limite), backgroundColor: '#9b222633', borderColor: '#9b2226', borderWidth: 2, borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
+    chartInstances['nivellib'] = new Chart(document.getElementById('ch-nivellib'), { type: 'bar', data: { labels: nivelAvg.map(n => n.nivel), datasets: [{ label: 'Tiempo real (activos)', data: nivelAvg.map(n => n.avg), backgroundColor: '#005f73cc', borderRadius: 4 }, { label: 'Límite establecido (activos)', data: nivelAvg.map(n => n.limite), backgroundColor: '#9b222633', borderColor: '#9b2226', borderWidth: 2, borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
+    chartInstances['demoraEquipoCliente'] = new Chart(document.getElementById('ch-demora-equipo-cliente'), { type: 'doughnut', data: { labels: ['Equipo (envío al sector)', 'Cliente interno (decisión del sector)'], datasets: [{ data: [avgT1, avgT2], backgroundColor: ['#005f73cc','#ca6702cc'], borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '55%', plugins: { legend: { labels: { font: { family: 'DM Sans', size: 11 } } }, tooltip: { callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed + ' activos (promedio)' } } } } });
+    chartInstances['demoraEquipoSelector'] = new Chart(document.getElementById('ch-demora-equipo-selector'), { type: 'bar', data: { labels: selT1Avg.map(s => s.sel), datasets: [{ label: 'Envío al sector (activos)', data: selT1Avg.map(s => s.avg), backgroundColor: '#005f73cc', borderColor: '#005f73', borderWidth: 2, borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
 }
 
 function renderChartsSelectores() {
@@ -1994,7 +2102,7 @@ function renderChartsSelectores() {
                 <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:var(--orange)">${data[s].candidatos}</td>
                 <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:var(--blue)">${data[s].psico}</td>
                 <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:var(--blue);font-weight:700">${data[s].psico_realizado || '—'}</td>
-                <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:${avgDiasPerSel[i] > 20 ? 'var(--red)' : 'var(--green)'};font-weight:700">${avgDiasPerSel[i] || '—'}hd</td>
+                <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:${avgDiasPerSel[i] > 20 ? 'var(--red)' : 'var(--green)'};font-weight:700">${avgDiasPerSel[i] || '—'}activos</td>
             </tr>`).join('')}</tbody>
         </table></div>
     </div></div>`;
