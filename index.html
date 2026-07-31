@@ -362,6 +362,10 @@
                 <option value="si">Solo reabiertas</option>
                 <option value="no">Sin reabrir</option>
             </select>
+            <select class="filter-select" id="f-alerta72" onchange="applyFilters()">
+                <option value="">Alertas 72hs: todas</option>
+                <option value="si">Solo con alerta 72hs</option>
+            </select>
             <select class="filter-select hidden" id="f-chofer-resultado" onchange="applyFilters()">
                 <option value="">Postulantes: todos</option>
                 <option value="Pendiente">Pendiente</option>
@@ -1541,6 +1545,7 @@ function applyFilters() {
     const depto  = document.getElementById('f-depto').value;
     const status = document.getElementById('f-status').value;
     const reab   = document.getElementById('f-reabierta').value;
+    const alerta72 = document.getElementById('f-alerta72').value;
     const search = (document.getElementById('f-search').value || '').trim().toLowerCase();
     filteredIds = busquedas
         .filter(inCategoria)
@@ -1551,6 +1556,7 @@ function applyFilters() {
             if (status && (b.status || '') !== status) return false;
             if (reab === 'si' && !b.reopened_from)     return false;
             if (reab === 'no' && b.reopened_from)      return false;
+            if (alerta72 === 'si' && !alertaSectorVencido(b)) return false;
             if (search) {
                 const hay = ((b.puesto || '') + ' ' + (b.depto || '') + ' ' + (b.selector || '')).toLowerCase();
                 if (!hay.includes(search)) return false;
@@ -2089,7 +2095,7 @@ function showView(v, btn) {
     if (v === 'pipeline' || v === 'choferes') {
         currentCategoria = (v === 'choferes') ? 'choferes' : 'general';
         filteredIds = null;
-        ['f-selector','f-tipo','f-depto','f-status','f-reabierta','f-search','f-chofer-resultado'].forEach(fid => { const el = document.getElementById(fid); if (el) el.value = ''; });
+        ['f-selector','f-tipo','f-depto','f-status','f-reabierta','f-alerta72','f-search','f-chofer-resultado'].forEach(fid => { const el = document.getElementById(fid); if (el) el.value = ''; });
         refreshView();
     }
     if (v === 'stats')  renderStats('general');
