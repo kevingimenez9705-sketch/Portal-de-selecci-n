@@ -1267,7 +1267,7 @@ function renderTable() {
                             ${['Proceso', 'Cerrada', 'Pausada', 'Finalizada', 'Sustituida'].map(s => `<option ${b.status === s ? 'selected' : ''}>${s}</option>`).join('')}
                            </select>`}
                     ${(b.status === 'Cerrada' || b.status === 'Finalizada') ? `<button class="btn-sm" style="font-size:11px" onclick="reabrir(${b.id})"><i class="fas fa-redo" style="font-size:8px"></i> Reabrir</button>` : ''}
-                    ${b.status === 'Proceso' ? `<button class="btn-sm" style="font-size:11px" onclick="reabrirPorDemora(${b.id})" title="Crea una búsqueda nueva con el contador en 0 y marca esta como Sustituida"><i class="fas fa-redo" style="font-size:8px"></i> Reabrir con contador en 0</button>` : ''}
+                    ${b.status === 'Proceso' ? `<button class="btn-sm" style="font-size:11px" onclick="reabrirContinuarConteo(${b.id})" title="Crea una búsqueda nueva pero mantiene la fecha de inicio, así el Total Proceso sigue sumando"><i class="fas fa-redo" style="font-size:8px"></i> Reabrir (sigue el conteo)</button>` : ''}
                     ${isAdmin() ? `<button class="btn-sm btn-danger" onclick="eliminar(${b.id})"><i class="fas fa-trash" style="font-size:8px"></i></button>` : ''}
                 </div>
             </td>
@@ -1993,6 +1993,48 @@ async function reabrirPorDemora(id) {
     if (errUpd) ({ error: errUpd } = await sb.from('busquedas').update({ status: 'Cerrada' }).eq('id', id));
     await loadData(); refreshView();
     toast('Búsqueda reabierta como ' + nueva.numero + ' ✓');
+}
+
+// Reapertura administrativa: crea un número de búsqueda nuevo pero mantiene la fecha de inicio
+// (y "Enviado al sector"/"Decisión del sector" si ya estaban cargadas), así el Total Proceso
+// sigue sumando en vez de arrancar en 0. Distinto de reabrirPorDemora(), que sí resetea el contador.
+async function reabrirContinuarConteo(id) {
+    const orig = busquedas.find(x => x.id === id);
+    if (!orig) { toast('No se encontró la búsqueda', true); return; }
+    const totalActual = tramosDemora(orig).total;
+    if (!confirm('¿Reabrir "' + orig.puesto + '" continuando el conteo actual (Total Proceso: ' + totalActual + 'hd)? Se creará una búsqueda nueva con la misma fecha de inicio y se marcará esta como Sustituida.')) return;
+    const nuevaRow = {
+        numero: nextNro(), puesto: orig.puesto, selector: orig.selector,
+        depto: orig.depto, tipo: orig.tipo, motivo: orig.motivo, nivel: orig.nivel,
+        sueldo: orig.sueldo, jornada: orig.jornada, ubicacion: orig.ubicacion,
+        inicio: orig.inicio, enviado_sector: orig.cp || null, decision_sector: orig.decision_sector || null,
+        status: 'Proceso', ingreso: null, ingreso_nombre: '',
+        categoria: orig.categoria || null, herramientas: orig.herramientas || null,
+        reopened_from: orig.numero
+    };
+    let { data: nueva, error: errInsert } = await sb.from('busquedas').insert(nuevaRow).select().single();
+    if (errInsert && errInsert.message && /categoria|herramientas/.test(errInsert.message)) {
+        delete nuevaRow.categoria; delete nuevaRow.herramientas;
+        ({ data: nueva, error: errInsert } = await sb.from('busquedas').insert(nuevaRow).select().single());
+    }
+    if (errInsert && errInsert.message && /decision_sector/.test(errInsert.message)) {
+        delete nuevaRow.decision_sector;
+        ({ data: nueva, error: errInsert } = await sb.from('busquedas').insert(nuevaRow).select().single());
+    }
+    if (errInsert && errInsert.message && /reopened_from/.test(errInsert.message)) {
+        delete nuevaRow.reopened_from;
+        ({ data: nueva, error: errInsert } = await sb.from('busquedas').insert(nuevaRow).select().single());
+    }
+    if (errInsert) { toast('Error al reabrir: ' + (errInsert.message || 'verificar permisos'), true); return; }
+    const textoOrigen = `Reapertura de ${orig.numero} — "${orig.puesto}" continuando el conteo (Total Proceso al reabrir: ${totalActual}hd, inicio original: ${orig.inicio}).`;
+    await sb.from('estado_log').insert({ busqueda_id: nueva.id, texto: textoOrigen, fecha: today() });
+    try {
+        await sb.from('historial').insert({ busqueda_id: nueva.id, texto: textoOrigen, fecha: new Date().toISOString() });
+    } catch (e) { console.warn('No se pudo copiar historial:', e); }
+    let { error: errUpd } = await sb.from('busquedas').update({ status: 'Sustituida' }).eq('id', id);
+    if (errUpd) ({ error: errUpd } = await sb.from('busquedas').update({ status: 'Cerrada' }).eq('id', id));
+    await loadData(); refreshView();
+    toast('Búsqueda reabierta como ' + nueva.numero + ' (conteo continuado) ✓');
 }
 
 async function eliminar(id) {
