@@ -1229,6 +1229,7 @@ function renderTable() {
                             ${['Proceso', 'Cerrada', 'Pausada', 'Finalizada', 'Sustituida'].map(s => `<option ${b.status === s ? 'selected' : ''}>${s}</option>`).join('')}
                            </select>`}
                     ${(b.status === 'Cerrada' || b.status === 'Finalizada') ? `<button class="btn-sm" style="font-size:11px" onclick="reabrir(${b.id})"><i class="fas fa-redo" style="font-size:8px"></i> Reabrir</button>` : ''}
+                    ${b.status === 'Proceso' ? `<button class="btn-sm" style="font-size:11px" onclick="reabrirPorDemora(${b.id})" title="Crea una búsqueda nueva con el contador en 0 y marca esta como Sustituida"><i class="fas fa-redo" style="font-size:8px"></i> Reabrir con contador en 0</button>` : ''}
                     ${isAdmin() ? `<button class="btn-sm btn-danger" onclick="eliminar(${b.id})"><i class="fas fa-trash" style="font-size:8px"></i></button>` : ''}
                 </div>
             </td>
@@ -1920,12 +1921,13 @@ async function reabrir(id) {
     toast('Búsqueda reabierta como ' + nueva.numero + ' ✓');
 }
 
-// Reapertura por demora del sector (72hs sin respuesta): a diferencia de reabrir(), esta búsqueda
-// sigue "Proceso" (nadie ingresó todavía), así que no corresponde preguntar fecha de baja.
+// Reapertura manual con el contador en 0 (por demora del sector, o por cualquier otro motivo mientras
+// sigue "Proceso"): a diferencia de reabrir(), acá nadie ingresó todavía, así que no corresponde
+// preguntar fecha de baja.
 async function reabrirPorDemora(id) {
     const orig = busquedas.find(x => x.id === id);
     if (!orig) { toast('No se encontró la búsqueda', true); return; }
-    if (!confirm('¿Reabrir "' + orig.puesto + '" por demora del sector (' + ALERTA_SECTOR_LIMITE_HD + '+ días hábiles sin respuesta)? Se marcará esta entrada como Sustituida y se creará una nueva con el contador en 0.')) return;
+    if (!confirm('¿Reabrir "' + orig.puesto + '" con el contador en 0? Se marcará esta entrada como Sustituida y se creará una nueva con fecha de inicio hoy.')) return;
     const nuevaRow = {
         numero: nextNro(), puesto: orig.puesto, selector: orig.selector,
         depto: orig.depto, tipo: orig.tipo, motivo: orig.motivo, nivel: orig.nivel,
@@ -1944,7 +1946,7 @@ async function reabrirPorDemora(id) {
         ({ data: nueva, error: errInsert } = await sb.from('busquedas').insert(nuevaRow).select().single());
     }
     if (errInsert) { toast('Error al reabrir: ' + (errInsert.message || 'verificar permisos'), true); return; }
-    const textoOrigen = `Reapertura de ${orig.numero} — "${orig.puesto}" por demora del sector (${ALERTA_SECTOR_LIMITE_HD}+ días hábiles sin respuesta desde el envío al sector).`;
+    const textoOrigen = `Reapertura de ${orig.numero} — "${orig.puesto}" con el contador en 0 (nueva fecha de inicio: ${today()}).`;
     await sb.from('estado_log').insert({ busqueda_id: nueva.id, texto: textoOrigen, fecha: today() });
     try {
         await sb.from('historial').insert({ busqueda_id: nueva.id, texto: textoOrigen, fecha: new Date().toISOString() });
