@@ -1104,6 +1104,11 @@ function renderTable() {
                             <input type="date" class="inline-input" style="font-size:11px" value="${c.fecha_rechazo || ''}" onchange="updateCandFecha(${c.id},'fecha_rechazo',this.value)">
                         </div>`;
                     }
+                    if (c.estado === 'Oferta') {
+                        fechasHtml += b.decision_sector
+                            ? `<div class="cand-fecha-row"><span class="cand-fecha-lbl" style="color:var(--green)"><i class="fas fa-check"></i> Decisión del sector: ${fmtFechaCorta(b.decision_sector)}</span></div>`
+                            : `<button class="btn-sm" style="margin-top:4px" onclick="updateField(${b.id},'decision_sector','${today()}')" title="Marca hoy como la fecha de 'Decisión del sector' de la búsqueda, para que el contador de demora la use"><i class="fas fa-check" style="font-size:8px"></i> Cerrado (marcar decisión del sector)</button>`;
+                    }
                 }
 
                 return `<div class="cand-item">
