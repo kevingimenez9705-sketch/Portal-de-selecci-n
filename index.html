@@ -102,6 +102,9 @@
         .tag-sustituida { background: #f0d9ff; color: #4a1272; }
         .tag-pausada { background: #fff3cd; color: #664d03; }
         .tag-finalizada { background: #fef3c7; color: #92400e; }
+        .tag-reabierta { background: var(--blue); color: #fff; display: inline-flex; align-items: center; gap: 4px; }
+        tbody tr.row-reabierta { box-shadow: inset 3px 0 0 var(--blue); }
+        tbody tr.row-reabierta:hover { background: #eaf3f6; }
         .psico-item { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 4px 8px; border-radius: 6px; background: #f0ede8; margin-bottom: 3px; }
         .psico-nombre { font-size: 12px; font-weight: 600; }
         .psico-result { font-size: 11px; font-weight: 700; text-transform: uppercase; }
@@ -337,6 +340,11 @@
             <select class="filter-select" id="f-status" onchange="applyFilters()">
                 <option value="">Todos los estados</option>
                 <option>Proceso</option><option>Cerrada</option><option>Pausada</option><option>Finalizada</option>
+            </select>
+            <select class="filter-select" id="f-reabierta" onchange="applyFilters()">
+                <option value="">Reabiertas: todas</option>
+                <option value="si">Solo reabiertas</option>
+                <option value="no">Sin reabrir</option>
             </select>
             <select class="filter-select hidden" id="f-chofer-resultado" onchange="applyFilters()">
                 <option value="">Postulantes: todos</option>
@@ -1019,14 +1027,18 @@ function renderTable() {
         const reopenedTag = b.reopened_from
             ? `<div style="margin-top:3px;font-size:10px;color:var(--blue);font-weight:600"><i class="fas fa-redo" style="font-size:8px"></i> Reapertura de ${b.reopened_from}</div>`
             : '';
+        const reabiertaBadge = b.reopened_from
+            ? `<span class="tag tag-reabierta" title="Esta búsqueda reemplaza a ${b.reopened_from}"><i class="fas fa-redo" style="font-size:9px"></i> Reabierta</span>`
+            : '';
 
         return `
-        <tr id="row-${b.id}" class="${isLocked ? 'row-locked' : ''}">
+        <tr id="row-${b.id}" class="${isLocked ? 'row-locked' : ''} ${b.reopened_from ? 'row-reabierta' : ''}">
             <td>
                 <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--muted)">${b.numero}</div>
                 <span class="motivo-chip ${motivoClass(b.motivo)}">${b.motivo}</span>
                 <div style="margin-top:5px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
                     <span class="tag ${tagClass(b.status)}">${b.status}</span>
+                    ${reabiertaBadge}
                 </div>
                 <div style="margin-top:4px;font-size:11px;color:var(--muted)">Inicio: ${b.inicio}</div>
                 <div style="margin-top:3px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px">
@@ -1311,12 +1323,14 @@ function renderKPIs() {
     const cerradas    = cat.filter(b => b.status === 'Cerrada').length;
     const finalizadas = cat.filter(b => b.status === 'Finalizada').length;
     const vencidas    = cat.filter(b => { const d = daysDiff(b.inicio); return d > (DEMORA_LIMITE[b.nivel] || 15) && b.status === 'Proceso'; }).length;
+    const reabiertas  = cat.filter(b => b.reopened_from).length;
     document.getElementById('kpi-row').innerHTML = `
         <div class="kpi"><div class="kpi-num">${total}</div><div class="kpi-lbl">Total búsquedas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--blue)">${proceso}</div><div class="kpi-lbl">En proceso</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--green)">${cerradas}</div><div class="kpi-lbl">Cerradas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:#92400e">${finalizadas}</div><div class="kpi-lbl">Finalizadas</div></div>
-        <div class="kpi"><div class="kpi-num" style="color:var(--red)">${vencidas}</div><div class="kpi-lbl">Fuera de plazo</div></div>`;
+        <div class="kpi"><div class="kpi-num" style="color:var(--red)">${vencidas}</div><div class="kpi-lbl">Fuera de plazo</div></div>
+        <div class="kpi"><div class="kpi-num" style="color:var(--blue)">${reabiertas}</div><div class="kpi-lbl">Reabiertas</div></div>`;
 }
 
 function applyFilters() {
@@ -1324,6 +1338,7 @@ function applyFilters() {
     const tipo   = document.getElementById('f-tipo').value;
     const depto  = document.getElementById('f-depto').value;
     const status = document.getElementById('f-status').value;
+    const reab   = document.getElementById('f-reabierta').value;
     const search = (document.getElementById('f-search').value || '').trim().toLowerCase();
     filteredIds = busquedas
         .filter(inCategoria)
@@ -1332,6 +1347,8 @@ function applyFilters() {
             if (tipo   && (b.tipo || '') !== tipo)     return false;
             if (depto  && (b.depto || '') !== depto)   return false;
             if (status && (b.status || '') !== status) return false;
+            if (reab === 'si' && !b.reopened_from)     return false;
+            if (reab === 'no' && b.reopened_from)      return false;
             if (search) {
                 const hay = ((b.puesto || '') + ' ' + (b.depto || '') + ' ' + (b.selector || '')).toLowerCase();
                 if (!hay.includes(search)) return false;
@@ -1694,11 +1711,16 @@ async function reabrir(id) {
         depto: orig.depto, tipo: orig.tipo, motivo: orig.motivo, nivel: orig.nivel,
         sueldo: orig.sueldo, jornada: orig.jornada, ubicacion: orig.ubicacion,
         inicio: today(), status: 'Proceso', ingreso: null, ingreso_nombre: '',
-        categoria: orig.categoria || null, herramientas: orig.herramientas || null
+        categoria: orig.categoria || null, herramientas: orig.herramientas || null,
+        reopened_from: orig.numero
     };
     let { data: nueva, error: errInsert } = await sb.from('busquedas').insert(nuevaRow).select().single();
     if (errInsert && errInsert.message && /categoria|herramientas/.test(errInsert.message)) {
         delete nuevaRow.categoria; delete nuevaRow.herramientas;
+        ({ data: nueva, error: errInsert } = await sb.from('busquedas').insert(nuevaRow).select().single());
+    }
+    if (errInsert && errInsert.message && /reopened_from/.test(errInsert.message)) {
+        delete nuevaRow.reopened_from;
         ({ data: nueva, error: errInsert } = await sb.from('busquedas').insert(nuevaRow).select().single());
     }
     if (errInsert) { toast('Error al reabrir: ' + (errInsert.message || 'verificar permisos'), true); return; }
@@ -1771,7 +1793,7 @@ function showView(v, btn) {
     if (v === 'pipeline' || v === 'choferes') {
         currentCategoria = (v === 'choferes') ? 'choferes' : 'general';
         filteredIds = null;
-        ['f-selector','f-tipo','f-depto','f-status','f-search','f-chofer-resultado'].forEach(fid => { const el = document.getElementById(fid); if (el) el.value = ''; });
+        ['f-selector','f-tipo','f-depto','f-status','f-reabierta','f-search','f-chofer-resultado'].forEach(fid => { const el = document.getElementById(fid); if (el) el.value = ''; });
         refreshView();
     }
     if (v === 'stats')  renderStats('general');
