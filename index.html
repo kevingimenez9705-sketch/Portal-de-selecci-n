@@ -233,6 +233,10 @@
         .dm-row.dm-total .dm-lbl { color: rgba(255,255,255,.65); }
         .dm-rango { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); margin-top: 1px; }
         .dm-row.dm-total .dm-rango { color: rgba(255,255,255,.5); }
+        .dm-row.dm-ajustado { background: var(--ok); border-color: #b6dfc2; }
+        .dm-row.dm-ajustado .dm-val { color: var(--ok-text); }
+        .dm-row.dm-ajustado .dm-lbl { color: var(--ok-text); opacity: .75; }
+        .dm-row.dm-ajustado .dm-rango { color: var(--ok-text); opacity: .7; }
         @keyframes alertapulse { 0%,100% { box-shadow: 0 0 0 0 rgba(155,34,38,.25); } 50% { box-shadow: 0 0 0 5px rgba(155,34,38,0); } }
         .dm-live { font-size: 6px; color: var(--blue); margin-left: 5px; animation: dmpulse 1.4s infinite; }
         @keyframes dmpulse { 0%,100% { opacity: 1; } 50% { opacity: .15; } }
@@ -716,11 +720,18 @@ function fmtRango(from, to, running) {
     return `${f} → ${fmtFechaCorta(to)}`;
 }
 
+// Suma los días hábiles justificados (descontados) de todos los candidatos de la búsqueda.
+function descuentoJustificadoTotal(b) {
+    return (b.candidatos || []).reduce((a, c) => a + (c.demora_descuento_dias || 0), 0);
+}
+
 function renderDemoraBreakdown(b) {
     const t = tramosDemora(b);
     const live = run => run ? `<i class="fas fa-circle dm-live"></i>` : '';
     const t2val = t.t2NA ? '—' : t.t2;
     const t3val = t.t3NA ? '—' : t.t3;
+    const descuentoTotal = descuentoJustificadoTotal(b);
+    const totalAjustado = Math.max(0, t.total - descuentoTotal);
     // Compatibilidad: si no se cargó "Decisión del sector" pero sí hay ingreso, el tramo 2 usa el ingreso como aproximación.
     const t2Aprox = !b.decision_sector && b.cp && b.ingreso;
     const rango1 = fmtRango(t.t1From, t.t1To, t.t1Run);
@@ -755,7 +766,7 @@ function renderDemoraBreakdown(b) {
                 ${rango3 ? `<span class="dm-rango">${rango3}</span>` : ''}
             </div>
         </div>
-        <div class="dm-row dm-total" title="Demora total del proceso: envío al sector + decisión del sector + espera de inicio (días hábiles)">
+        <div class="dm-row dm-total" title="Demora total del proceso: envío al sector + decisión del sector + espera de inicio (días hábiles)${descuentoTotal > 0 ? '. Se descontaron ' + descuentoTotal + 'hd justificados de candidatos (motivos ajenos al equipo).' : ''}">
             <span class="dm-ico"><i class="fas fa-equals"></i></span>
             <div class="dm-body">
                 <span class="dm-val">${t.total}<span class="dm-u">hd</span></span>
@@ -763,6 +774,15 @@ function renderDemoraBreakdown(b) {
                 ${b.inicio ? `<span class="dm-rango">${fmtRango(b.inicio, b.ingreso, !b.ingreso)}</span>` : ''}
             </div>
         </div>
+        ${descuentoTotal > 0 ? `
+        <div class="dm-row dm-ajustado" title="Total proceso menos los días hábiles justificados de candidatos (motivos que no dependen del equipo)">
+            <span class="dm-ico" style="color:var(--green)"><i class="fas fa-check-double"></i></span>
+            <div class="dm-body">
+                <span class="dm-val">${totalAjustado}<span class="dm-u">hd</span></span>
+                <span class="dm-lbl">Total ajustado</span>
+                <span class="dm-rango">${t.total}hd − ${descuentoTotal}hd justificados</span>
+            </div>
+        </div>` : ''}
     </div>`;
 }
 
