@@ -466,7 +466,11 @@
         <div class="form-row" style="grid-template-columns:1fr;">
             <div class="form-group hidden" id="cand-grp-busqueda">
                 <label>Búsqueda / Puesto</label>
-                <select class="form-input" id="cand-busqueda-select" onchange="document.getElementById('cand-bid').value=this.value"></select>
+                <select class="form-input" id="cand-busqueda-select" onchange="document.getElementById('cand-bid').value=this.value; toggleCandSelectorGroup()"></select>
+            </div>
+            <div class="form-group hidden" id="cand-grp-selector">
+                <label>Selector a cargo</label>
+                <select class="form-input" id="cand-selector"></select>
             </div>
             <div class="form-group"><label>Nombre del candidato</label><input class="form-input" id="cand-nombre" placeholder="Nombre Apellido"></div>
             <div class="form-group"><label>Estado</label>
@@ -1267,6 +1271,12 @@ function renderFichaCard(c, b) {
                         <span class="tag tag-sin-asignar">Sin asignar</span>
                     </div>
                     <div class="ficha-card-meta">Todavía no está vinculado a ninguna búsqueda de Choferes/Ayudantes</div>
+                    <div class="ficha-card-meta">Selector a cargo:
+                        <select class="inline-select" style="width:auto" onchange="updateCandSelector(${c.id},this.value)">
+                            <option value="">— Sin asignar —</option>
+                            ${SELECTORES.map(s => `<option ${c.selector === s ? 'selected' : ''}>${s}</option>`).join('')}
+                        </select>
+                    </div>
                 </div>
                 <div class="ficha-card-actions">
                     <button class="btn-sm btn-danger" onclick="removeCand(${c.id})" title="Eliminar postulante"><i class="fas fa-trash" style="font-size:10px"></i></button>
@@ -1335,6 +1345,13 @@ async function asignarCandidatoABusqueda(candId) {
     if (error) { toast('Error al asignar: ' + (error.message || error.code), true); return; }
     if (!data || data.length === 0) { toast('No se asignó (revisar policy UPDATE en candidatos)', true); return; }
     await loadData(); refreshView(); toast('Postulante asignado a la búsqueda ✓');
+}
+
+async function updateCandSelector(candId, selector) {
+    const { data, error } = await sb.from('candidatos').update({ selector: selector || null }).eq('id', candId).select();
+    if (error) { toast('Error al asignar selector: ' + (error.message || error.code), true); return; }
+    if (!data || data.length === 0) { toast('No se asignó (revisar policy UPDATE en candidatos)', true); return; }
+    await loadData(); refreshView(); toast('Selector asignado ✓');
 }
 
 function renderFichas() {
@@ -1491,6 +1508,7 @@ function toggleCandModalFechas() {
 
 function openCandModal(id) {
     document.getElementById('cand-grp-busqueda').classList.add('hidden');
+    document.getElementById('cand-grp-selector').classList.add('hidden');
     document.getElementById('cand-bid').value = id;
     document.getElementById('cand-nombre').value = '';
     document.getElementById('cand-estado').value = 'Enviado';
@@ -1501,13 +1519,22 @@ function openCandModal(id) {
     openModal('modal-cand');
 }
 
+// Muestra el selector de "Selector a cargo" solo cuando el postulante queda sin búsqueda vinculada.
+function toggleCandSelectorGroup() {
+    const sinBusqueda = !document.getElementById('cand-bid').value;
+    document.getElementById('cand-grp-selector').classList.toggle('hidden', !sinBusqueda);
+}
+
 // ── Nuevo Postulante (desde la vista de Fichas / Choferes y Ayudantes) ──
-// Por defecto queda SIN búsqueda asignada: un selector lo vincula después desde la ficha.
+// Por defecto queda SIN búsqueda asignada: se le puede igual asignar un selector a cargo,
+// y un selector vincula la búsqueda después desde la ficha.
 function openNuevoPostulanteModal() {
     const opts = busquedas.filter(b => catOf(b) === 'choferes');
     const selEl = document.getElementById('cand-busqueda-select');
-    selEl.innerHTML = '<option value="">— Sin asignar (lo asigna un selector después) —</option>'
+    selEl.innerHTML = '<option value="">— Sin asignar (se vincula a una búsqueda después) —</option>'
         + opts.map(b => `<option value="${b.id}">${b.puesto} · ${b.selector} (${b.numero})</option>`).join('');
+    document.getElementById('cand-selector').innerHTML = '<option value="">— Elegir selector —</option>'
+        + SELECTORES.map(s => `<option>${s}</option>`).join('');
     document.getElementById('cand-grp-busqueda').classList.remove('hidden');
     document.getElementById('cand-bid').value = '';
     document.getElementById('cand-nombre').value = '';
@@ -1516,6 +1543,7 @@ function openNuevoPostulanteModal() {
     document.getElementById('cand-fecha-entrevista').value = '';
     document.getElementById('cand-fecha-rechazo').value = '';
     toggleCandModalFechas();
+    toggleCandSelectorGroup();
     openModal('modal-cand');
 }
 
@@ -1528,9 +1556,11 @@ async function saveCand() {
     const fEnvio      = document.getElementById('cand-fecha-envio').value || today();
     const fEntrevista = document.getElementById('cand-fecha-entrevista').value;
     const fRechazo    = document.getElementById('cand-fecha-rechazo').value;
+    const selector    = id ? null : (document.getElementById('cand-selector').value || null);
 
     // ── FIX: construimos el row solo con columnas que existen ──
     const row = { busqueda_id: id, nombre, estado, fecha_envio: fEnvio };
+    if (!id) row.selector = selector;
     if (estado === 'Entrevista' && fEntrevista) row.fecha_entrevista = fEntrevista;
     if ((estado === 'Rechazado' || estado === 'Baja') && fRechazo) row.fecha_rechazo = fRechazo;
 
