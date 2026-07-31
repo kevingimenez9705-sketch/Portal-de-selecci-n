@@ -257,6 +257,10 @@
         .fichas-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 18px; flex-wrap: wrap; }
         .fichas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(540px, 1fr)); gap: 20px; }
         .ficha-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+        .ficha-card-unassigned { border: 1px dashed var(--orange); background: #fffaf3; }
+        .ficha-asignar-box { display: flex; gap: 6px; align-items: center; margin: 8px 0; padding: 8px; background: #fff3e0; border: 1px solid #ffd8a8; border-radius: 8px; flex-wrap: wrap; }
+        .ficha-asignar-box select { flex: 1; min-width: 160px; }
+        .tag-sin-asignar { background: #ffe8cc; color: #7c3d00; }
         .ficha-card-hdr { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 10px; }
         .ficha-card-puesto { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 14px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
         .ficha-card-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
@@ -570,6 +574,7 @@ const DEMORA_LIMITE = { 'Gerente/Director': 45, 'Jefe/Encargado': 30, 'Otros': 1
 const VERIF_EN_CURSO = ['Pendiente','En proceso'];
 function verifEnCurso(r) { return VERIF_EN_CURSO.includes(r); }
 let busquedas = [];
+let unassignedCandidatos = [];
 let filteredIds = null;
 let currentCategoria = 'general';
 const HERRAMIENTAS = ['PC', 'Celular', 'Notebook', 'Línea de teléfono'];
@@ -706,6 +711,14 @@ async function loadData() {
     busquedas = (data || []).map(mapRow);
     const nums = busquedas.map(b => parseInt((b.numero || '').replace('SEL-', '')) || 0);
     nroSeq = nums.length ? Math.max(...nums) + 1 : 1;
+
+    // Postulantes sin búsqueda asignada todavía (no vienen embebidos en "busquedas")
+    const { data: sinAsignar, error: errSA } = await sb
+        .from('candidatos')
+        .select('*')
+        .is('busqueda_id', null)
+        .order('id', { ascending: false });
+    unassignedCandidatos = errSA ? [] : (sinAsignar || []);
 }
 
 function mapRow(b) {
@@ -1240,8 +1253,30 @@ function buildFichaTableHtml(c, b) {
     </table>`;
 }
 
+// b === null ⇒ postulante todavía sin búsqueda asignada
 function renderFichaCard(c, b) {
-    const isLocked = (b.status === 'Cerrada' || b.status === 'Finalizada') && !isAdmin();
+    const isLocked = !!b && (b.status === 'Cerrada' || b.status === 'Finalizada') && !isAdmin();
+
+    if (!b) {
+        return `
+        <div class="ficha-card ficha-card-unassigned" id="ficha-card-${c.id}">
+            <div class="ficha-card-hdr">
+                <div>
+                    <div class="ficha-card-puesto">
+                        <i class="fas fa-user-clock" style="font-size:11px;color:var(--orange)"></i> Postulante sin búsqueda
+                        <span class="tag tag-sin-asignar">Sin asignar</span>
+                    </div>
+                    <div class="ficha-card-meta">Todavía no está vinculado a ninguna búsqueda de Choferes/Ayudantes</div>
+                </div>
+                <div class="ficha-card-actions">
+                    <button class="btn-sm btn-danger" onclick="removeCand(${c.id})" title="Eliminar postulante"><i class="fas fa-trash" style="font-size:10px"></i></button>
+                </div>
+            </div>
+            ${renderAsignarBusquedaBox(c.id)}
+            <div style="overflow-x:auto">${buildFichaTableHtml(c, {})}</div>
+        </div>`;
+    }
+
     const archivosHtml = (b.archivos || []).length > 0
         ? b.archivos.map(a => `
             <div class="pdf-item">
@@ -1277,6 +1312,31 @@ function renderFichaCard(c, b) {
     </div>`;
 }
 
+function renderAsignarBusquedaBox(candId) {
+    const opts = busquedas.filter(b => catOf(b) === 'choferes' && b.status !== 'Finalizada');
+    if (opts.length === 0) {
+        return `<div class="tip" style="display:block;margin:8px 0">No hay búsquedas de Choferes/Ayudantes abiertas todavía para asignar. Creá una con "Nueva Búsqueda".</div>`;
+    }
+    return `
+    <div class="ficha-asignar-box">
+        <span style="font-size:11px;font-weight:700;color:#7c3d00;white-space:nowrap">Asignar a búsqueda:</span>
+        <select class="inline-select" id="asignar-sel-${candId}">
+            ${opts.map(b => `<option value="${b.id}">${b.puesto} · ${b.selector} (${b.numero})</option>`).join('')}
+        </select>
+        <button class="btn-sm" onclick="asignarCandidatoABusqueda(${candId})"><i class="fas fa-link" style="font-size:9px"></i> Asignar</button>
+    </div>`;
+}
+
+async function asignarCandidatoABusqueda(candId) {
+    const sel = document.getElementById('asignar-sel-' + candId);
+    const bid = +(sel?.value || 0);
+    if (!bid) return;
+    const { data, error } = await sb.from('candidatos').update({ busqueda_id: bid }).eq('id', candId).select();
+    if (error) { toast('Error al asignar: ' + (error.message || error.code), true); return; }
+    if (!data || data.length === 0) { toast('No se asignó (revisar policy UPDATE en candidatos)', true); return; }
+    await loadData(); refreshView(); toast('Postulante asignado a la búsqueda ✓');
+}
+
 function renderFichas() {
     const base = busquedas.filter(b => catOf(b) === 'choferes');
     const list = filteredIds ? base.filter(b => filteredIds.includes(b.id)) : base;
@@ -1284,17 +1344,23 @@ function renderFichas() {
 
     let cards = [];
     list.forEach(b => (b.candidatos || []).forEach(c => cards.push({ c, b })));
+    unassignedCandidatos.forEach(c => cards.push({ c, b: null }));
     if (choferRes) cards = cards.filter(({ c }) => (c.resultado_chofer || 'Pendiente') === choferRes);
 
     const order = { 'Pendiente': 0, 'Para ingresar': 1, 'No apto': 2 };
-    cards.sort((x, y) => (order[x.c.resultado_chofer || 'Pendiente'] - order[y.c.resultado_chofer || 'Pendiente']) || (y.c.id - x.c.id));
+    // Los sin asignar van primero para que un selector los vea y los vincule.
+    cards.sort((x, y) => (x.b ? 1 : 0) - (y.b ? 1 : 0)
+        || (order[x.c.resultado_chofer || 'Pendiente'] - order[y.c.resultado_chofer || 'Pendiente'])
+        || (y.c.id - x.c.id));
 
     const totalPost    = cards.length;
+    const sinAsignar   = cards.filter(x => !x.b).length;
     const pendientes   = cards.filter(x => (x.c.resultado_chofer || 'Pendiente') === 'Pendiente').length;
     const paraIngresar = cards.filter(x => x.c.resultado_chofer === 'Para ingresar').length;
     const noApto       = cards.filter(x => x.c.resultado_chofer === 'No apto').length;
     document.getElementById('kpi-row-fichas').innerHTML = `
         <div class="kpi"><div class="kpi-num">${totalPost}</div><div class="kpi-lbl">Postulantes</div></div>
+        <div class="kpi"><div class="kpi-num" style="color:var(--orange)">${sinAsignar}</div><div class="kpi-lbl">Sin asignar</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--orange)">${pendientes}</div><div class="kpi-lbl">Pendientes</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--green)">${paraIngresar}</div><div class="kpi-lbl">Para ingresar</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--red)">${noApto}</div><div class="kpi-lbl">No aptos</div></div>`;
@@ -1302,7 +1368,7 @@ function renderFichas() {
     const grid = document.getElementById('fichas-grid');
     grid.innerHTML = cards.length > 0
         ? cards.map(({ c, b }) => renderFichaCard(c, b)).join('')
-        : `<span class="tip">No hay postulantes cargados todavía. Primero creá una búsqueda de Chofer/Ayudante con "Nueva Búsqueda" y después usá "Nuevo Postulante".</span>`;
+        : `<span class="tip">No hay postulantes cargados todavía. Usá "Nuevo Postulante" para cargar uno (podés asignarlo a una búsqueda más adelante).</span>`;
 
     updateDeptoFilter();
 }
@@ -1436,16 +1502,14 @@ function openCandModal(id) {
 }
 
 // ── Nuevo Postulante (desde la vista de Fichas / Choferes y Ayudantes) ──
+// Por defecto queda SIN búsqueda asignada: un selector lo vincula después desde la ficha.
 function openNuevoPostulanteModal() {
     const opts = busquedas.filter(b => catOf(b) === 'choferes');
-    if (opts.length === 0) {
-        toast('Primero creá una búsqueda de Chofer/Ayudante con "Nueva Búsqueda"', true);
-        return;
-    }
     const selEl = document.getElementById('cand-busqueda-select');
-    selEl.innerHTML = opts.map(b => `<option value="${b.id}">${b.puesto} · ${b.selector} (${b.numero})</option>`).join('');
+    selEl.innerHTML = '<option value="">— Sin asignar (lo asigna un selector después) —</option>'
+        + opts.map(b => `<option value="${b.id}">${b.puesto} · ${b.selector} (${b.numero})</option>`).join('');
     document.getElementById('cand-grp-busqueda').classList.remove('hidden');
-    document.getElementById('cand-bid').value = opts[0].id;
+    document.getElementById('cand-bid').value = '';
     document.getElementById('cand-nombre').value = '';
     document.getElementById('cand-estado').value = 'Enviado';
     document.getElementById('cand-fecha-envio').value = today();
@@ -1456,7 +1520,8 @@ function openNuevoPostulanteModal() {
 }
 
 async function saveCand() {
-    const id     = +document.getElementById('cand-bid').value;
+    const bidRaw = document.getElementById('cand-bid').value;
+    const id     = bidRaw ? +bidRaw : null;
     const nombre = document.getElementById('cand-nombre').value.trim();
     const estado = document.getElementById('cand-estado').value;
     if (!nombre) return;
