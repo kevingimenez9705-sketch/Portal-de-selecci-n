@@ -460,8 +460,21 @@
         <input type="hidden" id="cand-bid">
         <div class="form-row" style="grid-template-columns:1fr;">
             <div class="form-group hidden" id="cand-grp-busqueda">
-                <label>Búsqueda / Puesto</label>
-                <select class="form-input" id="cand-busqueda-select" onchange="document.getElementById('cand-bid').value=this.value"></select>
+                <label>Vincular a</label>
+                <select class="form-input" id="cand-busqueda-select" onchange="document.getElementById('cand-bid').value=this.value; togglePoolFields();"></select>
+            </div>
+            <div class="form-row hidden" id="cand-grp-pool" style="grid-template-columns:1fr 1fr">
+                <div class="form-group"><label>Puesto</label>
+                    <select class="form-input" id="cand-pool-puesto">
+                        <option value="Chofer">Chofer</option>
+                        <option value="Ayudante">Ayudante</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Selector a cargo</label>
+                    <select class="form-input" id="cand-pool-selector">
+                        <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Soledad</option><option>Juan Pablo</option><option>Angel</option><option>Noelia</option>
+                    </select>
+                </div>
             </div>
             <div class="form-group"><label>Nombre del candidato</label><input class="form-input" id="cand-nombre" placeholder="Nombre Apellido"></div>
             <div class="form-group"><label>Estado</label>
@@ -806,6 +819,30 @@ function catOf(b) {
 }
 
 // ══════════════════════════════════════════════
+//  "BASE DE DATOS" de Choferes y Ayudantes: postulantes sueltos, sin una
+//  búsqueda (SEL-XXX) específica asignada. No requiere cambios en Supabase:
+//  se reutiliza una búsqueda "contenedora" por Puesto+Selector (motivo
+//  reservado "Base de datos"), invisible en Pipeline/Estadísticas/Gráficos.
+// ══════════════════════════════════════════════
+function esPool(b) { return (b?.motivo || '') === 'Base de datos'; }
+function busquedasSinPool() { return busquedas.filter(b => !esPool(b)); }
+
+async function getOrCreatePoolId(tipoPuesto, selector) {
+    const existente = busquedas.find(b => esPool(b) && b.puesto === tipoPuesto && b.selector === selector);
+    if (existente) return existente.id;
+    const row = {
+        numero: nextNro(), puesto: tipoPuesto, selector,
+        depto: 'Choferes y Ayudantes', tipo: 'Fábrica', motivo: 'Base de datos', nivel: 'Otros',
+        sueldo: 0, jornada: '', ubicacion: 'Fabricas', inicio: today(),
+        status: 'Proceso', ingreso: null, ingreso_nombre: ''
+    };
+    const { data, error } = await sb.from('busquedas').insert(row).select().single();
+    if (error) { toast('Error al crear la base de datos de postulantes: ' + (error.message || error.code), true); return null; }
+    await loadData();
+    return data.id;
+}
+
+// ══════════════════════════════════════════════
 //  ¿La búsqueda pertenece a la vista actual?
 //  Pipeline (currentCategoria === 'general') muestra TODAS las búsquedas.
 //  Choferes y Ayudantes muestra solo las de esa categoría.
@@ -828,7 +865,7 @@ function refreshView() {
 // ══════════════════════════════════════════════
 function renderTable() {
     const body = document.getElementById('table-body');
-    const base = busquedas.filter(inCategoria);
+    const base = busquedas.filter(inCategoria).filter(b => !esPool(b));
     const list = filteredIds ? base.filter(b => filteredIds.includes(b.id)) : base;
     const locked = (b) => (b.status === 'Cerrada' || b.status === 'Finalizada') && !isAdmin();
 
@@ -1239,6 +1276,7 @@ function buildFichaTableHtml(c, b) {
 }
 
 function renderFichaCard(c, b) {
+    const pool = esPool(b);
     const isLocked = (b.status === 'Cerrada' || b.status === 'Finalizada') && !isAdmin();
     const archivosHtml = (b.archivos || []).length > 0
         ? b.archivos.map(a => `
@@ -1254,9 +1292,13 @@ function renderFichaCard(c, b) {
             <div>
                 <div class="ficha-card-puesto">
                     <i class="fas fa-truck" style="font-size:11px;color:var(--muted)"></i> ${b.puesto}
-                    <span class="tag ${tagClass(b.status)}">${b.status}</span>
+                    ${pool
+                        ? `<span class="tag" style="background:#e5e0d8;color:var(--muted)"><i class="fas fa-database" style="font-size:9px"></i> Base de datos</span>`
+                        : `<span class="tag ${tagClass(b.status)}">${b.status}</span>`}
                 </div>
-                <div class="ficha-card-meta">${b.numero} · Selector: <strong>${b.selector}</strong> · <span class="motivo-chip ${motivoClass(b.motivo)}">${b.motivo}</span></div>
+                <div class="ficha-card-meta">
+                    ${pool ? '' : `${b.numero} · `}Selector: <strong>${b.selector}</strong>${pool ? '' : ` · <span class="motivo-chip ${motivoClass(b.motivo)}">${b.motivo}</span>`}
+                </div>
             </div>
             <div class="ficha-card-actions">
                 ${!isLocked ? `<button class="btn-sm btn-danger" onclick="removeCand(${c.id})" title="Eliminar postulante"><i class="fas fa-trash" style="font-size:10px"></i></button>` : ''}
@@ -1264,7 +1306,7 @@ function renderFichaCard(c, b) {
         </div>
         <div style="overflow-x:auto">${buildFichaTableHtml(c, b)}</div>
         <div class="ficha-card-files">
-            <div class="section-hdr" style="margin-bottom:3px">Archivos PDF (de la búsqueda)</div>
+            <div class="section-hdr" style="margin-bottom:3px">Archivos PDF ${pool ? '(compartidos de este grupo)' : '(de la búsqueda)'}</div>
             <div class="cell-scroll" style="max-height:44px">${archivosHtml}</div>
             ${!isLocked ? `
             <label class="pdf-upload-btn">
@@ -1315,7 +1357,7 @@ function toggleComentarios(id, btn) {
 }
 
 function renderKPIs() {
-    const cat         = busquedas.filter(inCategoria);
+    const cat         = busquedas.filter(inCategoria).filter(b => !esPool(b));
     const total       = cat.length;
     const proceso     = cat.filter(b => b.status === 'Proceso').length;
     const cerradas    = cat.filter(b => b.status === 'Cerrada').length;
@@ -1365,7 +1407,7 @@ function applyFilters() {
 }
 
 function descargarNombres() {
-    const base = busquedas.filter(inCategoria);
+    const base = busquedas.filter(inCategoria).filter(b => !esPool(b));
     const list = filteredIds ? base.filter(b => filteredIds.includes(b.id)) : base;
     if (list.length === 0) { toast('No hay búsquedas para descargar', true); return; }
     const contenido = list.map(b => b.puesto || '(sin nombre)').join('\n');
@@ -1384,12 +1426,13 @@ function descargarNombres() {
 function updateDeptoFilter() {
     const deptos = [...new Set(busquedas
         .filter(inCategoria)
+        .filter(b => !esPool(b))
         .map(b => b.depto).filter(Boolean))];
     const sel = document.getElementById('f-depto');
     const cur = sel.value;
     sel.innerHTML = '<option value="">Todos los dptos.</option>' + deptos.map(d => `<option ${d === cur ? 'selected' : ''}>${d}</option>`).join('');
 
-    const todosDeptos = [...new Set(busquedas.map(b => b.depto).filter(Boolean))].sort();
+    const todosDeptos = [...new Set(busquedas.filter(b => !esPool(b)).map(b => b.depto).filter(Boolean))].sort();
     const datalist = document.getElementById('depto-datalist');
     if (datalist) datalist.innerHTML = todosDeptos.map(d => `<option value="${d}">`).join('');
 }
@@ -1452,6 +1495,7 @@ function toggleCandModalFechas() {
 
 function openCandModal(id) {
     document.getElementById('cand-grp-busqueda').classList.add('hidden');
+    document.getElementById('cand-grp-pool').classList.add('hidden');
     document.getElementById('cand-bid').value = id;
     document.getElementById('cand-nombre').value = '';
     document.getElementById('cand-estado').value = 'Enviado';
@@ -1463,33 +1507,50 @@ function openCandModal(id) {
 }
 
 // ── Nuevo Postulante (desde la vista de Fichas / Choferes y Ayudantes) ──
+// Por defecto se carga suelto, como una base de datos (sin búsqueda SEL-XXX);
+// opcionalmente se puede vincular a una búsqueda real existente.
+function togglePoolFields() {
+    const val = document.getElementById('cand-busqueda-select')?.value ?? '';
+    document.getElementById('cand-grp-pool').classList.toggle('hidden', val !== '');
+}
+
 function openNuevoPostulanteModal() {
-    const opts = busquedas.filter(b => catOf(b) === 'choferes');
-    if (opts.length === 0) {
-        toast('Primero creá una búsqueda de Chofer/Ayudante con "Nueva Búsqueda"', true);
-        return;
-    }
+    const opts = busquedas.filter(b => catOf(b) === 'choferes' && !esPool(b));
     const selEl = document.getElementById('cand-busqueda-select');
-    selEl.innerHTML = opts.map(b => `<option value="${b.id}">${b.puesto} · ${b.selector} (${b.numero})</option>`).join('');
+    selEl.innerHTML = '<option value="">📁 Base de datos (sin búsqueda específica)</option>' +
+        opts.map(b => `<option value="${b.id}">${b.puesto} · ${b.selector} (${b.numero})</option>`).join('');
     document.getElementById('cand-grp-busqueda').classList.remove('hidden');
-    document.getElementById('cand-bid').value = opts[0].id;
+    document.getElementById('cand-bid').value = '';
     document.getElementById('cand-nombre').value = '';
     document.getElementById('cand-estado').value = 'Enviado';
     document.getElementById('cand-fecha-envio').value = today();
     document.getElementById('cand-fecha-entrevista').value = '';
     document.getElementById('cand-fecha-rechazo').value = '';
     toggleCandModalFechas();
+    togglePoolFields();
     openModal('modal-cand');
 }
 
 async function saveCand() {
-    const id     = +document.getElementById('cand-bid').value;
+    const poolGrp = document.getElementById('cand-grp-pool');
+    const usarPool = poolGrp && !poolGrp.classList.contains('hidden');
     const nombre = document.getElementById('cand-nombre').value.trim();
     const estado = document.getElementById('cand-estado').value;
     if (!nombre) return;
     const fEnvio      = document.getElementById('cand-fecha-envio').value || today();
     const fEntrevista = document.getElementById('cand-fecha-entrevista').value;
     const fRechazo    = document.getElementById('cand-fecha-rechazo').value;
+
+    let id;
+    if (usarPool) {
+        const tipoPuesto = document.getElementById('cand-pool-puesto').value;
+        const selectorPool = document.getElementById('cand-pool-selector').value;
+        id = await getOrCreatePoolId(tipoPuesto, selectorPool);
+        if (!id) return;
+    } else {
+        id = +document.getElementById('cand-bid').value;
+        if (!id) { toast('Elegí una búsqueda para vincular el candidato', true); return; }
+    }
 
     // ── FIX: construimos el row solo con columnas que existen ──
     const row = { busqueda_id: id, nombre, estado, fecha_envio: fEnvio };
@@ -1831,7 +1892,8 @@ function switchStatsTab(tab, btn) {
     btn.classList.add('active'); renderStats(tab);
 }
 function renderStats(tab) {
-    const subset = tab === 'general' ? busquedas : busquedas.filter(b => b.tipo === (tab === 'staff' ? 'Staff' : 'Fábrica'));
+    const busquedasFiltradas = busquedasSinPool();
+    const subset = tab === 'general' ? busquedasFiltradas : busquedasFiltradas.filter(b => b.tipo === (tab === 'staff' ? 'Staff' : 'Fábrica'));
     const total = subset.length || 1;
     const bySelector = {};
     subset.forEach(b => {
@@ -1896,19 +1958,20 @@ function switchChartsTab(tab, btn) { document.querySelectorAll('#view-charts .pa
 function renderCharts(tab) { destroyCharts(); if (tab === 'general') renderChartsGeneral(); else if (tab === 'tiempo') renderChartsTiempo(); else if (tab === 'selectores') renderChartsSelectores(); }
 
 function renderChartsGeneral() {
-    const cerradas    = busquedas.filter(b => b.status === 'Cerrada' || b.status === 'Finalizada').length;
-    const proceso     = busquedas.filter(b => b.status === 'Proceso').length;
-    const pausadas    = busquedas.filter(b => b.status === 'Pausada').length;
-    const finalizadas = busquedas.filter(b => b.status === 'Finalizada').length;
-    const tasaCierre  = Math.round((cerradas / Math.max(busquedas.length, 1)) * 100);
-    const totalCands  = busquedas.reduce((a, b) => a + b.candidatos.length, 0);
-    const byStatus    = {}; busquedas.forEach(b => { byStatus[b.status] = (byStatus[b.status] || 0) + 1; });
-    const staff       = busquedas.filter(b => b.tipo === 'Staff').length;
-    const fabrica     = busquedas.filter(b => b.tipo === 'Fábrica').length;
-    const byMotivo    = {}; busquedas.forEach(b => { byMotivo[b.motivo] = (byMotivo[b.motivo] || 0) + 1; });
-    const byDepto     = {}; busquedas.forEach(b => { byDepto[b.depto]   = (byDepto[b.depto]   || 0) + 1; });
-    const byNivel     = {}; busquedas.forEach(b => { byNivel[b.nivel]   = (byNivel[b.nivel]   || 0) + 1; });
-    const permData    = busquedas.filter(b => b.ingreso).map(b => ({
+    const busquedasFiltradas = busquedasSinPool();
+    const cerradas    = busquedasFiltradas.filter(b => b.status === 'Cerrada' || b.status === 'Finalizada').length;
+    const proceso     = busquedasFiltradas.filter(b => b.status === 'Proceso').length;
+    const pausadas    = busquedasFiltradas.filter(b => b.status === 'Pausada').length;
+    const finalizadas = busquedasFiltradas.filter(b => b.status === 'Finalizada').length;
+    const tasaCierre  = Math.round((cerradas / Math.max(busquedasFiltradas.length, 1)) * 100);
+    const totalCands  = busquedasFiltradas.reduce((a, b) => a + b.candidatos.length, 0);
+    const byStatus    = {}; busquedasFiltradas.forEach(b => { byStatus[b.status] = (byStatus[b.status] || 0) + 1; });
+    const staff       = busquedasFiltradas.filter(b => b.tipo === 'Staff').length;
+    const fabrica     = busquedasFiltradas.filter(b => b.tipo === 'Fábrica').length;
+    const byMotivo    = {}; busquedasFiltradas.forEach(b => { byMotivo[b.motivo] = (byMotivo[b.motivo] || 0) + 1; });
+    const byDepto     = {}; busquedasFiltradas.forEach(b => { byDepto[b.depto]   = (byDepto[b.depto]   || 0) + 1; });
+    const byNivel     = {}; busquedasFiltradas.forEach(b => { byNivel[b.nivel]   = (byNivel[b.nivel]   || 0) + 1; });
+    const permData    = busquedasFiltradas.filter(b => b.ingreso).map(b => ({
         nombre: (b.ingreso_nombre && b.ingreso_nombre.trim()) ? b.ingreso_nombre : (b.puesto || '(sin nombre)'),
         dias: daysDiff(b.ingreso, b.fecha_baja || null), puesto: b.puesto
     })).sort((a, b) => b.dias - a.dias);
@@ -1916,35 +1979,35 @@ function renderChartsGeneral() {
     // ── Demora promedio por nivel (Otros / Jefe-Encargado / Gerente-Director) ──
     const NIVELES = ['Otros', 'Jefe/Encargado', 'Gerente/Director'];
     const demoraPorNivel = NIVELES.map(n => {
-        const items = busquedas.filter(b => (b.nivel || 'Otros') === n);
+        const items = busquedasFiltradas.filter(b => (b.nivel || 'Otros') === n);
         const dl = items.map(b => b.cp ? daysDiff(b.inicio, b.cp) : (b.ingreso ? daysDiff(b.inicio, b.ingreso) : daysDiff(b.inicio)));
         const avg = dl.length ? Math.round(dl.reduce((a, c) => a + c, 0) / dl.length) : 0;
         return { nivel: n, avg, limite: DEMORA_LIMITE[n] || 15, count: items.length };
     });
 
     // ── Tasa de Cobertura: general y Staff vs Fábrica (cerradas+finalizadas / total) ──
-    const staffList        = busquedas.filter(b => b.tipo === 'Staff');
-    const fabList          = busquedas.filter(b => b.tipo === 'Fábrica');
+    const staffList        = busquedasFiltradas.filter(b => b.tipo === 'Staff');
+    const fabList          = busquedasFiltradas.filter(b => b.tipo === 'Fábrica');
     const coberturaGeneral = tasaCierre;
     const coberturaStaff   = Math.round((staffList.filter(b => b.status === 'Cerrada' || b.status === 'Finalizada').length / Math.max(staffList.length, 1)) * 100);
     const coberturaFab     = Math.round((fabList.filter(b => b.status === 'Cerrada' || b.status === 'Finalizada').length / Math.max(fabList.length, 1)) * 100);
 
     // ── Tasa de Permanencia: ingresados que siguen activos (sin fecha de baja) ──
-    const ingresados      = busquedas.filter(b => b.ingreso);
+    const ingresados      = busquedasFiltradas.filter(b => b.ingreso);
     const activosEmpresa  = ingresados.filter(b => !b.fecha_baja);
     const tasaPermanencia = Math.round((activosEmpresa.length / Math.max(ingresados.length, 1)) * 100);
 
     // ── Cumplimiento de plazos: cierres que entraron dentro del límite vs los que lo excedieron ──
-    const cerradasConIngreso = busquedas.filter(b => (b.status === 'Cerrada' || b.status === 'Finalizada') && b.ingreso);
+    const cerradasConIngreso = busquedasFiltradas.filter(b => (b.status === 'Cerrada' || b.status === 'Finalizada') && b.ingreso);
     const enTiempo    = cerradasConIngreso.filter(b => daysDiff(b.inicio, b.ingreso) <= (DEMORA_LIMITE[b.nivel] || 15)).length;
     const excedidos   = cerradasConIngreso.length - enTiempo;
     const pctEnTiempo = Math.round((enTiempo / Math.max(cerradasConIngreso.length, 1)) * 100);
 
     document.getElementById('charts-content').innerHTML = `
     <div class="mini-kpi-row">
-        <div class="mini-kpi"><div class="mini-kpi-num">${busquedas.length}</div><div class="mini-kpi-lbl">Total</div><div class="mini-kpi-sub">${proceso} en curso · ${pausadas} pausadas</div></div>
-        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${tasaCierre}%</div><div class="mini-kpi-lbl">Tasa de Cierre</div><div class="mini-kpi-sub">${cerradas} de ${busquedas.length}</div></div>
-        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--orange)">${totalCands}</div><div class="mini-kpi-lbl">Candidatos</div><div class="mini-kpi-sub">⌀ ${(totalCands / Math.max(busquedas.length, 1)).toFixed(1)} por búsqueda</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num">${busquedasFiltradas.length}</div><div class="mini-kpi-lbl">Total</div><div class="mini-kpi-sub">${proceso} en curso · ${pausadas} pausadas</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${tasaCierre}%</div><div class="mini-kpi-lbl">Tasa de Cierre</div><div class="mini-kpi-sub">${cerradas} de ${busquedasFiltradas.length}</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--orange)">${totalCands}</div><div class="mini-kpi-lbl">Candidatos</div><div class="mini-kpi-sub">⌀ ${(totalCands / Math.max(busquedasFiltradas.length, 1)).toFixed(1)} por búsqueda</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:#92400e">${finalizadas}</div><div class="mini-kpi-lbl">Finalizadas</div><div class="mini-kpi-sub">≥ 90 días háb. en empresa</div></div>
     </div>
     <div class="charts-grid-2">
@@ -2010,7 +2073,8 @@ function renderChartsGeneral() {
 }
 
 function renderChartsTiempo() {
-    const cerradas = busquedas.filter(b => (b.status === 'Cerrada' || b.status === 'Finalizada') && b.ingreso);
+    const busquedasFiltradas = busquedasSinPool();
+    const cerradas = busquedasFiltradas.filter(b => (b.status === 'Cerrada' || b.status === 'Finalizada') && b.ingreso);
     const diasList = cerradas.map(b => daysDiff(b.inicio, b.ingreso));
     const avgDias  = diasList.length ? Math.round(diasList.reduce((a, c) => a + c, 0) / diasList.length) : 0;
     const minDias  = diasList.length ? Math.min(...diasList) : 0;
@@ -2025,7 +2089,7 @@ function renderChartsTiempo() {
     const nivelAvg = Object.entries(byNivel).map(([n, d]) => ({ nivel: n, avg: Math.round(d.reduce((a, c) => a + c, 0) / d.length), limite: DEMORA_LIMITE[n] || 15 }));
 
     // ── Demora: cuánto tardó el equipo de Selección (T1) vs el cliente interno / sector (T2) ──
-    const tramosAll = busquedas.map(b => ({ sel: b.selector, ...tramosDemora(b) }));
+    const tramosAll = busquedasFiltradas.map(b => ({ sel: b.selector, ...tramosDemora(b) }));
     const avgT1 = tramosAll.length ? Math.round(tramosAll.reduce((a, t) => a + t.t1, 0) / tramosAll.length) : 0;
     const t2Validos = tramosAll.filter(t => !t.t2NA);
     const avgT2 = t2Validos.length ? Math.round(t2Validos.reduce((a, t) => a + t.t2, 0) / t2Validos.length) : 0;
@@ -2038,7 +2102,7 @@ function renderChartsTiempo() {
         <div class="mini-kpi"><div class="mini-kpi-num">${avgDias}activos</div><div class="mini-kpi-lbl">Tiempo promedio</div><div class="mini-kpi-sub">${cerradas.length} búsquedas cerradas</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${minDias}activos</div><div class="mini-kpi-lbl">Más rápida</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--red)">${maxDias}activos</div><div class="mini-kpi-lbl">Más lenta</div></div>
-        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--orange)">${busquedas.filter(b => { const d = daysDiff(b.inicio); return d > (DEMORA_LIMITE[b.nivel] || 15) && b.status === 'Proceso'; }).length}</div><div class="mini-kpi-lbl">Fuera de plazo</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--orange)">${busquedasFiltradas.filter(b => { const d = daysDiff(b.inicio); return d > (DEMORA_LIMITE[b.nivel] || 15) && b.status === 'Proceso'; }).length}</div><div class="mini-kpi-lbl">Fuera de plazo</div></div>
     </div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:12px;padding:6px 12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;display:inline-block">
         <i class="fas fa-info-circle"></i> Todos los tiempos expresados en <strong>días hábiles (activos)</strong> — lunes a viernes
@@ -2070,9 +2134,10 @@ function renderChartsTiempo() {
 }
 
 function renderChartsSelectores() {
+    const busquedasFiltradas = busquedasSinPool();
     const data = {};
     SELECTORES.forEach(s => { data[s] = { total: 0, cerradas: 0, proceso: 0, candidatos: 0, psico: 0, psico_realizado: 0, dias: [] }; });
-    busquedas.forEach(b => {
+    busquedasFiltradas.forEach(b => {
         if (!data[b.selector]) return;
         data[b.selector].total++;
         if (b.status === 'Cerrada' || b.status === 'Finalizada') { data[b.selector].cerradas++; if (b.ingreso) data[b.selector].dias.push(daysDiff(b.inicio, b.ingreso)); }
