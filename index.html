@@ -717,8 +717,11 @@ function renderDemoraBreakdown(b) {
     const live = run => run ? `<i class="fas fa-circle dm-live"></i>` : '';
     const t2val = t.t2NA ? '—' : t.t2;
     const t3val = t.t3NA ? '—' : t.t3;
+    // Compatibilidad: si no se cargó "Decisión del sector" pero sí hay ingreso, el tramo 2 usa el ingreso como aproximación.
+    const t2Aprox = !b.decision_sector && b.cp && b.ingreso;
     const rango1 = fmtRango(t.t1From, t.t1To, t.t1Run);
-    const rango2 = t.t2NA ? 'Sin enviar al sector todavía' : fmtRango(t.t2From, t.t2To, t.t2Run);
+    const rango2raw = t.t2NA ? 'Sin enviar al sector todavía' : fmtRango(t.t2From, t.t2To, t.t2Run);
+    const rango2 = t2Aprox ? `${rango2raw} (aprox., sin fecha de decisión cargada)` : rango2raw;
     const rango3 = t.t3NA ? 'Sin fecha de decisión del sector todavía' : fmtRango(t.t3From, t.t3To, t.t3Run);
     return `
     <div class="demora-bd">
@@ -730,11 +733,11 @@ function renderDemoraBreakdown(b) {
                 ${rango1 ? `<span class="dm-rango">${rango1}</span>` : ''}
             </div>
         </div>
-        <div class="dm-row" title="${t.t2NA ? 'Aún no se envió el perfil al sector' : 'Días hábiles que tardó el sector en decidir (aprobar o rechazar) el perfil' + (t.t2Run ? ' (en curso)' : '')}">
+        <div class="dm-row" title="${t.t2NA ? 'Aún no se envió el perfil al sector' : (t2Aprox ? 'No se cargó la fecha de "Decisión del sector": se usa la fecha de ingreso como aproximación' : 'Días hábiles que tardó el sector en decidir (aprobar o rechazar) el perfil' + (t.t2Run ? ' (en curso)' : ''))}">
             <span class="dm-ico" style="color:var(--orange)"><i class="fas fa-building"></i></span>
             <div class="dm-body">
                 <span class="dm-val">${t2val}<span class="dm-u">hd</span>${live(t.t2Run)}</span>
-                <span class="dm-lbl">Decisión del sector</span>
+                <span class="dm-lbl">Decisión del sector${t2Aprox ? ' (aprox.)' : ''}</span>
                 ${rango2 ? `<span class="dm-rango">${rango2}</span>` : ''}
             </div>
         </div>
