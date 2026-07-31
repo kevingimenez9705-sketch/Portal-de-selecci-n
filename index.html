@@ -229,6 +229,9 @@
         .dm-row.dm-total .dm-lbl { color: rgba(255,255,255,.65); }
         .dm-rango { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); margin-top: 1px; }
         .dm-row.dm-total .dm-rango { color: rgba(255,255,255,.5); }
+        .alerta-sector { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; background: var(--danger); color: var(--danger-text); border: 1px solid #f1a8ae; border-radius: 8px; padding: 6px 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; animation: alertapulse 1.6s infinite; }
+        .alerta-sector i { margin-right: 3px; }
+        @keyframes alertapulse { 0%,100% { box-shadow: 0 0 0 0 rgba(155,34,38,.25); } 50% { box-shadow: 0 0 0 5px rgba(155,34,38,0); } }
         .dm-live { font-size: 6px; color: var(--blue); margin-left: 5px; animation: dmpulse 1.4s infinite; }
         @keyframes dmpulse { 0%,100% { opacity: 1; } 50% { opacity: .15; } }
 
@@ -350,7 +353,7 @@
             <select class="filter-select" id="f-depto" onchange="applyFilters()"><option value="">Todos los dptos.</option></select>
             <select class="filter-select" id="f-status" onchange="applyFilters()">
                 <option value="">Todos los estados</option>
-                <option>Proceso</option><option>Cerrada</option><option>Pausada</option><option>Finalizada</option>
+                <option>Proceso</option><option>Cerrada</option><option>Pausada</option><option>Finalizada</option><option>Sustituida</option>
             </select>
             <select class="filter-select" id="f-reabierta" onchange="applyFilters()">
                 <option value="">Reabiertas: todas</option>
@@ -582,6 +585,12 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const SELECTORES = ['Silvina','Romina','Claudia','Soledad','Juan Pablo','Angel','Noelia'];
 const DEMORA_LIMITE = { 'Gerente/Director': 45, 'Jefe/Encargado': 30, 'Otros': 15 };
+const ALERTA_SECTOR_LIMITE_HD = 3; // 72hs hábiles sin respuesta del sector desde "Enviado al sector"
+
+// Búsqueda en Proceso, ya enviada al sector, sin ingreso todavía y con 3+ días hábiles esperando respuesta.
+function alertaSectorVencido(b) {
+    return b.status === 'Proceso' && !!b.cp && !b.ingreso && daysDiff(b.cp) >= ALERTA_SECTOR_LIMITE_HD;
+}
 const VERIF_EN_CURSO = ['Pendiente','En proceso'];
 function verifEnCurso(r) { return VERIF_EN_CURSO.includes(r); }
 let busquedas = [];
@@ -684,8 +693,15 @@ function renderDemoraBreakdown(b) {
     const t2val = t.t2NA ? '—' : t.t2;
     const rango1 = fmtRango(t.t1From, t.t1To, t.t1Run);
     const rango2 = t.t2NA ? 'Sin enviar al sector todavía' : fmtRango(t.t2From, t.t2To, t.t2Run);
+    const alerta = alertaSectorVencido(b)
+        ? `<div class="alerta-sector" title="Pasaron ${t.t2}hd desde que se envió al sector (${fmtFechaCorta(b.cp)}) sin respuesta">
+            <i class="fas fa-triangle-exclamation"></i> +${ALERTA_SECTOR_LIMITE_HD}hd sin respuesta del sector
+            <button class="btn-sm" style="margin-top:4px" onclick="reabrirPorDemora(${b.id})"><i class="fas fa-redo" style="font-size:8px"></i> Reabrir con contador en 0</button>
+        </div>`
+        : '';
     return `
     <div class="demora-bd">
+        ${alerta}
         <div class="dm-row" title="Días hábiles desde la apertura hasta enviar el perfil al sector${t.t1Run ? ' (en curso · aún sin enviar)' : ''}">
             <span class="dm-ico" style="color:var(--blue)"><i class="fas fa-paper-plane"></i></span>
             <div class="dm-body">
@@ -938,7 +954,7 @@ function renderTable() {
     const body = document.getElementById('table-body');
     const base = busquedas.filter(inCategoria);
     const list = filteredIds ? base.filter(b => filteredIds.includes(b.id)) : base;
-    const locked = (b) => (b.status === 'Cerrada' || b.status === 'Finalizada') && !isAdmin();
+    const locked = (b) => (b.status === 'Cerrada' || b.status === 'Finalizada' || b.status === 'Sustituida') && !isAdmin();
 
     body.innerHTML = list.map(b => {
         const isLocked = locked(b);
@@ -1195,7 +1211,7 @@ function renderTable() {
                     ${isLocked
                         ? `<span class="tag ${tagClass(b.status)}">${b.status}</span>`
                         : `<select class="inline-select" onchange="updateField(${b.id},'status',this.value)">
-                            ${['Proceso', 'Cerrada', 'Pausada', 'Finalizada'].map(s => `<option ${b.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                            ${['Proceso', 'Cerrada', 'Pausada', 'Finalizada', 'Sustituida'].map(s => `<option ${b.status === s ? 'selected' : ''}>${s}</option>`).join('')}
                            </select>`}
                     ${(b.status === 'Cerrada' || b.status === 'Finalizada') ? `<button class="btn-sm" style="font-size:11px" onclick="reabrir(${b.id})"><i class="fas fa-redo" style="font-size:8px"></i> Reabrir</button>` : ''}
                     ${isAdmin() ? `<button class="btn-sm btn-danger" onclick="eliminar(${b.id})"><i class="fas fa-trash" style="font-size:8px"></i></button>` : ''}
@@ -1217,7 +1233,7 @@ function fmtFechaCorta(iso) {
 }
 
 function buildFichaTableHtml(c, b) {
-    const isLocked = (b.status === 'Cerrada' || b.status === 'Finalizada') && !isAdmin();
+    const isLocked = (b.status === 'Cerrada' || b.status === 'Finalizada' || b.status === 'Sustituida') && !isAdmin();
     const inp = (field, val, type = 'text', ph = '') => isLocked
         ? `<span>${val || '—'}</span>`
         : `<input class="ficha-input" type="${type}" value="${val || ''}" placeholder="${ph}" onchange="updateFichaField(${c.id},'${field}',this.value)">`;
@@ -1296,7 +1312,7 @@ function buildFichaTableHtml(c, b) {
 
 // b === null ⇒ postulante todavía sin búsqueda asignada
 function renderFichaCard(c, b) {
-    const isLocked = !!b && (b.status === 'Cerrada' || b.status === 'Finalizada') && !isAdmin();
+    const isLocked = !!b && (b.status === 'Cerrada' || b.status === 'Finalizada' || b.status === 'Sustituida') && !isAdmin();
 
     if (!b) {
         return `
@@ -1444,13 +1460,15 @@ function renderKPIs() {
     const finalizadas = cat.filter(b => b.status === 'Finalizada').length;
     const vencidas    = cat.filter(b => { const d = daysDiff(b.inicio); return d > (DEMORA_LIMITE[b.nivel] || 15) && b.status === 'Proceso'; }).length;
     const reabiertas  = cat.filter(b => b.reopened_from).length;
+    const alertas72   = cat.filter(alertaSectorVencido).length;
     document.getElementById('kpi-row').innerHTML = `
         <div class="kpi"><div class="kpi-num">${total}</div><div class="kpi-lbl">Total búsquedas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--blue)">${proceso}</div><div class="kpi-lbl">En proceso</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--green)">${cerradas}</div><div class="kpi-lbl">Cerradas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:#92400e">${finalizadas}</div><div class="kpi-lbl">Finalizadas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--red)">${vencidas}</div><div class="kpi-lbl">Fuera de plazo</div></div>
-        <div class="kpi"><div class="kpi-num" style="color:var(--blue)">${reabiertas}</div><div class="kpi-lbl">Reabiertas</div></div>`;
+        <div class="kpi"><div class="kpi-num" style="color:var(--blue)">${reabiertas}</div><div class="kpi-lbl">Reabiertas</div></div>
+        <div class="kpi"><div class="kpi-num" style="color:var(--red)">${alertas72}</div><div class="kpi-lbl">Alertas 72hs sector</div></div>`;
 }
 
 function applyFilters() {
@@ -1873,6 +1891,41 @@ async function reabrir(id) {
     const updOrig = { status: 'Cerrada' };
     if (fechaBaja && /^\d{4}-\d{2}-\d{2}$/.test(fechaBaja.trim())) updOrig.fecha_baja = fechaBaja.trim();
     await sb.from('busquedas').update(updOrig).eq('id', id);
+    await loadData(); refreshView();
+    toast('Búsqueda reabierta como ' + nueva.numero + ' ✓');
+}
+
+// Reapertura por demora del sector (72hs sin respuesta): a diferencia de reabrir(), esta búsqueda
+// sigue "Proceso" (nadie ingresó todavía), así que no corresponde preguntar fecha de baja.
+async function reabrirPorDemora(id) {
+    const orig = busquedas.find(x => x.id === id);
+    if (!orig) { toast('No se encontró la búsqueda', true); return; }
+    if (!confirm('¿Reabrir "' + orig.puesto + '" por demora del sector (' + ALERTA_SECTOR_LIMITE_HD + '+ días hábiles sin respuesta)? Se marcará esta entrada como Sustituida y se creará una nueva con el contador en 0.')) return;
+    const nuevaRow = {
+        numero: nextNro(), puesto: orig.puesto, selector: orig.selector,
+        depto: orig.depto, tipo: orig.tipo, motivo: orig.motivo, nivel: orig.nivel,
+        sueldo: orig.sueldo, jornada: orig.jornada, ubicacion: orig.ubicacion,
+        inicio: today(), status: 'Proceso', ingreso: null, ingreso_nombre: '',
+        categoria: orig.categoria || null, herramientas: orig.herramientas || null,
+        reopened_from: orig.numero
+    };
+    let { data: nueva, error: errInsert } = await sb.from('busquedas').insert(nuevaRow).select().single();
+    if (errInsert && errInsert.message && /categoria|herramientas/.test(errInsert.message)) {
+        delete nuevaRow.categoria; delete nuevaRow.herramientas;
+        ({ data: nueva, error: errInsert } = await sb.from('busquedas').insert(nuevaRow).select().single());
+    }
+    if (errInsert && errInsert.message && /reopened_from/.test(errInsert.message)) {
+        delete nuevaRow.reopened_from;
+        ({ data: nueva, error: errInsert } = await sb.from('busquedas').insert(nuevaRow).select().single());
+    }
+    if (errInsert) { toast('Error al reabrir: ' + (errInsert.message || 'verificar permisos'), true); return; }
+    const textoOrigen = `Reapertura de ${orig.numero} — "${orig.puesto}" por demora del sector (${ALERTA_SECTOR_LIMITE_HD}+ días hábiles sin respuesta desde el envío al sector).`;
+    await sb.from('estado_log').insert({ busqueda_id: nueva.id, texto: textoOrigen, fecha: today() });
+    try {
+        await sb.from('historial').insert({ busqueda_id: nueva.id, texto: textoOrigen, fecha: new Date().toISOString() });
+    } catch (e) { console.warn('No se pudo copiar historial:', e); }
+    let { error: errUpd } = await sb.from('busquedas').update({ status: 'Sustituida' }).eq('id', id);
+    if (errUpd) ({ error: errUpd } = await sb.from('busquedas').update({ status: 'Cerrada' }).eq('id', id));
     await loadData(); refreshView();
     toast('Búsqueda reabierta como ' + nueva.numero + ' ✓');
 }
