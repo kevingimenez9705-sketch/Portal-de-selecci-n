@@ -342,6 +342,7 @@
             <button class="inline-nav-btn" id="nav-choferes" onclick="showView('choferes',this)"><i class="fas fa-truck"></i> Choferes y Ayudantes</button>
             <button class="inline-nav-btn" id="nav-stats" onclick="showView('stats',this)"><i class="fas fa-chart-bar"></i> Estadísticas</button>
             <button class="inline-nav-btn" id="nav-charts" onclick="showView('charts',this)"><i class="fas fa-chart-pie"></i> Gráficos</button>
+            <button class="inline-nav-btn" id="nav-informe" onclick="showView('informe',this)"><i class="fas fa-file-export"></i> Informe</button>
             <div class="inline-nav-sep"></div>
             <button class="inline-nav-btn" onclick="openModal()"><i class="fas fa-plus"></i> Nueva Búsqueda</button>
         </div>
@@ -426,6 +427,18 @@
                 <button class="page-tab" onclick="switchChartsTab('selectores',this)">Selectores</button>
             </div>
             <div id="charts-content"></div>
+        </div>
+
+        <!-- INFORME -->
+        <div id="view-informe" class="hidden">
+            <div id="informe-content"></div>
+            <div class="chart-card" style="margin-top:20px">
+                <div class="chart-card-title"><i class="fas fa-file-csv"></i> Exportar informe completo</div>
+                <p style="font-size:12px;color:var(--muted);margin-bottom:12px;max-width:640px">
+                    Descarga un CSV con todas las búsquedas: fechas, demora total y ajustada (con descuentos justificados), estado, cobertura, alertas de 72hs y datos incompletos — listo para abrir en Excel o Google Sheets.
+                </p>
+                <button class="btn-primary" onclick="descargarInformeCSV()"><i class="fas fa-download"></i> Descargar CSV</button>
+            </div>
         </div>
     </main>
 </div>
@@ -606,6 +619,14 @@ function alertaSectorVencido(b) {
         const d = Math.max(0, daysDiff(c.fecha_envio) - (c.demora_descuento_dias || 0));
         return d >= ALERTA_SECTOR_LIMITE_HD;
     });
+}
+
+// Búsquedas con datos que ensucian el informe: se cerraron sin fecha de ingreso, o tienen un
+// candidato con oferta pero la búsqueda todavía no tiene "Decisión del sector" cargada.
+function datosIncompletos(b) {
+    if ((b.status === 'Cerrada' || b.status === 'Finalizada') && !b.ingreso) return true;
+    if ((b.candidatos || []).some(c => c.estado === 'Oferta') && !b.decision_sector) return true;
+    return false;
 }
 const VERIF_EN_CURSO = ['Pendiente','En proceso'];
 function verifEnCurso(r) { return VERIF_EN_CURSO.includes(r); }
@@ -1554,6 +1575,7 @@ function renderKPIs() {
     const vencidas    = cat.filter(b => { const d = daysDiff(b.inicio); return d > (DEMORA_LIMITE[b.nivel] || 15) && b.status === 'Proceso'; }).length;
     const reabiertas  = cat.filter(b => b.reopened_from).length;
     const alertas72   = cat.filter(alertaSectorVencido).length;
+    const incompletos = cat.filter(datosIncompletos).length;
     document.getElementById('kpi-row').innerHTML = `
         <div class="kpi"><div class="kpi-num">${total}</div><div class="kpi-lbl">Total búsquedas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--blue)">${proceso}</div><div class="kpi-lbl">En proceso</div></div>
@@ -1561,7 +1583,8 @@ function renderKPIs() {
         <div class="kpi"><div class="kpi-num" style="color:#92400e">${finalizadas}</div><div class="kpi-lbl">Finalizadas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--red)">${vencidas}</div><div class="kpi-lbl">Fuera de plazo</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--blue)">${reabiertas}</div><div class="kpi-lbl">Reabiertas</div></div>
-        <div class="kpi"><div class="kpi-num" style="color:var(--red)">${alertas72}</div><div class="kpi-lbl">Alertas 72hs sector</div></div>`;
+        <div class="kpi"><div class="kpi-num" style="color:var(--red)">${alertas72}</div><div class="kpi-lbl">Alertas 72hs sector</div></div>
+        <div class="kpi"><div class="kpi-num" style="color:var(--orange)">${incompletos}</div><div class="kpi-lbl">Datos incompletos</div></div>`;
 }
 
 function applyFilters() {
@@ -1631,7 +1654,8 @@ async function updateField(id, field, val) {
     await loadData();
     if (field === 'ingreso') await checkAndFinalizeSearches();
     refreshView();
-    toast('Guardado ✓');
+    const cerrandoSinIngreso = field === 'status' && (val === 'Cerrada' || val === 'Finalizada') && !data[0].ingreso;
+    toast(cerrandoSinIngreso ? 'Guardado — ojo: se cerró sin cargar la fecha de ingreso' : 'Guardado ✓');
 }
 
 async function addEstadoEntry(id) {
@@ -2099,11 +2123,69 @@ async function eliminarPDF(archivoId, storagePath) {
     await loadData(); refreshView(); toast('Archivo eliminado');
 }
 
+// ── INFORME ──
+function renderInforme() {
+    const total       = busquedas.length;
+    const cerradas    = busquedas.filter(b => b.status === 'Cerrada' || b.status === 'Finalizada').length;
+    const staff       = busquedas.filter(b => b.tipo === 'Staff').length;
+    const fabrica     = busquedas.filter(b => b.tipo === 'Fábrica').length;
+    const coberturaStaff   = staff   ? Math.round((busquedas.filter(b => b.tipo === 'Staff'   && (b.status === 'Cerrada' || b.status === 'Finalizada')).length / staff)   * 100) : 0;
+    const coberturaFabrica = fabrica ? Math.round((busquedas.filter(b => b.tipo === 'Fábrica' && (b.status === 'Cerrada' || b.status === 'Finalizada')).length / fabrica) * 100) : 0;
+    const conIngreso  = busquedas.filter(b => b.ingreso).length;
+    const retenidos90 = busquedas.filter(b => b.ingreso && daysDiff(b.ingreso, b.fecha_baja || null) >= 90).length;
+    const tasaPermanencia = conIngreso ? Math.round((retenidos90 / conIngreso) * 100) : 0;
+    const alertas72   = busquedas.filter(alertaSectorVencido).length;
+    const incompletos = busquedas.filter(datosIncompletos).length;
+    document.getElementById('informe-content').innerHTML = `
+    <div class="mini-kpi-row">
+        <div class="mini-kpi"><div class="mini-kpi-num">${total}</div><div class="mini-kpi-lbl">Total búsquedas</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${cerradas}</div><div class="mini-kpi-lbl">Cerradas / Finalizadas</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--blue)">${coberturaStaff}%</div><div class="mini-kpi-lbl">Cobertura Staff (Oficina)</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${coberturaFabrica}%</div><div class="mini-kpi-lbl">Cobertura Fábrica</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--accent-dark)">${tasaPermanencia}%</div><div class="mini-kpi-lbl">Tasa de Permanencia</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--red)">${alertas72}</div><div class="mini-kpi-lbl">Alertas 72hs sector</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--orange)">${incompletos}</div><div class="mini-kpi-lbl">Datos incompletos</div></div>
+    </div>`;
+}
+
+function csvEscape(val) {
+    if (val === null || val === undefined) return '';
+    const s = String(val);
+    return /[",;\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+function descargarInformeCSV() {
+    const headers = ['Número','Puesto','Departamento','Tipo','Selector','Motivo','Nivel','Estado',
+        'Fecha Apertura','Enviado al Sector','Decisión del Sector','Fecha Ingreso','Ingresado','Fecha Baja',
+        'Total Proceso (hd)','Total Ajustado (hd)','Candidatos Enviados','Reabierta','Alerta 72hs','Datos Incompletos'];
+    const rows = busquedas.map(b => {
+        const t = tramosDemora(b);
+        const ajustado = Math.max(0, t.total - descuentoJustificadoTotal(b));
+        return [
+            b.numero, b.puesto, b.depto, b.tipo, b.selector, b.motivo, b.nivel, b.status,
+            b.inicio || '', b.cp || '', b.decision_sector || '', b.ingreso || '', b.ingreso_nombre || '', b.fecha_baja || '',
+            t.total, ajustado, (b.candidatos || []).length,
+            b.reopened_from ? 'Sí' : 'No', alertaSectorVencido(b) ? 'Sí' : 'No', datosIncompletos(b) ? 'Sí' : 'No'
+        ];
+    });
+    const csv = [headers, ...rows].map(r => r.map(csvEscape).join(';')).join('\r\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `informe_selecciones_${today()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('Informe descargado ✓');
+}
+
 function showView(v, btn) {
     if ((v === 'stats' || v === 'charts') && !isAdmin()) { toast('Acceso restringido a administradores', true); return; }
     // 'pipeline' usa #view-pipeline (tabla); 'choferes' usa #view-fichas (tarjetas)
     const domView = (v === 'choferes') ? 'fichas' : v;
-    ['pipeline', 'fichas', 'stats', 'charts'].forEach(id => document.getElementById('view-' + id).classList.toggle('hidden', id !== domView));
+    ['pipeline', 'fichas', 'stats', 'charts', 'informe'].forEach(id => document.getElementById('view-' + id).classList.toggle('hidden', id !== domView));
     document.querySelectorAll('.inline-nav-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2111,12 +2193,14 @@ function showView(v, btn) {
         pipeline: ['Pipeline de Selección', 'Control de búsquedas, seguimiento y feedback'],
         choferes: ['Choferes y Ayudantes', 'Fichas de postulantes a chofer y ayudante'],
         stats:    ['Estadísticas', 'Análisis de rendimiento y métricas'],
-        charts:   ['Gráficos', 'Visualizaciones interactivas del pipeline']
+        charts:   ['Gráficos', 'Visualizaciones interactivas del pipeline'],
+        informe:  ['Informe', 'Resumen y exportación de datos para reportes']
     };
     document.getElementById('main-title').textContent = titles[v][0];
     document.getElementById('main-sub').textContent   = titles[v][1];
     const fChoferSel = document.getElementById('f-chofer-resultado');
     if (fChoferSel) fChoferSel.classList.toggle('hidden', v !== 'choferes');
+    if (v === 'informe') renderInforme();
     if (v === 'pipeline' || v === 'choferes') {
         currentCategoria = (v === 'choferes') ? 'choferes' : 'general';
         filteredIds = null;
