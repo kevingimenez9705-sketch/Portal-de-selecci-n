@@ -126,6 +126,7 @@
         .cand-tl-badge-wait { background: #dbeafe; color: #1e40af; }
         .cand-tl-badge-done { background: #d1fae5; color: #065f46; }
         .cand-tl-badge-rejected { background: #f8d7da; color: #721c24; }
+        .cand-tl-badge-alerta { background: var(--danger); color: var(--danger-text); animation: alertapulse 1.6s infinite; }
         .modal-bg { position: fixed; inset: 0; background: rgba(14,17,26,.55); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; backdrop-filter: blur(3px); }
         .modal-bg.hidden { display: none; }
         .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; width: 100%; max-width: 560px; padding: 28px; box-shadow: var(--shadow-lg); max-height: 90vh; overflow-y: auto; }
@@ -229,8 +230,6 @@
         .dm-row.dm-total .dm-lbl { color: rgba(255,255,255,.65); }
         .dm-rango { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); margin-top: 1px; }
         .dm-row.dm-total .dm-rango { color: rgba(255,255,255,.5); }
-        .alerta-sector { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; background: var(--danger); color: var(--danger-text); border: 1px solid #f1a8ae; border-radius: 8px; padding: 6px 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; animation: alertapulse 1.6s infinite; }
-        .alerta-sector i { margin-right: 3px; }
         @keyframes alertapulse { 0%,100% { box-shadow: 0 0 0 0 rgba(155,34,38,.25); } 50% { box-shadow: 0 0 0 5px rgba(155,34,38,0); } }
         .dm-live { font-size: 6px; color: var(--blue); margin-left: 5px; animation: dmpulse 1.4s infinite; }
         @keyframes dmpulse { 0%,100% { opacity: 1; } 50% { opacity: .15; } }
@@ -587,9 +586,10 @@ const SELECTORES = ['Silvina','Romina','Claudia','Soledad','Juan Pablo','Angel',
 const DEMORA_LIMITE = { 'Gerente/Director': 45, 'Jefe/Encargado': 30, 'Otros': 15 };
 const ALERTA_SECTOR_LIMITE_HD = 3; // 72hs hábiles sin respuesta del sector desde "Enviado al sector"
 
-// Búsqueda en Proceso, ya enviada al sector, sin ingreso todavía y con 3+ días hábiles esperando respuesta.
+// Búsqueda en Proceso con al menos un candidato "Enviado al área" hace 3+ días hábiles sin respuesta.
 function alertaSectorVencido(b) {
-    return b.status === 'Proceso' && !!b.cp && !b.ingreso && daysDiff(b.cp) >= ALERTA_SECTOR_LIMITE_HD;
+    if (b.status !== 'Proceso') return false;
+    return (b.candidatos || []).some(c => c.estado === 'Enviado' && c.fecha_envio && daysDiff(c.fecha_envio) >= ALERTA_SECTOR_LIMITE_HD);
 }
 const VERIF_EN_CURSO = ['Pendiente','En proceso'];
 function verifEnCurso(r) { return VERIF_EN_CURSO.includes(r); }
@@ -693,15 +693,8 @@ function renderDemoraBreakdown(b) {
     const t2val = t.t2NA ? '—' : t.t2;
     const rango1 = fmtRango(t.t1From, t.t1To, t.t1Run);
     const rango2 = t.t2NA ? 'Sin enviar al sector todavía' : fmtRango(t.t2From, t.t2To, t.t2Run);
-    const alerta = alertaSectorVencido(b)
-        ? `<div class="alerta-sector" title="Pasaron ${t.t2}hd desde que se envió al sector (${fmtFechaCorta(b.cp)}) sin respuesta">
-            <i class="fas fa-triangle-exclamation"></i> +${ALERTA_SECTOR_LIMITE_HD}hd sin respuesta del sector
-            <button class="btn-sm" style="margin-top:4px" onclick="reabrirPorDemora(${b.id})"><i class="fas fa-redo" style="font-size:8px"></i> Reabrir con contador en 0</button>
-        </div>`
-        : '';
     return `
     <div class="demora-bd">
-        ${alerta}
         <div class="dm-row" title="Días hábiles desde la apertura hasta enviar el perfil al sector${t.t1Run ? ' (en curso · aún sin enviar)' : ''}">
             <span class="dm-ico" style="color:var(--blue)"><i class="fas fa-paper-plane"></i></span>
             <div class="dm-body">
@@ -968,13 +961,15 @@ function renderTable() {
                 if (c.fecha_envio) {
                     if (c.estado === 'Enviado') {
                         const d = daysDiff(c.fecha_envio);
+                        const vencido = d >= ALERTA_SECTOR_LIMITE_HD;
                         tlHtml = `<div class="cand-timeline">
                             <span class="cand-tl-dot cand-tl-dot-blue"></span>
                             <div class="cand-tl-line"></div>
-                            <span class="cand-tl-badge cand-tl-badge-wait">⏳ ${d === 0 ? 'Hoy' : d + 'hd esperando'}</span>
+                            <span class="cand-tl-badge ${vencido ? 'cand-tl-badge-alerta' : 'cand-tl-badge-wait'}">${vencido ? '⚠' : '⏳'} ${d === 0 ? 'Hoy' : d + 'hd esperando'}</span>
                             <div class="cand-tl-line"></div>
                             <span class="cand-tl-dot cand-tl-dot-green" style="opacity:.3"></span>
-                        </div>`;
+                        </div>
+                        ${vencido && !isLocked ? `<button class="btn-sm" style="margin-top:4px" onclick="reabrirPorDemora(${b.id})" title="Pasaron ${d}hd desde que se envió al área sin respuesta"><i class="fas fa-redo" style="font-size:8px"></i> +${ALERTA_SECTOR_LIMITE_HD}hd sin respuesta · Reabrir con contador en 0</button>` : ''}`;
                     } else if (c.estado === 'Entrevista' && c.fecha_entrevista) {
                         const d = daysDiff(c.fecha_envio, c.fecha_entrevista);
                         tlHtml = `<div class="cand-timeline">
