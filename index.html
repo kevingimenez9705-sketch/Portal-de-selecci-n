@@ -1221,13 +1221,14 @@ function buildFichaTableHtml(c, b) {
                 <th colspan="2">PREOCUPACIONAL</th>
                 <th style="min-width:100px">ANTECEDENTES<br>PENALES</th>
                 <th style="min-width:110px">MANIPULACIÓN<br>DE ALIMENTOS</th>
+                <th style="min-width:90px">NOSIS</th>
             </tr>
             <tr class="ficha-subhdr">
                 <th></th><th></th>
                 <th>Fecha de envío</th><th>Fecha estimada</th><th>Resultados</th>
                 <th>Fecha Adm.</th><th>Resultado</th>
                 <th>Fecha</th><th>Resultado</th>
-                <th></th><th></th>
+                <th></th><th></th><th></th>
             </tr>
         </thead>
         <tbody>
@@ -1243,17 +1244,18 @@ function buildFichaTableHtml(c, b) {
                 <td>${sel('preocup_resultado', c.preocup_resultado, FICHA_SIMPLE_OPTS)}</td>
                 <td>${sel('antecedentes_resultado', c.antecedentes_resultado, FICHA_SIMPLE_OPTS)}</td>
                 <td>${sel('manipulacion_resultado', c.manipulacion_resultado, FICHA_SIMPLE_OPTS)}</td>
+                <td>${sel('nosis_resultado', c.nosis_resultado, FICHA_SIMPLE_OPTS)}</td>
             </tr>
-            <tr><td class="ficha-lbl">APELLIDO</td><td class="ficha-val" colspan="10">${inp('apellido', c.apellido)}</td></tr>
-            <tr><td class="ficha-lbl">DNI</td><td class="ficha-val" colspan="10">${inp('dni', c.dni)}</td></tr>
-            <tr><td class="ficha-lbl">CUIL</td><td class="ficha-val" colspan="10">${inp('cuil', c.cuil)}</td></tr>
-            <tr><td class="ficha-lbl">Fecha nacimiento</td><td class="ficha-val" colspan="10">${inp('fecha_nacimiento', c.fecha_nacimiento, 'date')}</td></tr>
-            <tr><td class="ficha-lbl">CEL</td><td class="ficha-val" colspan="10">${inp('celular', c.celular)}</td></tr>
-            <tr><td class="ficha-lbl">DOMICILIO</td><td class="ficha-val" colspan="10">${inp('domicilio', c.domicilio)}</td></tr>
-            <tr><td class="ficha-lbl">PUESTO</td><td class="ficha-val" colspan="10">${inp('puesto_candidato', c.puesto_candidato || b.puesto)}</td></tr>
-            <tr><td class="ficha-lbl">RAZÓN SOCIAL</td><td class="ficha-val" colspan="10">${inp('razon_social', c.razon_social)}</td></tr>
+            <tr><td class="ficha-lbl">APELLIDO</td><td class="ficha-val" colspan="11">${inp('apellido', c.apellido)}</td></tr>
+            <tr><td class="ficha-lbl">DNI</td><td class="ficha-val" colspan="11">${inp('dni', c.dni)}</td></tr>
+            <tr><td class="ficha-lbl">CUIL</td><td class="ficha-val" colspan="11">${inp('cuil', c.cuil)}</td></tr>
+            <tr><td class="ficha-lbl">Fecha nacimiento</td><td class="ficha-val" colspan="11">${inp('fecha_nacimiento', c.fecha_nacimiento, 'date')}</td></tr>
+            <tr><td class="ficha-lbl">CEL</td><td class="ficha-val" colspan="11">${inp('celular', c.celular)}</td></tr>
+            <tr><td class="ficha-lbl">DOMICILIO</td><td class="ficha-val" colspan="11">${inp('domicilio', c.domicilio)}</td></tr>
+            <tr><td class="ficha-lbl">PUESTO</td><td class="ficha-val" colspan="11">${inp('puesto_candidato', c.puesto_candidato || b.puesto)}</td></tr>
+            <tr><td class="ficha-lbl">RAZÓN SOCIAL</td><td class="ficha-val" colspan="11">${inp('razon_social', c.razon_social)}</td></tr>
             <tr class="ficha-estado-row ${estadoClass}">
-                <td colspan="11">
+                <td colspan="12">
                     <div class="ficha-estado-inner">
                         <span style="font-weight:800;text-transform:uppercase;letter-spacing:.5px;font-size:11px">Estado:</span>
                         ${isLocked ? `<strong>${estadoTexto}</strong>` : `
@@ -1324,11 +1326,6 @@ function renderFichaCard(c, b) {
             </div>
         </div>
         <div style="overflow-x:auto">${buildFichaTableHtml(c, b)}</div>
-        <div style="margin-top:8px">
-            <div class="section-hdr">Psicotécnicos y verificaciones (de la búsqueda ${b.numero})</div>
-            ${renderPsicoBlock(b, isLocked)}
-            ${renderVerifBlock(b, isLocked)}
-        </div>
         <div class="ficha-card-files">
             <div class="section-hdr" style="margin-bottom:3px">Archivos PDF (de la búsqueda)</div>
             <div class="cell-scroll" style="max-height:44px">${archivosHtml}</div>
