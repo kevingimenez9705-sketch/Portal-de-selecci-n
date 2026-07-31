@@ -227,6 +227,8 @@
         .dm-u { font-size: 9px; font-weight: 500; opacity: .55; margin-left: 2px; }
         .dm-lbl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; font-weight: 700; }
         .dm-row.dm-total .dm-lbl { color: rgba(255,255,255,.65); }
+        .dm-rango { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); margin-top: 1px; }
+        .dm-row.dm-total .dm-rango { color: rgba(255,255,255,.5); }
         .dm-live { font-size: 6px; color: var(--blue); margin-left: 5px; animation: dmpulse 1.4s infinite; }
         @keyframes dmpulse { 0%,100% { opacity: 1; } 50% { opacity: .15; } }
 
@@ -636,12 +638,16 @@ function daysDiff(from, to = null) { return workingDaysDiff(from, to); }
 function tramosDemora(b) {
     let t1, t1Run = false;
     let t2 = 0, t2Run = false, t2NA = false;
+    const t1From = b.inicio;
+    let t1To = null, t2From = b.cp || null, t2To = null;
 
     // ── Tramo 1: cuánto tardó Selección en enviar el perfil al sector ──
     if (b.cp) {
         t1 = daysDiff(b.inicio, b.cp);          // frenado: ya se envió al sector
+        t1To = b.cp;
     } else if (b.ingreso) {
         t1 = daysDiff(b.inicio, b.ingreso);     // se cerró sin registrar el envío
+        t1To = b.ingreso;
     } else {
         t1 = daysDiff(b.inicio);                // sigue corriendo: todavía no se envió
         t1Run = true;
@@ -651,6 +657,7 @@ function tramosDemora(b) {
     if (b.cp) {
         if (b.ingreso) {
             t2 = daysDiff(b.cp, b.ingreso);     // frenado: ya se cerró
+            t2To = b.ingreso;
         } else {
             t2 = daysDiff(b.cp);                // sigue corriendo: el sector evalúa
             t2Run = true;
@@ -659,13 +666,24 @@ function tramosDemora(b) {
         t2NA = true;                            // todavía no se envió al sector
     }
 
-    return { t1, t1Run, t2, t2Run, t2NA, total: (t1 || 0) + (t2 || 0) };
+    return { t1, t1Run, t1From, t1To, t2, t2Run, t2NA, t2From, t2To, total: (t1 || 0) + (t2 || 0) };
+}
+
+// Muestra de qué fecha a qué fecha se está contando, para que el "Xhd" se entienda de un vistazo.
+function fmtRango(from, to, running) {
+    if (!from) return '';
+    const f = fmtFechaCorta(from);
+    if (running) return `${f} → hoy`;
+    if (!to) return f;
+    return `${f} → ${fmtFechaCorta(to)}`;
 }
 
 function renderDemoraBreakdown(b) {
     const t = tramosDemora(b);
     const live = run => run ? `<i class="fas fa-circle dm-live"></i>` : '';
     const t2val = t.t2NA ? '—' : t.t2;
+    const rango1 = fmtRango(t.t1From, t.t1To, t.t1Run);
+    const rango2 = t.t2NA ? 'Sin enviar al sector todavía' : fmtRango(t.t2From, t.t2To, t.t2Run);
     return `
     <div class="demora-bd">
         <div class="dm-row" title="Días hábiles desde la apertura hasta enviar el perfil al sector${t.t1Run ? ' (en curso · aún sin enviar)' : ''}">
@@ -673,6 +691,7 @@ function renderDemoraBreakdown(b) {
             <div class="dm-body">
                 <span class="dm-val">${t.t1}<span class="dm-u">hd</span>${live(t.t1Run)}</span>
                 <span class="dm-lbl">Envío al sector</span>
+                ${rango1 ? `<span class="dm-rango">${rango1}</span>` : ''}
             </div>
         </div>
         <div class="dm-row" title="${t.t2NA ? 'Aún no se envió el perfil al sector' : 'Días hábiles que tardó el sector en cerrar o rechazar el perfil' + (t.t2Run ? ' (en curso)' : '')}">
@@ -680,6 +699,7 @@ function renderDemoraBreakdown(b) {
             <div class="dm-body">
                 <span class="dm-val">${t2val}<span class="dm-u">hd</span>${live(t.t2Run)}</span>
                 <span class="dm-lbl">Decisión del sector</span>
+                ${rango2 ? `<span class="dm-rango">${rango2}</span>` : ''}
             </div>
         </div>
         <div class="dm-row dm-total" title="Demora total del proceso: envío al sector + decisión del sector (días hábiles)">
@@ -687,6 +707,7 @@ function renderDemoraBreakdown(b) {
             <div class="dm-body">
                 <span class="dm-val">${t.total}<span class="dm-u">hd</span></span>
                 <span class="dm-lbl">Total proceso</span>
+                ${b.inicio ? `<span class="dm-rango">${fmtRango(b.inicio, b.ingreso, !b.ingreso)}</span>` : ''}
             </div>
         </div>
     </div>`;
