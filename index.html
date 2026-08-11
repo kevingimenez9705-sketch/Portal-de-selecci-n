@@ -451,10 +451,22 @@
             <div class="form-group form-full"><label>Puesto / Cargo</label><input class="form-input" id="n-puesto" placeholder="Ej: Analista Contable"></div>
             <div class="form-group"><label>Selector a cargo</label>
                 <select class="form-input" id="n-selector">
-                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Soledad</option><option>Juan Pablo</option><option>Angel</option><option>Noelia</option>
+                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Soledad</option><option>Juan Pablo</option><option>Angel</option><option>Noelia</option><option>Milagros</option>
                 </select>
             </div>
-            <div class="form-group"><label>Departamento</label><input class="form-input" id="n-depto" placeholder="Ej: Administración" list="depto-datalist"><datalist id="depto-datalist"></datalist></div>
+            <div class="form-group"><label>Departamento</label>
+                <select class="form-input" id="n-depto">
+                    <option value="">— Elegir departamento —</option>
+                    <option>Dirección de Operaciones</option>
+                    <option>Dirección de Obras y Expansión</option>
+                    <option>Dirección de Marketing y Comercial</option>
+                    <option>Dirección de Producción</option>
+                    <option>Dirección de Administración y Finanzas</option>
+                    <option>Dirección de Recursos Humanos</option>
+                    <option>Dirección de Supply Chain</option>
+                    <option>Gerencia de Tecnología e Innovación</option>
+                </select>
+            </div>
             <div class="form-group"><label>Tipo</label>
                 <select class="form-input" id="n-tipo"><option value="Staff">Staff</option><option value="Fábrica">Fábrica</option></select>
             </div>
@@ -541,7 +553,7 @@
             <div class="form-group"><label>Selector que lo realiza</label>
                 <select class="form-input" id="psico-selector">
                     <option value="">— Sin asignar —</option>
-                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Soledad</option><option>Juan Pablo</option><option>Angel</option><option>Noelia</option>
+                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Soledad</option><option>Juan Pablo</option><option>Angel</option><option>Noelia</option><option>Milagros</option>
                 </select>
             </div>
             <div class="form-group"><label>¿Quién lo realizó? (evaluador externo)</label><input class="form-input" id="psico-realizado" placeholder="Nombre del evaluador"></div>
@@ -576,7 +588,7 @@
             <div class="form-group"><label>¿Quién lo realiza?</label>
                 <select class="form-input" id="verif-selector">
                     <option value="">— Sin asignar —</option>
-                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Soledad</option><option>Juan Pablo</option><option>Angel</option><option>Noelia</option>
+                    <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Soledad</option><option>Juan Pablo</option><option>Angel</option><option>Noelia</option><option>Milagros</option>
                 </select>
             </div>
             <div class="form-group"><label>Observaciones (opcional)</label><input class="form-input" id="verif-obs" placeholder="Detalle…"></div>
@@ -606,7 +618,7 @@ const SUPABASE_URL = 'https://nhlkndwwsuybnejbyigk.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5obGtuZHd3c3V5Ym5lamJ5aWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNzY5ODYsImV4cCI6MjA5Mzc1Mjk4Nn0.Xdli4VzqAKuYLkU5q8m8G6UTNda_BAaJlibROm9tGhw';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const SELECTORES = ['Silvina','Romina','Claudia','Soledad','Juan Pablo','Angel','Noelia'];
+const SELECTORES = ['Silvina','Romina','Claudia','Soledad','Juan Pablo','Angel','Noelia','Milagros'];
 const DEMORA_LIMITE = { 'Gerente/Director': 45, 'Jefe/Encargado': 30, 'Otros': 15 };
 const ALERTA_SECTOR_LIMITE_HD = 3; // 72hs hábiles sin respuesta del sector desde "Enviado al sector"
 
@@ -1575,7 +1587,6 @@ function renderKPIs() {
     const vencidas    = cat.filter(b => { const d = daysDiff(b.inicio); return d > (DEMORA_LIMITE[b.nivel] || 15) && b.status === 'Proceso'; }).length;
     const reabiertas  = cat.filter(b => b.reopened_from).length;
     const alertas72   = cat.filter(alertaSectorVencido).length;
-    const incompletos = cat.filter(datosIncompletos).length;
     document.getElementById('kpi-row').innerHTML = `
         <div class="kpi"><div class="kpi-num">${total}</div><div class="kpi-lbl">Total búsquedas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--blue)">${proceso}</div><div class="kpi-lbl">En proceso</div></div>
@@ -1583,8 +1594,7 @@ function renderKPIs() {
         <div class="kpi"><div class="kpi-num" style="color:#92400e">${finalizadas}</div><div class="kpi-lbl">Finalizadas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--red)">${vencidas}</div><div class="kpi-lbl">Fuera de plazo</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--blue)">${reabiertas}</div><div class="kpi-lbl">Reabiertas</div></div>
-        <div class="kpi"><div class="kpi-num" style="color:var(--red)">${alertas72}</div><div class="kpi-lbl">Alertas 72hs sector</div></div>
-        <div class="kpi"><div class="kpi-num" style="color:var(--orange)">${incompletos}</div><div class="kpi-lbl">Datos incompletos</div></div>`;
+        <div class="kpi"><div class="kpi-num" style="color:var(--red)">${alertas72}</div><div class="kpi-lbl">Alertas 72hs sector</div></div>`;
 }
 
 function applyFilters() {
@@ -1621,10 +1631,6 @@ function updateDeptoFilter() {
     const sel = document.getElementById('f-depto');
     const cur = sel.value;
     sel.innerHTML = '<option value="">Todos los dptos.</option>' + deptos.map(d => `<option ${d === cur ? 'selected' : ''}>${d}</option>`).join('');
-
-    // Lista de departamentos ya cargados, para sugerir en "Nueva Búsqueda" (input con datalist).
-    const todosDeptos = [...new Set(busquedas.map(b => b.depto).filter(Boolean))].sort();
-    document.getElementById('depto-datalist').innerHTML = todosDeptos.map(d => `<option value="${d}">`).join('');
 }
 
 // ══════════════════════════════════════════════
@@ -2135,7 +2141,6 @@ function renderInforme() {
     const retenidos90 = busquedas.filter(b => b.ingreso && daysDiff(b.ingreso, b.fecha_baja || null) >= 90).length;
     const tasaPermanencia = conIngreso ? Math.round((retenidos90 / conIngreso) * 100) : 0;
     const alertas72   = busquedas.filter(alertaSectorVencido).length;
-    const incompletos = busquedas.filter(datosIncompletos).length;
     document.getElementById('informe-content').innerHTML = `
     <div class="mini-kpi-row">
         <div class="mini-kpi"><div class="mini-kpi-num">${total}</div><div class="mini-kpi-lbl">Total búsquedas</div></div>
@@ -2144,7 +2149,6 @@ function renderInforme() {
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${coberturaFabrica}%</div><div class="mini-kpi-lbl">Cobertura Fábrica</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--accent-dark)">${tasaPermanencia}%</div><div class="mini-kpi-lbl">Tasa de Permanencia</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--red)">${alertas72}</div><div class="mini-kpi-lbl">Alertas 72hs sector</div></div>
-        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--orange)">${incompletos}</div><div class="mini-kpi-lbl">Datos incompletos</div></div>
     </div>`;
 }
 
