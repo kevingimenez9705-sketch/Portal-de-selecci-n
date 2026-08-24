@@ -873,8 +873,13 @@ function mapRow(b) {
 function nextNro() { return 'SEL-' + String(nroSeq++).padStart(3, '0'); }
 
 async function checkAndFinalizeSearches() {
+    // Ojo: usar daysDiff(b.ingreso, b.fecha_baja || null), NO daysDiff(b.ingreso) a secas.
+    // Si el ingresado ya se dio de baja (reabrir() deja la búsqueda original en "Cerrada"
+    // con fecha_baja cargada), la permanencia real es ingreso→baja, no ingreso→hoy: sin este
+    // corte, una persona que se fue a los pocos días terminaba "Finalizada" solo por el paso
+    // del tiempo, aunque nadie siga trabajando en el puesto.
     const toFinalize = busquedas.filter(b =>
-        b.status === 'Cerrada' && b.ingreso && daysDiff(b.ingreso) >= 90
+        b.status === 'Cerrada' && b.ingreso && daysDiff(b.ingreso, b.fecha_baja || null) >= 90
     );
     if (toFinalize.length === 0) return;
     for (const b of toFinalize) {
