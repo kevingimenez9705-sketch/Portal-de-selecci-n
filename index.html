@@ -124,8 +124,6 @@
         .login-btn { width: 100%; background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; border: none; padding: 12px; border-radius: 9px; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 8px; transition: transform .15s, box-shadow .15s; box-shadow: 0 8px 20px rgba(54,84,234,.35); }
         .login-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 26px rgba(54,84,234,.45); }
         .login-error { font-size: 12px; color: var(--red); background: var(--danger); border-radius: 6px; padding: 8px 12px; margin-top: 12px; display: none; }
-        .login-back { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--muted); background: none; border: none; cursor: pointer; margin-bottom: 20px; padding: 0; }
-        .login-back:hover { color: var(--text); }
 
         /* ── LOADING ── */
         #loading-screen { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; gap: 16px; }
@@ -386,23 +384,23 @@
 <body>
 
 <!-- ══ LANDING (pantalla previa al ingreso) ══ -->
-<div id="landing-screen">
+<div id="landing-screen" class="hidden">
     <nav class="landing-nav">
         <div class="landing-nav-logo"><i class="fas fa-user-tie"></i> Panel de Selección</div>
         <div class="landing-nav-links">
-            <span class="landing-nav-link" onclick="goToLogin()">Inicio</span>
+            <span class="landing-nav-link">Inicio</span>
             <div class="landing-dropdown">
                 <button class="landing-dropdown-btn">Secciones <i class="fas fa-chevron-down"></i></button>
                 <div class="landing-dropdown-menu">
-                    <a onclick="goToLogin()"><i class="fas fa-table"></i> Pipeline</a>
-                    <a onclick="goToLogin()"><i class="fas fa-truck"></i> Choferes y Ayudantes</a>
-                    <a onclick="goToLogin()"><i class="fas fa-chart-bar"></i> Estadísticas</a>
-                    <a onclick="goToLogin()"><i class="fas fa-chart-pie"></i> Gráficos</a>
-                    <a onclick="goToLogin()"><i class="fas fa-file-export"></i> Informe</a>
+                    <a onclick="goToApp()"><i class="fas fa-table"></i> Pipeline</a>
+                    <a onclick="goToApp()"><i class="fas fa-truck"></i> Choferes y Ayudantes</a>
+                    <a onclick="goToApp()"><i class="fas fa-chart-bar"></i> Estadísticas</a>
+                    <a onclick="goToApp()"><i class="fas fa-chart-pie"></i> Gráficos</a>
+                    <a onclick="goToApp()"><i class="fas fa-file-export"></i> Informe</a>
                 </div>
             </div>
         </div>
-        <button class="landing-nav-btn" onclick="goToLogin()"><i class="fas fa-right-to-bracket"></i> Ingresar</button>
+        <button class="landing-nav-btn" onclick="goToApp()"><i class="fas fa-table"></i> Ir al Pipeline</button>
     </nav>
 
     <div class="landing-main">
@@ -415,27 +413,27 @@
                     <div class="landing-hero-sub">Acceso rápido a las búsquedas, postulantes y estadísticas del equipo.</div>
                 </div>
             </div>
-            <button class="landing-hero-btn" onclick="goToLogin()">Ingresar al sistema <i class="fas fa-arrow-right"></i></button>
+            <button class="landing-hero-btn" onclick="goToApp()">Ir al Pipeline <i class="fas fa-arrow-right"></i></button>
         </div>
 
         <div class="landing-quick-grid">
-            <div class="landing-quick-card" onclick="goToLogin()">
+            <div class="landing-quick-card" onclick="goToApp()">
                 <div class="landing-quick-ico ico-accent"><i class="fas fa-table"></i></div>
                 <div><div class="landing-quick-title">Pipeline</div><div class="landing-quick-sub">Búsquedas activas</div></div>
             </div>
-            <div class="landing-quick-card" onclick="goToLogin()">
+            <div class="landing-quick-card" onclick="goToApp()">
                 <div class="landing-quick-ico ico-orange"><i class="fas fa-truck"></i></div>
                 <div><div class="landing-quick-title">Choferes y Ayudantes</div><div class="landing-quick-sub">Fichas y asignaciones</div></div>
             </div>
-            <div class="landing-quick-card" onclick="goToLogin()">
+            <div class="landing-quick-card" onclick="goToApp()">
                 <div class="landing-quick-ico ico-green"><i class="fas fa-chart-bar"></i></div>
                 <div><div class="landing-quick-title">Estadísticas</div><div class="landing-quick-sub">Demoras e indicadores</div></div>
             </div>
-            <div class="landing-quick-card" onclick="goToLogin()">
+            <div class="landing-quick-card" onclick="goToApp()">
                 <div class="landing-quick-ico ico-blue"><i class="fas fa-chart-pie"></i></div>
                 <div><div class="landing-quick-title">Gráficos</div><div class="landing-quick-sub">Visualización de datos</div></div>
             </div>
-            <div class="landing-quick-card" onclick="goToLogin()">
+            <div class="landing-quick-card" onclick="goToApp()">
                 <div class="landing-quick-ico ico-red"><i class="fas fa-file-export"></i></div>
                 <div><div class="landing-quick-title">Informe</div><div class="landing-quick-sub">Resumen ejecutivo</div></div>
             </div>
@@ -448,35 +446,35 @@
                 <div class="landing-card-title">Pipeline</div>
                 <div class="landing-card-sub">Búsquedas en curso</div>
                 <div class="landing-card-tag">El corazón del proceso</div>
-                <a class="landing-card-link" onclick="goToLogin()">Ingresar →</a>
+                <a class="landing-card-link" onclick="goToApp()">Ingresar →</a>
             </div>
             <div class="landing-card" style="border-top-color:var(--orange)">
                 <div class="landing-card-avatar"><i class="fas fa-truck" style="color:var(--orange)"></i></div>
                 <div class="landing-card-title">Choferes y Ayudantes</div>
                 <div class="landing-card-sub">Postulantes operativos</div>
                 <div class="landing-card-tag">Fichas y asignaciones</div>
-                <a class="landing-card-link" onclick="goToLogin()">Ingresar →</a>
+                <a class="landing-card-link" onclick="goToApp()">Ingresar →</a>
             </div>
             <div class="landing-card" style="border-top-color:var(--green)">
                 <div class="landing-card-avatar"><i class="fas fa-chart-bar" style="color:var(--green)"></i></div>
                 <div class="landing-card-title">Estadísticas</div>
                 <div class="landing-card-sub">Indicadores clave</div>
                 <div class="landing-card-tag">Métricas y demoras</div>
-                <a class="landing-card-link" onclick="goToLogin()">Ingresar →</a>
+                <a class="landing-card-link" onclick="goToApp()">Ingresar →</a>
             </div>
             <div class="landing-card" style="border-top-color:var(--blue)">
                 <div class="landing-card-avatar"><i class="fas fa-chart-pie" style="color:var(--blue)"></i></div>
                 <div class="landing-card-title">Gráficos</div>
                 <div class="landing-card-sub">La foto completa</div>
                 <div class="landing-card-tag">Visualización de datos</div>
-                <a class="landing-card-link" onclick="goToLogin()">Ingresar →</a>
+                <a class="landing-card-link" onclick="goToApp()">Ingresar →</a>
             </div>
             <div class="landing-card" style="border-top-color:var(--red)">
                 <div class="landing-card-avatar"><i class="fas fa-file-export" style="color:var(--red)"></i></div>
                 <div class="landing-card-title">Informe</div>
                 <div class="landing-card-sub">Para exportar y compartir</div>
                 <div class="landing-card-tag">Resumen ejecutivo</div>
-                <a class="landing-card-link" onclick="goToLogin()">Ingresar →</a>
+                <a class="landing-card-link" onclick="goToApp()">Ingresar →</a>
             </div>
         </div>
 
@@ -542,9 +540,8 @@
 </div>
 
 <!-- ══ LOGIN ══ -->
-<div id="login-screen" class="hidden">
+<div id="login-screen">
     <div class="login-box">
-        <button class="login-back" onclick="backToLanding()"><i class="fas fa-arrow-left"></i> Volver</button>
         <div class="login-logo">Panel de<br>Selección</div>
         <div class="login-sub">Sistema de Reclutamiento</div>
         <label class="login-label">Email</label>
@@ -1065,15 +1062,16 @@ function renderDemoraBreakdown(b) {
     </div>`;
 }
 
-function goToLogin() {
-    document.getElementById('landing-screen').classList.add('hidden');
-    document.getElementById('login-screen').classList.remove('hidden');
-    document.getElementById('login-email').focus();
+function showHome() {
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('loading-screen').classList.add('hidden');
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('landing-screen').classList.remove('hidden');
 }
 
-function backToLanding() {
-    document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('landing-screen').classList.remove('hidden');
+function goToApp() {
+    document.getElementById('landing-screen').classList.add('hidden');
+    initDashboard();
 }
 
 async function login() {
@@ -1083,7 +1081,7 @@ async function login() {
     errEl.style.display = 'none';
     const { error } = await sb.auth.signInWithPassword({ email, password: pass });
     if (error) { errEl.textContent = 'Email o contraseña incorrectos'; errEl.style.display = 'block'; return; }
-    await initDashboard();
+    showHome();
 }
 
 async function logout() { await sb.auth.signOut(); location.reload(); }
@@ -1162,7 +1160,7 @@ async function initDashboard() {
 
 async function initApp() {
     const { data: { session } } = await sb.auth.getSession();
-    if (session) await initDashboard();
+    if (session) showHome();
 }
 initApp();
 
