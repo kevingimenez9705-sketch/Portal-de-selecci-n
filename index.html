@@ -42,8 +42,8 @@
         .landing-section-hdr { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; margin-bottom: 14px; }
 
         /* ── LANDING: equipo (tarjetas, misma temática que los accesos rápidos) ── */
-        .landing-team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
-        .landing-team-card { background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 14px; padding: 22px; text-align: center; box-shadow: var(--shadow-sm); transition: transform .15s, box-shadow .15s; }
+        .landing-team-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; }
+        .landing-team-card { background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 14px; padding: 22px; text-align: center; box-shadow: var(--shadow-sm); transition: transform .15s, box-shadow .15s; flex: 1 1 220px; max-width: 260px; }
         .landing-team-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
         .landing-team-avatar { width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 17px; color: #fff; background: var(--accent); overflow: hidden; }
         .landing-team-avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -976,8 +976,11 @@ function mapRow(b) {
 function nextNro() { return 'SEL-' + String(nroSeq++).padStart(3, '0'); }
 
 async function checkAndFinalizeSearches() {
+    // Días hábiles trabajados: desde el ingreso hasta la baja (si la hubo) o hasta hoy.
+    // Si no se considera la baja, alguien que ingresó y se fue a los pocos días
+    // igual se termina marcando Finalizada por el solo hecho de que pasó tiempo.
     const toFinalize = busquedas.filter(b =>
-        b.status === 'Cerrada' && b.ingreso && daysDiff(b.ingreso) >= 90
+        b.status === 'Cerrada' && b.ingreso && daysDiff(b.ingreso, b.fecha_baja || null) >= 90
     );
     if (toFinalize.length === 0) return;
     for (const b of toFinalize) {
