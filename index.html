@@ -26,6 +26,93 @@
         body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--text); font-size: 14px; }
         .hidden { display: none !important; }
 
+        /* ── LANDING (pantalla previa al ingreso) ── */
+        #landing-screen { min-height: 100vh; background: var(--bg); }
+        .landing-nav { background: linear-gradient(120deg, #12161f 0%, #1d2333 100%); color: #fff; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 56px; position: sticky; top: 0; z-index: 50; box-shadow: var(--shadow-md); }
+        .landing-nav-logo { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 800; letter-spacing: -0.5px; color: #fff; display: flex; align-items: center; gap: 9px; white-space: nowrap; }
+        .landing-nav-logo i { color: var(--accent); }
+        .landing-nav-links { display: flex; align-items: center; gap: 4px; flex: 1; padding-left: 28px; }
+        .landing-nav-link { color: rgba(255,255,255,.65); text-decoration: none; font-size: 13px; font-weight: 600; padding: 8px 12px; border-radius: 7px; transition: all .15s; cursor: pointer; }
+        .landing-nav-link:hover { color: #fff; background: rgba(255,255,255,.08); }
+        .landing-dropdown { position: relative; }
+        .landing-dropdown-btn { background: none; border: none; color: rgba(255,255,255,.65); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; padding: 8px 12px; border-radius: 7px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .15s; }
+        .landing-dropdown-btn i { font-size: 9px; transition: transform .15s; }
+        .landing-dropdown:hover .landing-dropdown-btn { color: #fff; background: rgba(255,255,255,.08); }
+        .landing-dropdown:hover .landing-dropdown-btn i { transform: rotate(180deg); }
+        .landing-dropdown-menu { position: absolute; top: 100%; left: 0; background: #12161f; border: 1px solid rgba(255,255,255,.1); border-radius: 10px; padding: 6px; min-width: 220px; box-shadow: var(--shadow-lg); opacity: 0; visibility: hidden; transform: translateY(4px); transition: all .15s; }
+        .landing-dropdown:hover .landing-dropdown-menu { opacity: 1; visibility: visible; transform: translateY(0); }
+        .landing-dropdown-menu a { display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: 7px; color: rgba(255,255,255,.75); text-decoration: none; font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+        .landing-dropdown-menu a i { width: 14px; text-align: center; font-size: 12px; color: var(--accent); }
+        .landing-dropdown-menu a:hover { background: rgba(255,255,255,.08); color: #fff; }
+        .landing-nav-btn { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; border: none; padding: 8px 18px; border-radius: 8px; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 7px; white-space: nowrap; transition: transform .15s, box-shadow .15s; box-shadow: 0 6px 16px rgba(54,84,234,.3); }
+        .landing-nav-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(54,84,234,.4); }
+
+        .landing-main { padding: 28px 32px 48px; max-width: 1240px; margin: 0 auto; }
+        .landing-hero { background: linear-gradient(120deg, #12161f 0%, #1d2333 100%); border-radius: 20px; padding: 32px 36px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 24px; box-shadow: var(--shadow-md); }
+        .landing-hero-left { display: flex; align-items: center; gap: 20px; }
+        .landing-hero-icon { width: 62px; height: 62px; border-radius: 16px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); flex-shrink: 0; }
+        .landing-hero-eyebrow { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 4px; }
+        .landing-hero-title { font-family: 'Syne', sans-serif; font-size: 30px; font-weight: 800; letter-spacing: -1px; color: #fff; }
+        .landing-hero-title span { color: var(--accent); }
+        .landing-hero-sub { font-size: 13px; color: rgba(255,255,255,.55); margin-top: 4px; }
+        .landing-hero-btn { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; border: none; padding: 13px 24px; border-radius: 10px; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 9px; white-space: nowrap; transition: transform .15s, box-shadow .15s; box-shadow: 0 8px 20px rgba(54,84,234,.4); }
+        .landing-hero-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 26px rgba(54,84,234,.5); }
+
+        .landing-quick-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 28px; }
+        .landing-quick-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; display: flex; align-items: center; gap: 13px; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform .15s, box-shadow .15s; }
+        .landing-quick-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .landing-quick-ico { width: 40px; height: 40px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+        .landing-quick-ico.ico-accent { background: #e0e6ff; color: var(--accent-dark); }
+        .landing-quick-ico.ico-orange { background: #ffe8cc; color: var(--orange); }
+        .landing-quick-ico.ico-green { background: var(--ok); color: var(--green); }
+        .landing-quick-ico.ico-blue { background: #d6f0f5; color: var(--blue); }
+        .landing-quick-ico.ico-red { background: var(--danger); color: var(--red); }
+        .landing-quick-title { font-size: 13px; font-weight: 700; }
+        .landing-quick-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+        .landing-section-hdr { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; margin-bottom: 14px; }
+        .landing-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+        .landing-card { background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 14px; padding: 22px; text-align: center; box-shadow: var(--shadow-sm); transition: transform .15s, box-shadow .15s; }
+        .landing-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .landing-card-avatar { width: 60px; height: 60px; border-radius: 50%; background: #eef1f6; display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 0 auto 12px; }
+        .landing-card-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; }
+        .landing-card-sub { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-top: 2px; }
+        .landing-card-tag { font-size: 12px; font-style: italic; margin-top: 8px; color: var(--muted); }
+        .landing-card-link { display: inline-block; margin-top: 10px; font-size: 12px; font-weight: 700; color: var(--accent); text-decoration: none; cursor: pointer; }
+        .landing-card-link:hover { text-decoration: underline; }
+
+        /* ── LANDING: equipo / organigrama ── */
+        .landing-boss-card { background: #eef1f6; border-radius: 16px; padding: 20px 22px; display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+        .landing-avatar-ph { width: 54px; height: 54px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 16px; color: var(--accent-dark); flex-shrink: 0; }
+        .landing-boss-eyebrow { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
+        .landing-boss-name { font-family: 'Syne', sans-serif; font-size: 19px; font-weight: 800; margin-top: 1px; }
+        .landing-boss-badge { display: inline-block; margin-top: 7px; background: var(--ok); color: var(--ok-text); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; padding: 4px 10px; border-radius: 100px; }
+
+        .landing-org-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; box-shadow: var(--shadow-sm); }
+        .landing-org-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 8px; }
+        .landing-org-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 9px; }
+        .landing-org-title i { color: var(--accent); }
+        .landing-org-tag { font-size: 12px; font-weight: 800; color: var(--accent-dark); }
+
+        .landing-vacante { border: 1px dashed var(--border); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+        .landing-vacante-plus { width: 46px; height: 46px; border-radius: 50%; background: var(--bg); color: var(--muted); display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+        .landing-vacante-lbl { font-size: 10px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: .6px; }
+        .landing-vacante-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; margin-top: 1px; }
+        .landing-vacante-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+
+        .landing-org-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+        .landing-org-member { border: 1px solid var(--border); border-radius: 12px; padding: 16px 12px; text-align: center; }
+        .landing-org-member .landing-avatar-ph { margin: 0 auto 10px; }
+        .landing-org-member-name { font-size: 13px; font-weight: 800; }
+        .landing-org-member-role { font-size: 11px; font-weight: 700; color: var(--accent-dark); text-transform: uppercase; letter-spacing: .4px; margin-top: 2px; }
+
+        @media(max-width:900px) {
+            .landing-nav-links { display: none; }
+            .landing-main { padding: 20px 16px 36px; }
+            .landing-hero { padding: 24px; }
+            .landing-hero-title { font-size: 24px; }
+        }
+
         /* ── LOGIN ── */
         #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 30% 20%, #232c47 0%, #12151f 60%); }
         .login-box { background: var(--surface); border-radius: 20px; padding: 40px; width: 100%; max-width: 380px; box-shadow: var(--shadow-lg); }
@@ -295,6 +382,162 @@
     </style>
 </head>
 <body>
+
+<!-- ══ LANDING (pantalla previa al ingreso) ══ -->
+<div id="landing-screen" class="hidden">
+    <nav class="landing-nav">
+        <div class="landing-nav-logo"><i class="fas fa-user-tie"></i> Panel de Selección</div>
+        <div class="landing-nav-links">
+            <span class="landing-nav-link">Inicio</span>
+            <div class="landing-dropdown">
+                <button class="landing-dropdown-btn">Secciones <i class="fas fa-chevron-down"></i></button>
+                <div class="landing-dropdown-menu">
+                    <a onclick="goToApp()"><i class="fas fa-table"></i> Pipeline</a>
+                    <a onclick="goToApp()"><i class="fas fa-truck"></i> Choferes y Ayudantes</a>
+                    <a onclick="goToApp()"><i class="fas fa-chart-bar"></i> Estadísticas</a>
+                    <a onclick="goToApp()"><i class="fas fa-chart-pie"></i> Gráficos</a>
+                    <a onclick="goToApp()"><i class="fas fa-file-export"></i> Informe</a>
+                </div>
+            </div>
+        </div>
+        <button class="landing-nav-btn" onclick="goToApp()"><i class="fas fa-table"></i> Ir al Pipeline</button>
+    </nav>
+
+    <div class="landing-main">
+        <div class="landing-hero">
+            <div class="landing-hero-left">
+                <div class="landing-hero-icon"><i class="fas fa-user-tie"></i></div>
+                <div>
+                    <div class="landing-hero-eyebrow">Sistema de Reclutamiento</div>
+                    <div class="landing-hero-title">Panel de <span>Selección</span></div>
+                    <div class="landing-hero-sub">Acceso rápido a las búsquedas, postulantes y estadísticas del equipo.</div>
+                </div>
+            </div>
+            <button class="landing-hero-btn" onclick="goToApp()">Ir al Pipeline <i class="fas fa-arrow-right"></i></button>
+        </div>
+
+        <div class="landing-quick-grid">
+            <div class="landing-quick-card" onclick="goToApp()">
+                <div class="landing-quick-ico ico-accent"><i class="fas fa-table"></i></div>
+                <div><div class="landing-quick-title">Pipeline</div><div class="landing-quick-sub">Búsquedas activas</div></div>
+            </div>
+            <div class="landing-quick-card" onclick="goToApp()">
+                <div class="landing-quick-ico ico-orange"><i class="fas fa-truck"></i></div>
+                <div><div class="landing-quick-title">Choferes y Ayudantes</div><div class="landing-quick-sub">Fichas y asignaciones</div></div>
+            </div>
+            <div class="landing-quick-card" onclick="goToApp()">
+                <div class="landing-quick-ico ico-green"><i class="fas fa-chart-bar"></i></div>
+                <div><div class="landing-quick-title">Estadísticas</div><div class="landing-quick-sub">Demoras e indicadores</div></div>
+            </div>
+            <div class="landing-quick-card" onclick="goToApp()">
+                <div class="landing-quick-ico ico-blue"><i class="fas fa-chart-pie"></i></div>
+                <div><div class="landing-quick-title">Gráficos</div><div class="landing-quick-sub">Visualización de datos</div></div>
+            </div>
+            <div class="landing-quick-card" onclick="goToApp()">
+                <div class="landing-quick-ico ico-red"><i class="fas fa-file-export"></i></div>
+                <div><div class="landing-quick-title">Informe</div><div class="landing-quick-sub">Resumen ejecutivo</div></div>
+            </div>
+        </div>
+
+        <div class="landing-section-hdr">Qué vas a encontrar en el portal</div>
+        <div class="landing-cards-grid">
+            <div class="landing-card" style="border-top-color:var(--accent)">
+                <div class="landing-card-avatar"><i class="fas fa-table" style="color:var(--accent-dark)"></i></div>
+                <div class="landing-card-title">Pipeline</div>
+                <div class="landing-card-sub">Búsquedas en curso</div>
+                <div class="landing-card-tag">El corazón del proceso</div>
+                <a class="landing-card-link" onclick="goToApp()">Ingresar →</a>
+            </div>
+            <div class="landing-card" style="border-top-color:var(--orange)">
+                <div class="landing-card-avatar"><i class="fas fa-truck" style="color:var(--orange)"></i></div>
+                <div class="landing-card-title">Choferes y Ayudantes</div>
+                <div class="landing-card-sub">Postulantes operativos</div>
+                <div class="landing-card-tag">Fichas y asignaciones</div>
+                <a class="landing-card-link" onclick="goToApp()">Ingresar →</a>
+            </div>
+            <div class="landing-card" style="border-top-color:var(--green)">
+                <div class="landing-card-avatar"><i class="fas fa-chart-bar" style="color:var(--green)"></i></div>
+                <div class="landing-card-title">Estadísticas</div>
+                <div class="landing-card-sub">Indicadores clave</div>
+                <div class="landing-card-tag">Métricas y demoras</div>
+                <a class="landing-card-link" onclick="goToApp()">Ingresar →</a>
+            </div>
+            <div class="landing-card" style="border-top-color:var(--blue)">
+                <div class="landing-card-avatar"><i class="fas fa-chart-pie" style="color:var(--blue)"></i></div>
+                <div class="landing-card-title">Gráficos</div>
+                <div class="landing-card-sub">La foto completa</div>
+                <div class="landing-card-tag">Visualización de datos</div>
+                <a class="landing-card-link" onclick="goToApp()">Ingresar →</a>
+            </div>
+            <div class="landing-card" style="border-top-color:var(--red)">
+                <div class="landing-card-avatar"><i class="fas fa-file-export" style="color:var(--red)"></i></div>
+                <div class="landing-card-title">Informe</div>
+                <div class="landing-card-sub">Para exportar y compartir</div>
+                <div class="landing-card-tag">Resumen ejecutivo</div>
+                <a class="landing-card-link" onclick="goToApp()">Ingresar →</a>
+            </div>
+        </div>
+
+        <div class="landing-section-hdr" style="margin-top:32px">Nuestro equipo</div>
+        <div class="landing-boss-card">
+            <div class="landing-avatar-ph">SC</div>
+            <div>
+                <div class="landing-boss-eyebrow">Equipo de</div>
+                <div class="landing-boss-name">Soledad Cueto</div>
+                <div class="landing-boss-badge">Jefe Selección Staff</div>
+            </div>
+        </div>
+
+        <div class="landing-org-panel">
+            <div class="landing-org-hdr">
+                <div class="landing-org-title"><i class="fas fa-users"></i> Selección Staff</div>
+                <div class="landing-org-tag">Selección</div>
+            </div>
+
+            <div class="landing-vacante">
+                <div class="landing-vacante-plus"><i class="fas fa-plus"></i></div>
+                <div>
+                    <div class="landing-vacante-lbl">Vacante</div>
+                    <div class="landing-vacante-title">Coordinación</div>
+                    <div class="landing-vacante-sub">Coordinador Selección Staff</div>
+                </div>
+            </div>
+
+            <div class="landing-org-grid">
+                <div class="landing-org-member">
+                    <div class="landing-avatar-ph">SC</div>
+                    <div class="landing-org-member-name">Silvina Croce</div>
+                    <div class="landing-org-member-role">Selector</div>
+                </div>
+                <div class="landing-org-member">
+                    <div class="landing-avatar-ph">RR</div>
+                    <div class="landing-org-member-name">Romina Rigoni</div>
+                    <div class="landing-org-member-role">Selector</div>
+                </div>
+                <div class="landing-org-member">
+                    <div class="landing-avatar-ph">CT</div>
+                    <div class="landing-org-member-name">Claudia Triana</div>
+                    <div class="landing-org-member-role">Selector</div>
+                </div>
+                <div class="landing-org-member">
+                    <div class="landing-avatar-ph">NE</div>
+                    <div class="landing-org-member-name">Noelia Esteban</div>
+                    <div class="landing-org-member-role">Selector</div>
+                </div>
+                <div class="landing-org-member">
+                    <div class="landing-avatar-ph">MB</div>
+                    <div class="landing-org-member-name">Milagros Bellomo</div>
+                    <div class="landing-org-member-role">Selector</div>
+                </div>
+                <div class="landing-org-member">
+                    <div class="landing-avatar-ph">JA</div>
+                    <div class="landing-org-member-name">Juan Pablo Alecha</div>
+                    <div class="landing-org-member-role">Selector Jr</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- ══ LOGIN ══ -->
 <div id="login-screen">
@@ -819,6 +1062,18 @@ function renderDemoraBreakdown(b) {
     </div>`;
 }
 
+function showHome() {
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('loading-screen').classList.add('hidden');
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('landing-screen').classList.remove('hidden');
+}
+
+function goToApp() {
+    document.getElementById('landing-screen').classList.add('hidden');
+    initDashboard();
+}
+
 async function login() {
     const email = document.getElementById('login-email').value.trim();
     const pass  = document.getElementById('login-pass').value;
@@ -826,7 +1081,7 @@ async function login() {
     errEl.style.display = 'none';
     const { error } = await sb.auth.signInWithPassword({ email, password: pass });
     if (error) { errEl.textContent = 'Email o contraseña incorrectos'; errEl.style.display = 'block'; return; }
-    await initDashboard();
+    showHome();
 }
 
 async function logout() { await sb.auth.signOut(); location.reload(); }
@@ -884,6 +1139,7 @@ async function checkAndFinalizeSearches() {
 }
 
 async function initDashboard() {
+    document.getElementById('landing-screen').classList.add('hidden');
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('loading-screen').classList.remove('hidden');
     await loadProfile();
@@ -904,7 +1160,7 @@ async function initDashboard() {
 
 async function initApp() {
     const { data: { session } } = await sb.auth.getSession();
-    if (session) await initDashboard();
+    if (session) showHome();
 }
 initApp();
 
