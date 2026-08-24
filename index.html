@@ -81,30 +81,26 @@
         .landing-card-link { display: inline-block; margin-top: 10px; font-size: 12px; font-weight: 700; color: var(--accent); text-decoration: none; cursor: pointer; }
         .landing-card-link:hover { text-decoration: underline; }
 
-        /* ── LANDING: equipo / organigrama ── */
-        .landing-boss-card { background: #eef1f6; border-radius: 16px; padding: 20px 22px; display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
-        .landing-avatar-ph { width: 54px; height: 54px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 16px; color: var(--accent-dark); flex-shrink: 0; }
-        .landing-boss-eyebrow { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
-        .landing-boss-name { font-family: 'Syne', sans-serif; font-size: 19px; font-weight: 800; margin-top: 1px; }
-        .landing-boss-badge { display: inline-block; margin-top: 7px; background: var(--ok); color: var(--ok-text); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; padding: 4px 10px; border-radius: 100px; }
+        /* ── LANDING: equipo (tarjetas, misma temática que los accesos rápidos) ── */
+        .landing-team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+        .landing-team-card { background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 14px; padding: 22px; text-align: center; box-shadow: var(--shadow-sm); transition: transform .15s, box-shadow .15s; }
+        .landing-team-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .landing-team-avatar { width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 17px; color: #fff; background: var(--accent); }
+        .landing-team-name { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; }
+        .landing-team-role { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-top: 2px; }
+        .landing-team-tag { font-size: 12px; font-style: italic; margin-top: 8px; color: var(--muted); }
+        .landing-team-link { display: inline-block; margin-top: 10px; font-size: 12px; font-weight: 700; color: var(--accent); text-decoration: none; cursor: pointer; }
+        .landing-team-link:hover { text-decoration: underline; }
 
-        .landing-org-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; box-shadow: var(--shadow-sm); }
-        .landing-org-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 8px; }
-        .landing-org-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 9px; }
-        .landing-org-title i { color: var(--accent); }
-        .landing-org-tag { font-size: 12px; font-weight: 800; color: var(--accent-dark); }
+        .landing-team-card.boss { background: linear-gradient(135deg, #12161f 0%, #1d2333 100%); border-top-color: var(--accent); }
+        .landing-team-card.boss .landing-team-avatar { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); }
+        .landing-team-card.boss .landing-team-name { color: #fff; }
+        .landing-team-card.boss .landing-team-role { color: rgba(255,255,255,.55); }
+        .landing-team-card.boss .landing-team-tag { color: rgba(255,255,255,.75); }
+        .landing-team-card.boss .landing-team-link { color: #fff; }
 
-        .landing-vacante { border: 1px dashed var(--border); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
-        .landing-vacante-plus { width: 46px; height: 46px; border-radius: 50%; background: var(--bg); color: var(--muted); display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
-        .landing-vacante-lbl { font-size: 10px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: .6px; }
-        .landing-vacante-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; margin-top: 1px; }
-        .landing-vacante-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
-
-        .landing-org-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
-        .landing-org-member { border: 1px solid var(--border); border-radius: 12px; padding: 16px 12px; text-align: center; }
-        .landing-org-member .landing-avatar-ph { margin: 0 auto 10px; }
-        .landing-org-member-name { font-size: 13px; font-weight: 800; }
-        .landing-org-member-role { font-size: 11px; font-weight: 700; color: var(--accent-dark); text-transform: uppercase; letter-spacing: .4px; margin-top: 2px; }
+        .landing-team-card.vacante { border-style: dashed; border-top-style: dashed; }
+        .landing-team-card.vacante .landing-team-avatar { background: var(--bg); color: var(--muted); font-size: 20px; }
 
         @media(max-width:900px) {
             .landing-nav-links { display: none; }
@@ -479,61 +475,61 @@
         </div>
 
         <div class="landing-section-hdr" style="margin-top:32px">Nuestro equipo</div>
-        <div class="landing-boss-card">
-            <div class="landing-avatar-ph">SC</div>
-            <div>
-                <div class="landing-boss-eyebrow">Equipo de</div>
-                <div class="landing-boss-name">Soledad Cueto</div>
-                <div class="landing-boss-badge">Jefe Selección Staff</div>
+        <div class="landing-team-grid">
+            <div class="landing-team-card boss">
+                <div class="landing-team-avatar"><i class="fas fa-user-tie"></i></div>
+                <div class="landing-team-name">Soledad Cueto</div>
+                <div class="landing-team-role">Jefe Selección Staff</div>
+                <div class="landing-team-tag">Coordinación general del equipo</div>
+                <a class="landing-team-link" onclick="goToApp()">Ver resultados de equipo →</a>
             </div>
-        </div>
-
-        <div class="landing-org-panel">
-            <div class="landing-org-hdr">
-                <div class="landing-org-title"><i class="fas fa-users"></i> Selección Staff</div>
-                <div class="landing-org-tag">Selección</div>
+            <div class="landing-team-card" style="border-top-color:#6a4c93">
+                <div class="landing-team-avatar" style="background:#6a4c93">SC</div>
+                <div class="landing-team-name">Silvina Croce</div>
+                <div class="landing-team-role">Selector</div>
+                <div class="landing-team-tag" style="color:#6a4c93">Búsqueda y evaluación de candidatos</div>
+                <a class="landing-team-link" style="color:#6a4c93" onclick="goToApp()">Ver resultados →</a>
             </div>
-
-            <div class="landing-vacante">
-                <div class="landing-vacante-plus"><i class="fas fa-plus"></i></div>
-                <div>
-                    <div class="landing-vacante-lbl">Vacante</div>
-                    <div class="landing-vacante-title">Coordinación</div>
-                    <div class="landing-vacante-sub">Coordinador Selección Staff</div>
-                </div>
+            <div class="landing-team-card" style="border-top-color:var(--red)">
+                <div class="landing-team-avatar" style="background:var(--red)">RR</div>
+                <div class="landing-team-name">Romina Rigoni</div>
+                <div class="landing-team-role">Selector</div>
+                <div class="landing-team-tag" style="color:var(--red)">Búsqueda y evaluación de candidatos</div>
+                <a class="landing-team-link" style="color:var(--red)" onclick="goToApp()">Ver resultados →</a>
             </div>
-
-            <div class="landing-org-grid">
-                <div class="landing-org-member">
-                    <div class="landing-avatar-ph">SC</div>
-                    <div class="landing-org-member-name">Silvina Croce</div>
-                    <div class="landing-org-member-role">Selector</div>
-                </div>
-                <div class="landing-org-member">
-                    <div class="landing-avatar-ph">RR</div>
-                    <div class="landing-org-member-name">Romina Rigoni</div>
-                    <div class="landing-org-member-role">Selector</div>
-                </div>
-                <div class="landing-org-member">
-                    <div class="landing-avatar-ph">CT</div>
-                    <div class="landing-org-member-name">Claudia Triana</div>
-                    <div class="landing-org-member-role">Selector</div>
-                </div>
-                <div class="landing-org-member">
-                    <div class="landing-avatar-ph">NE</div>
-                    <div class="landing-org-member-name">Noelia Esteban</div>
-                    <div class="landing-org-member-role">Selector</div>
-                </div>
-                <div class="landing-org-member">
-                    <div class="landing-avatar-ph">MB</div>
-                    <div class="landing-org-member-name">Milagros Bellomo</div>
-                    <div class="landing-org-member-role">Selector</div>
-                </div>
-                <div class="landing-org-member">
-                    <div class="landing-avatar-ph">JA</div>
-                    <div class="landing-org-member-name">Juan Pablo Alecha</div>
-                    <div class="landing-org-member-role">Selector Jr</div>
-                </div>
+            <div class="landing-team-card" style="border-top-color:var(--orange)">
+                <div class="landing-team-avatar" style="background:var(--orange)">CT</div>
+                <div class="landing-team-name">Claudia Triana</div>
+                <div class="landing-team-role">Selector</div>
+                <div class="landing-team-tag" style="color:var(--orange)">Búsqueda y evaluación de candidatos</div>
+                <a class="landing-team-link" style="color:var(--orange)" onclick="goToApp()">Ver resultados →</a>
+            </div>
+            <div class="landing-team-card" style="border-top-color:var(--blue)">
+                <div class="landing-team-avatar" style="background:var(--blue)">NE</div>
+                <div class="landing-team-name">Noelia Esteban</div>
+                <div class="landing-team-role">Selector</div>
+                <div class="landing-team-tag" style="color:var(--blue)">Búsqueda y evaluación de candidatos</div>
+                <a class="landing-team-link" style="color:var(--blue)" onclick="goToApp()">Ver resultados →</a>
+            </div>
+            <div class="landing-team-card" style="border-top-color:var(--green)">
+                <div class="landing-team-avatar" style="background:var(--green)">MB</div>
+                <div class="landing-team-name">Milagros Bellomo</div>
+                <div class="landing-team-role">Selector</div>
+                <div class="landing-team-tag" style="color:var(--green)">Búsqueda y evaluación de candidatos</div>
+                <a class="landing-team-link" style="color:var(--green)" onclick="goToApp()">Ver resultados →</a>
+            </div>
+            <div class="landing-team-card" style="border-top-color:var(--yellow)">
+                <div class="landing-team-avatar" style="background:var(--yellow)">JA</div>
+                <div class="landing-team-name">Juan Pablo Alecha</div>
+                <div class="landing-team-role">Selector Jr</div>
+                <div class="landing-team-tag" style="color:var(--yellow)">Apoyo en procesos de selección</div>
+                <a class="landing-team-link" style="color:var(--yellow)" onclick="goToApp()">Ver resultados →</a>
+            </div>
+            <div class="landing-team-card vacante">
+                <div class="landing-team-avatar"><i class="fas fa-plus"></i></div>
+                <div class="landing-team-name">Coordinación</div>
+                <div class="landing-team-role">Vacante</div>
+                <div class="landing-team-tag">Coordinador Selección Staff</div>
             </div>
         </div>
     </div>
