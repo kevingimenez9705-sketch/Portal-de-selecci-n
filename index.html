@@ -872,23 +872,11 @@ function mapRow(b) {
 
 function nextNro() { return 'SEL-' + String(nroSeq++).padStart(3, '0'); }
 
-async function checkAndFinalizeSearches() {
-    const toFinalize = busquedas.filter(b =>
-        b.status === 'Cerrada' && b.ingreso && daysDiff(b.ingreso) >= 90
-    );
-    if (toFinalize.length === 0) return;
-    for (const b of toFinalize) {
-        const { error } = await sb.from('busquedas').update({ status: 'Finalizada' }).eq('id', b.id);
-        if (!error) b.status = 'Finalizada';
-    }
-}
-
 async function initDashboard() {
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('loading-screen').classList.remove('hidden');
     await loadProfile();
     await loadData();
-    await checkAndFinalizeSearches();
     document.getElementById('loading-screen').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
     const esAdmin = isAdmin();
@@ -1658,7 +1646,6 @@ async function updateField(id, field, val) {
     if (error) { toast('Error al guardar: ' + (error.message || error.code), true); return; }
     if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE en busquedas)', true); return; }
     await loadData();
-    if (field === 'ingreso') await checkAndFinalizeSearches();
     refreshView();
     const cerrandoSinIngreso = field === 'status' && (val === 'Cerrada' || val === 'Finalizada') && !data[0].ingreso;
     toast(cerrandoSinIngreso ? 'Guardado — ojo: se cerró sin cargar la fecha de ingreso' : 'Guardado ✓');
@@ -2329,7 +2316,7 @@ function renderChartsGeneral() {
         <div class="mini-kpi"><div class="mini-kpi-num">${busquedas.length}</div><div class="mini-kpi-lbl">Total</div><div class="mini-kpi-sub">${proceso} en curso · ${pausadas} pausadas</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${tasaCierre}%</div><div class="mini-kpi-lbl">Tasa de Cierre</div><div class="mini-kpi-sub">${cerradas} de ${busquedas.length}</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--orange)">${totalCands}</div><div class="mini-kpi-lbl">Candidatos</div><div class="mini-kpi-sub">⌀ ${(totalCands / Math.max(busquedas.length, 1)).toFixed(1)} por búsqueda</div></div>
-        <div class="mini-kpi"><div class="mini-kpi-num" style="color:#92400e">${finalizadas}</div><div class="mini-kpi-lbl">Finalizadas</div><div class="mini-kpi-sub">≥ 90 días háb. en empresa</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:#92400e">${finalizadas}</div><div class="mini-kpi-lbl">Finalizadas</div><div class="mini-kpi-sub">Cargado por el selector</div></div>
     </div>
     <div style="margin-top:20px">
         <div class="chart-card">
