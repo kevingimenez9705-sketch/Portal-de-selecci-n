@@ -28,25 +28,6 @@
 
         /* ── LANDING (pantalla previa al ingreso) ── */
         #landing-screen { min-height: 100vh; background: var(--bg); }
-        .landing-nav { background: linear-gradient(120deg, #12161f 0%, #1d2333 100%); color: #fff; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 56px; position: sticky; top: 0; z-index: 50; box-shadow: var(--shadow-md); }
-        .landing-nav-logo { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 800; letter-spacing: -0.5px; color: #fff; display: flex; align-items: center; gap: 9px; white-space: nowrap; }
-        .landing-nav-logo i { color: var(--accent); }
-        .landing-nav-links { display: flex; align-items: center; gap: 4px; flex: 1; padding-left: 28px; }
-        .landing-nav-link { color: rgba(255,255,255,.65); text-decoration: none; font-size: 13px; font-weight: 600; padding: 8px 12px; border-radius: 7px; transition: all .15s; cursor: pointer; }
-        .landing-nav-link:hover { color: #fff; background: rgba(255,255,255,.08); }
-        .landing-dropdown { position: relative; }
-        .landing-dropdown-btn { background: none; border: none; color: rgba(255,255,255,.65); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; padding: 8px 12px; border-radius: 7px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .15s; }
-        .landing-dropdown-btn i { font-size: 9px; transition: transform .15s; }
-        .landing-dropdown:hover .landing-dropdown-btn { color: #fff; background: rgba(255,255,255,.08); }
-        .landing-dropdown:hover .landing-dropdown-btn i { transform: rotate(180deg); }
-        .landing-dropdown-menu { position: absolute; top: 100%; left: 0; background: #12161f; border: 1px solid rgba(255,255,255,.1); border-radius: 10px; padding: 6px; min-width: 220px; box-shadow: var(--shadow-lg); opacity: 0; visibility: hidden; transform: translateY(4px); transition: all .15s; }
-        .landing-dropdown:hover .landing-dropdown-menu { opacity: 1; visibility: visible; transform: translateY(0); }
-        .landing-dropdown-menu a { display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: 7px; color: rgba(255,255,255,.75); text-decoration: none; font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; }
-        .landing-dropdown-menu a i { width: 14px; text-align: center; font-size: 12px; color: var(--accent); }
-        .landing-dropdown-menu a:hover { background: rgba(255,255,255,.08); color: #fff; }
-        .landing-nav-btn { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; border: none; padding: 8px 18px; border-radius: 8px; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 7px; white-space: nowrap; transition: transform .15s, box-shadow .15s; box-shadow: 0 6px 16px rgba(54,84,234,.3); }
-        .landing-nav-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(54,84,234,.4); }
-
         .landing-main { padding: 28px 32px 48px; max-width: 1240px; margin: 0 auto; }
         .landing-hero { background: linear-gradient(120deg, #12161f 0%, #1d2333 100%); border-radius: 20px; padding: 32px 36px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 24px; box-shadow: var(--shadow-md); }
         .landing-hero-left { display: flex; align-items: center; gap: 20px; }
@@ -64,7 +45,8 @@
         .landing-team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
         .landing-team-card { background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 14px; padding: 22px; text-align: center; box-shadow: var(--shadow-sm); transition: transform .15s, box-shadow .15s; }
         .landing-team-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-        .landing-team-avatar { width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 17px; color: #fff; background: var(--accent); }
+        .landing-team-avatar { width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 17px; color: #fff; background: var(--accent); overflow: hidden; }
+        .landing-team-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .landing-team-name { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; }
         .landing-team-role { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-top: 2px; }
 
@@ -74,7 +56,6 @@
         .landing-team-card.boss .landing-team-role { color: rgba(255,255,255,.55); }
 
         @media(max-width:900px) {
-            .landing-nav-links { display: none; }
             .landing-main { padding: 20px 16px 36px; }
             .landing-hero { padding: 24px; }
             .landing-hero-title { font-size: 24px; }
@@ -352,24 +333,6 @@
 
 <!-- ══ LANDING (pantalla previa al ingreso) ══ -->
 <div id="landing-screen" class="hidden">
-    <nav class="landing-nav">
-        <div class="landing-nav-logo"><i class="fas fa-user-tie"></i> Panel de Selección</div>
-        <div class="landing-nav-links">
-            <span class="landing-nav-link">Inicio</span>
-            <div class="landing-dropdown">
-                <button class="landing-dropdown-btn">Secciones <i class="fas fa-chevron-down"></i></button>
-                <div class="landing-dropdown-menu">
-                    <a onclick="goToApp()"><i class="fas fa-table"></i> Pipeline</a>
-                    <a onclick="goToApp()"><i class="fas fa-truck"></i> Choferes y Ayudantes</a>
-                    <a onclick="goToApp()"><i class="fas fa-chart-bar"></i> Estadísticas</a>
-                    <a onclick="goToApp()"><i class="fas fa-chart-pie"></i> Gráficos</a>
-                    <a onclick="goToApp()"><i class="fas fa-file-export"></i> Informe</a>
-                </div>
-            </div>
-        </div>
-        <button class="landing-nav-btn" onclick="goToApp()"><i class="fas fa-table"></i> Ir al Pipeline</button>
-    </nav>
-
     <div class="landing-main">
         <div class="landing-hero">
             <div class="landing-hero-left">
@@ -386,37 +349,37 @@
         <div class="landing-section-hdr" style="margin-top:32px">Nuestro equipo</div>
         <div class="landing-team-grid">
             <div class="landing-team-card boss">
-                <div class="landing-team-avatar"><i class="fas fa-user-tie"></i></div>
+                <div class="landing-team-avatar"><img src="assest%20staff/soledad-toledo.jpg" alt="Soledad Cueto"></div>
                 <div class="landing-team-name">Soledad Cueto</div>
                 <div class="landing-team-role">Jefe Selección Staff</div>
             </div>
             <div class="landing-team-card" style="border-top-color:#6a4c93">
-                <div class="landing-team-avatar" style="background:#6a4c93">SC</div>
+                <div class="landing-team-avatar"><img src="assest%20staff/silvina-croce.jpg" alt="Silvina Croce"></div>
                 <div class="landing-team-name">Silvina Croce</div>
                 <div class="landing-team-role">Selector</div>
             </div>
             <div class="landing-team-card" style="border-top-color:var(--red)">
-                <div class="landing-team-avatar" style="background:var(--red)">RR</div>
+                <div class="landing-team-avatar"><img src="assest%20staff/romina-rogoni.jpg" alt="Romina Rigoni"></div>
                 <div class="landing-team-name">Romina Rigoni</div>
                 <div class="landing-team-role">Selector</div>
             </div>
             <div class="landing-team-card" style="border-top-color:var(--orange)">
-                <div class="landing-team-avatar" style="background:var(--orange)">CT</div>
+                <div class="landing-team-avatar"><img src="assest%20staff/claudia-triana.jpg" alt="Claudia Triana"></div>
                 <div class="landing-team-name">Claudia Triana</div>
                 <div class="landing-team-role">Selector</div>
             </div>
             <div class="landing-team-card" style="border-top-color:var(--blue)">
-                <div class="landing-team-avatar" style="background:var(--blue)">NE</div>
+                <div class="landing-team-avatar"><img src="assest%20staff/noelia-esteban.jpg" alt="Noelia Esteban"></div>
                 <div class="landing-team-name">Noelia Esteban</div>
                 <div class="landing-team-role">Selector</div>
             </div>
             <div class="landing-team-card" style="border-top-color:var(--green)">
-                <div class="landing-team-avatar" style="background:var(--green)">MB</div>
+                <div class="landing-team-avatar"><img src="assest%20staff/milagros-bellomo.jpg" alt="Milagros Bellomo"></div>
                 <div class="landing-team-name">Milagros Bellomo</div>
                 <div class="landing-team-role">Selector</div>
             </div>
             <div class="landing-team-card" style="border-top-color:var(--yellow)">
-                <div class="landing-team-avatar" style="background:var(--yellow)">JA</div>
+                <div class="landing-team-avatar"><img src="assest%20staff/juan-alecha.jpg" alt="Juan Pablo Alecha"></div>
                 <div class="landing-team-name">Juan Pablo Alecha</div>
                 <div class="landing-team-role">Selector Jr</div>
             </div>
