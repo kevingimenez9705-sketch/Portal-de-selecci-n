@@ -753,6 +753,25 @@ let nroSeq = 1;
 function isAdmin() { return currentProfile?.rol === 'admin'; }
 function today() { return new Date().toISOString().slice(0, 10); }
 
+// Evita que el scroll del mouse sobre un input de fecha/número (foco activo) modifique
+// su valor "de arriba" sin que el usuario se dé cuenta (ej: año 2026 -> 0202 al scrollear).
+document.addEventListener('wheel', function (e) {
+    const el = e.target;
+    if (el && el.tagName === 'INPUT' && (el.type === 'date' || el.type === 'number') && document.activeElement === el) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+// Chequeo de sanidad para no guardar fechas con año inválido (ej: incompletas por scroll
+// accidental o edición a medio terminar del input nativo de fecha).
+function fechaValida(val) {
+    if (!val) return true;
+    const m = /^(\d{4})-\d{2}-\d{2}$/.exec(val);
+    if (!m) return true; // no tiene forma de fecha ISO, se deja pasar (no es este chequeo)
+    const anio = +m[1];
+    return anio >= 2000 && anio <= 2100;
+}
+
 let toastTimer;
 function toast(msg, isError = false) {
     const t = document.getElementById('toast');
@@ -1766,6 +1785,7 @@ async function toggleHerramienta(id, herramienta, checked) {
 }
 
 async function updateField(id, field, val) {
+    if (!fechaValida(val)) { toast('Fecha inválida (año fuera de rango) — no se guardó', true); refreshView(); return; }
     const update = { [field]: val };
     if (field === 'ingreso' && val) update.status = 'Cerrada';
     const { data, error } = await sb.from('busquedas').update(update).eq('id', id).select();
@@ -1923,6 +1943,7 @@ async function updateCandEstado(candId, estado) {
 }
 
 async function updateCandFecha(candId, field, val) {
+    if (!fechaValida(val)) { toast('Fecha inválida (año fuera de rango) — no se guardó', true); refreshView(); return; }
     const { data, error } = await sb.from('candidatos').update({ [field]: val || null }).eq('id', candId).select();
     if (error) { toast('Error al guardar fecha: ' + (error.message || error.code), true); return; }
     if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE en candidatos)', true); return; }
@@ -1944,6 +1965,7 @@ async function updateCandChoferResultado(candId, resultado) {
 }
 
 async function updateCandChoferFecha(candId, val) {
+    if (!fechaValida(val)) { toast('Fecha inválida (año fuera de rango) — no se guardó', true); refreshView(); return; }
     const { data, error } = await sb.from('candidatos').update({ fecha_ingreso_chofer: val || null }).eq('id', candId).select();
     if (error && error.message && error.message.includes('fecha_ingreso_chofer')) {
         toast('Falta agregar la columna "fecha_ingreso_chofer" en la tabla candidatos (Supabase)', true);
@@ -1975,6 +1997,7 @@ function renderFichaModalContent(candId) {
 }
 
 async function updateFichaField(candId, field, val) {
+    if (!fechaValida(val)) { toast('Fecha inválida (año fuera de rango) — no se guardó', true); refreshView(); return; }
     const { data, error } = await sb.from('candidatos').update({ [field]: val || null }).eq('id', candId).select();
     if (error) {
         toast('Falta la columna "' + field + '" en la tabla candidatos (Supabase)', true);
