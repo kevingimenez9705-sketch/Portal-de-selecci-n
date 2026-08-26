@@ -785,7 +785,7 @@ function toast(msg, isError = false) {
 //  DÍAS HÁBILES
 // ══════════════════════════════════════════════
 function workingDaysDiff(from, to = null) {
-    if (!from) return 0;
+    if (!from || !fechaValida(from) || (to && !fechaValida(to))) return 0;
     const start = new Date(from + 'T00:00:00');
     const end   = to ? new Date(to + 'T00:00:00') : new Date();
     start.setHours(0, 0, 0, 0);
@@ -1786,6 +1786,12 @@ async function toggleHerramienta(id, herramienta, checked) {
 
 async function updateField(id, field, val) {
     if (!fechaValida(val)) { toast('Fecha inválida (año fuera de rango) — no se guardó', true); refreshView(); return; }
+    if (field === 'ingreso' && val) {
+        const msg = isAdmin()
+            ? 'Vas a cargar la fecha de ingreso: esto cambia el Estado a "Cerrada" automáticamente. ¿Confirmás?'
+            : 'Vas a cargar la fecha de ingreso: esto cierra automáticamente la búsqueda (Estado: Cerrada) y, al no ser admin, vos mismo/a vas a dejar de poder editarla después. ¿Confirmás?';
+        if (!confirm(msg)) { refreshView(); return; }
+    }
     const update = { [field]: val };
     if (field === 'ingreso' && val) update.status = 'Cerrada';
     const { data, error } = await sb.from('busquedas').update(update).eq('id', id).select();
@@ -2151,7 +2157,11 @@ async function reabrir(id) {
     } catch (e) { console.warn('No se pudo copiar historial:', e); }
     let fechaBaja = prompt('Fecha de baja del que ingresó (AAAA-MM-DD). Dejá vacío si seguía hasta hoy:', today());
     const updOrig = { status: 'Cerrada' };
-    if (fechaBaja && /^\d{4}-\d{2}-\d{2}$/.test(fechaBaja.trim())) updOrig.fecha_baja = fechaBaja.trim();
+    if (fechaBaja && fechaBaja.trim()) {
+        const f = fechaBaja.trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(f) && fechaValida(f)) updOrig.fecha_baja = f;
+        else toast('Fecha de baja inválida — se reabrió igual, pero sin guardar esa fecha', true);
+    }
     await sb.from('busquedas').update(updOrig).eq('id', id);
     await loadData(); refreshView();
     toast('Búsqueda reabierta como ' + nueva.numero + ' ✓');
