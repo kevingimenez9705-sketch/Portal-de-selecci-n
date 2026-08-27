@@ -29,8 +29,8 @@ let filteredIds = null;
 let currentCategoria = 'general';
 let currentProfile = null;
 let nroSeq = 1;
-// Selector correspondiente al usuario logueado (uno de SELECTORES), calculado por
-// matchSelector() en applySelectorScope(). null = admin, o no se pudo identificar.
+// Selector elegido a mano en este navegador (uno de SELECTORES), ver applySelectorScope().
+// null = admin, o todavía no eligió nadie / eligió "ver todas".
 let miSelector = null;
 
 function isAdmin() { return currentProfile?.rol === 'admin'; }
@@ -38,33 +38,42 @@ function today() { return new Date().toISOString().slice(0, 10); }
 
 // ══════════════════════════════════════════════
 //  VISIBILIDAD POR SELECTOR
-//  Cada selector ve por defecto (y, si se pudo identificar con confianza,
-//  únicamente) sus propias búsquedas. Los admin siempre ven todo.
+//  Todo el equipo entra con la MISMA cuenta de Supabase (no hay login por
+//  persona), así que no hay forma de saber automáticamente quién es quién.
+//  En vez de eso, cada quien elige su nombre a mano (como apretar un botón) la
+//  primera vez que usa el panel en su navegador; queda guardado en localStorage
+//  de ESE navegador y se puede cambiar en cualquier momento tocando la insignia.
+//  Los admin siempre ven todo, sin este paso.
 // ══════════════════════════════════════════════
-function normalizarTexto(s) {
-    return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+const MI_SELECTOR_KEY = 'panelSeleccion.miSelector';
+const SIN_FILTRAR = '__TODAS__'; // sentinel: "elegí ver todas las búsquedas, no preguntes de nuevo"
+
+// Lee la elección guardada en este navegador. Devuelve el nombre elegido,
+// SIN_FILTRAR si explícitamente pidió ver todas, o null si todavía no eligió
+// nada (localStorage puede fallar en modo privado/incógnito: se trata igual
+// que "no eligió nada" — nunca rompe el panel).
+function leerMiSelectorGuardado() {
+    try {
+        const v = localStorage.getItem(MI_SELECTOR_KEY);
+        if (v === SIN_FILTRAR) return SIN_FILTRAR;
+        return SELECTORES.includes(v) ? v : null;
+    } catch (e) { return null; }
 }
-// Relaciona el nombre del perfil logueado con uno de los SELECTORES fijos.
-// Preferimos un campo "selector" explícito en la tabla profiles si existe (columna
-// opcional, con el valor EXACTO tal como aparece en SELECTORES) — es la forma más
-// confiable. Si no está, probamos con el "nombre" del perfil de forma flexible
-// (sin mayúsculas/acentos, por si el perfil tiene apellido: "Juan Pablo Alecha").
-// Devuelve null si no hay ninguna coincidencia confiable (nunca hay que asumir).
-function matchSelector(perfil) {
-    if (!perfil) return null;
-    if (perfil.selector && SELECTORES.includes(perfil.selector)) return perfil.selector;
-    const n = normalizarTexto(perfil.nombre);
-    if (!n) return null;
-    return SELECTORES.find(s => {
-        const sn = normalizarTexto(s);
-        return n === sn || n.includes(sn) || sn.includes(n);
-    }) || null;
+function guardarMiSelector(valor) {
+    try { localStorage.setItem(MI_SELECTOR_KEY, valor); } catch (e) { /* modo privado: no persiste, no rompe nada */ }
 }
 
 // Ajusta el filtro de selector, la insignia de la barra y el combo de "Nueva Búsqueda"
-// según quién está logueado. Se llama una vez al entrar al dashboard.
+// según lo elegido en este navegador. Se llama al entrar al dashboard, y de nuevo cada
+// vez que se elige/cambia el nombre desde "¿Quién sos?".
 function applySelectorScope() {
-    miSelector = isAdmin() ? null : matchSelector(currentProfile);
+    const guardado = isAdmin() ? SIN_FILTRAR : leerMiSelectorGuardado();
+    miSelector = (guardado && guardado !== SIN_FILTRAR) ? guardado : null;
+    renderSelectorBadge();
+    if (!isAdmin() && guardado === null) abrirQuienSosModal();
+}
+
+function renderSelectorBadge() {
     const selEl   = document.getElementById('f-selector');
     const badge   = document.getElementById('selector-badge');
     const badgeNm = document.getElementById('selector-badge-name');
@@ -72,15 +81,37 @@ function applySelectorScope() {
         selEl.innerHTML = `<option value="${miSelector}">${miSelector}</option>`;
         selEl.value = miSelector;
         selEl.disabled = true;
-        selEl.title = 'Ves solo tus propias búsquedas';
+        selEl.title = 'Ves solo las búsquedas de ' + miSelector + ' — tocá la insignia para cambiar';
         badgeNm.textContent = miSelector;
         badge.classList.remove('hidden');
     } else {
         badge.classList.add('hidden');
-        if (!isAdmin() && currentProfile) {
-            toast('No pudimos reconocer automáticamente tu selector — se muestran todas las búsquedas. Pedile a un admin que revise tu perfil.', true);
-        }
     }
+}
+
+// Abre el selector "¿Quién sos?" (un botón por cada nombre, más la opción de ver
+// todas). Se abre solo la primera vez en un navegador, o a mano tocando la
+// insignia de la barra de filtros.
+function abrirQuienSosModal() {
+    const box = document.getElementById('quien-sos-botones');
+    box.innerHTML = SELECTORES.map(s => `<button class="quien-sos-btn" onclick="elegirMiSelector('${s}')">${s}</button>`).join('');
+    openModal('modal-quien-sos');
+}
+function elegirMiSelector(nombre) {
+    guardarMiSelector(nombre);
+    miSelector = nombre;
+    closeModal('modal-quien-sos');
+    renderSelectorBadge();
+    applyFilters(); // ya llama refreshView()
+    toast('Viendo las búsquedas de ' + nombre + ' ✓');
+}
+function verTodasLasBusquedas() {
+    guardarMiSelector(SIN_FILTRAR);
+    miSelector = null;
+    closeModal('modal-quien-sos');
+    renderSelectorBadge();
+    applyFilters();
+    toast('Viendo todas las búsquedas');
 }
 
 // Evita que el scroll del mouse sobre un input de fecha/número (foco activo) modifique

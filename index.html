@@ -127,7 +127,7 @@
         </div>
 
         <div class="filters">
-            <span id="selector-badge" class="filter-me-badge hidden"><i class="fas fa-user"></i> <span id="selector-badge-name"></span></span>
+            <button id="selector-badge" class="filter-me-badge hidden" onclick="abrirQuienSosModal()" title="Tocá para cambiar quién sos"><i class="fas fa-user"></i> <span id="selector-badge-name"></span> <i class="fas fa-pen" style="font-size:9px;opacity:.7"></i></button>
             <span class="filter-label">Filtrar:</span>
             <select class="filter-select" id="f-selector" onchange="applyFilters()">
                 <option value="">Todos los selectores</option>
@@ -224,6 +224,17 @@
 </div>
 
 <!-- ══ MODALES ══ -->
+<!-- Todo el equipo entra con la misma cuenta: este selector es manual (ver
+     applySelectorScope() en core.js) para saber de quién es la vista. -->
+<div id="modal-quien-sos" class="modal-bg hidden">
+    <div class="modal-box" style="max-width:460px">
+        <div class="modal-title"><i class="fas fa-user-check" style="font-size:13px;opacity:.5;margin-right:6px"></i> ¿Quién sos?</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:4px">Elegí tu nombre para ver solo tus búsquedas. Queda guardado en este navegador — lo podés cambiar cuando quieras tocando la insignia.</p>
+        <div class="quien-sos-grid" id="quien-sos-botones"></div>
+        <button class="quien-sos-todas" onclick="verTodasLasBusquedas()">Ver todas las búsquedas (no filtrar)</button>
+    </div>
+</div>
+
 <div id="modal-nueva" class="modal-bg hidden">
     <div class="modal-box">
         <div class="modal-title"><i class="fas fa-plus-circle" style="font-size:13px;opacity:.5;margin-right:6px"></i> Alta de Nueva Búsqueda</div>

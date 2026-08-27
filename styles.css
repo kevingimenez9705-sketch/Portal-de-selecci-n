@@ -105,10 +105,17 @@
         .filter-select, .filter-input { font-family: 'DM Sans', sans-serif; font-size: 13px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; background: var(--surface); color: var(--text); outline: none; cursor: pointer; }
         .filter-select:focus, .filter-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(54,84,234,.12); }
         .filter-label { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; align-self: center; }
-        /* ── Insignia "vos sos X": aparece cuando un selector (no admin) tiene la vista
-           acotada a sus propias búsquedas. Ver applySelectorScope() en core.js. ── */
-        .filter-me-badge { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; box-shadow: 0 6px 16px rgba(54,84,234,.3); }
+        /* ── Insignia "vos sos X": botón que aparece cuando este navegador ya eligió su
+           selector (ver applySelectorScope() en core.js) — tocarla abre "¿Quién sos?" de nuevo. ── */
+        .filter-me-badge { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; border: none; cursor: pointer; box-shadow: 0 6px 16px rgba(54,84,234,.3); transition: transform .15s, box-shadow .15s; }
+        .filter-me-badge:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(54,84,234,.4); }
         .filter-select:disabled { opacity: .75; cursor: default; }
+        /* ── Modal "¿Quién sos?": un botón grande por cada selector ── */
+        .quien-sos-grid { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }
+        .quien-sos-btn { flex: 1 1 130px; padding: 16px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all .15s; }
+        .quien-sos-btn:hover { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .quien-sos-todas { display: block; text-align: center; font-size: 12px; color: var(--muted); background: none; border: none; cursor: pointer; text-decoration: underline; margin: 4px auto 0; }
+        .quien-sos-todas:hover { color: var(--accent); }
         .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; border: none; padding: 9px 18px; border-radius: 9px; font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 7px; transition: transform .15s, box-shadow .15s; box-shadow: 0 6px 16px rgba(54,84,234,.3); }
         .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(54,84,234,.4); }
         .btn-sm { padding: 4px 10px; font-size: 12px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 600; transition: all .12s; }
