@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════
 //  DATA.JS — configuración y datos de referencia
-//  (conexión a Supabase + listas/constantes fijas que usa app.js)
+//  (conexión a Supabase + listas/constantes fijas que usan core.js/render.js/etc.)
 // ══════════════════════════════════════════════
 const SUPABASE_URL = 'https://nhlkndwwsuybnejbyigk.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5obGtuZHd3c3V5Ym5lamJ5aWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNzY5ODYsImV4cCI6MjA5Mzc1Mjk4Nn0.Xdli4VzqAKuYLkU5q8m8G6UTNda_BAaJlibROm9tGhw';
