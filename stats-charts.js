@@ -333,7 +333,7 @@ function renderAnalisis() {
         <i class="fas fa-info-circle"></i> Conversión = candidatos con oferta / candidatos enviados. Retención = ingresos que llegaron a 90 días hábiles en la empresa. Fuera de plazo y Alertas 72hs son del momento actual.
     </div>
     <div class="charts-grid">
-        <div class="chart-card"><div class="chart-card-title"><i class="fas fa-percentage"></i> Tasa de Conversión (Oferta / Candidatos enviados)</div><div class="chart-wrap"><canvas id="an-conversion"></canvas></div></div>
+        <div class="chart-card"><div class="chart-card-title"><i class="fas fa-percentage"></i> Candidatos que llegan a Oferta (% de los enviados)</div><div class="chart-wrap"><canvas id="an-conversion"></canvas></div></div>
         <div class="chart-card"><div class="chart-card-title"><i class="fas fa-user-check"></i> Retención · 90 días hábiles en empresa</div><div class="chart-wrap"><canvas id="an-retencion"></canvas></div></div>
         <div class="chart-card"><div class="chart-card-title"><i class="fas fa-redo"></i> Reaperturas</div><div class="chart-wrap"><canvas id="an-reaperturas"></canvas></div></div>
         <div class="chart-card"><div class="chart-card-title"><i class="fas fa-hourglass-end"></i> Fuera de Plazo (actual)</div><div class="chart-wrap"><canvas id="an-vencidas"></canvas></div></div>
@@ -345,7 +345,7 @@ function renderAnalisis() {
     </div></div>
     <div style="margin-top:20px"><div class="chart-card full"><div class="chart-card-title"><i class="fas fa-table"></i> Panel comparativo por Selector</div>
         <div style="overflow-x:auto"><table style="width:100%;min-width:760px;border-collapse:collapse">
-            <thead><tr>${['Selector', 'Conversión', 'Retención 90d', 'Reaperturas', 'Fuera de plazo', 'Alertas 72hs'].map(h => `<th style="padding:10px 14px;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);text-align:left">${h}</th>`).join('')}</tr></thead>
+            <thead><tr>${['Selector', '% con Oferta', 'Retención 90d', 'Reaperturas', 'Fuera de plazo', 'Alertas 72hs'].map(h => `<th style="padding:10px 14px;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);text-align:left">${h}</th>`).join('')}</tr></thead>
             <tbody>${activos.map((s, i) => `<tr style="background:${i % 2 === 0 ? 'var(--bg)' : 'transparent'}">
                 <td style="padding:10px 14px;font-weight:700">${s}</td>
                 <td style="padding:10px 14px;font-family:'DM Mono',monospace;font-weight:700;color:${!data[s].candidatos ? 'var(--muted)' : conversion[i] >= 30 ? 'var(--green)' : 'var(--red)'}">${data[s].candidatos ? conversion[i] + '%' : '—'}</td>
