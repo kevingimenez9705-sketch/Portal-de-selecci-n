@@ -35,6 +35,9 @@
         .landing-team-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
         .landing-team-avatar { width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 17px; color: #fff; background: var(--accent); overflow: hidden; }
         .landing-team-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        /* ── Foto clickeable: entra directo al Pipeline filtrado por esa persona (goToApp(nombre)) ── */
+        .landing-team-avatar.clickable { cursor: pointer; transition: transform .15s, box-shadow .15s; }
+        .landing-team-avatar.clickable:hover { transform: scale(1.08); box-shadow: 0 0 0 3px var(--accent); }
         .landing-team-name { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; }
         .landing-team-role { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-top: 2px; }
         .landing-team-tag { font-size: 12px; font-style: italic; font-weight: 600; margin-top: 8px; }

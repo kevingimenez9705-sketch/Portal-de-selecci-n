@@ -250,9 +250,13 @@ function showHome() {
     document.getElementById('landing-screen').classList.remove('hidden');
 }
 
-function goToApp() {
+// Si se pasa un nombre (clic en la foto de un selector desde la landing), entra
+// directo al Pipeline ya filtrado por esa persona — mismo efecto que entrar y
+// tocar su chip en la barra de filtros.
+async function goToApp(selectorInicial) {
     document.getElementById('landing-screen').classList.add('hidden');
-    initDashboard();
+    await initDashboard();
+    if (selectorInicial) filtrarPorSelector(selectorInicial);
 }
 
 async function login() {
