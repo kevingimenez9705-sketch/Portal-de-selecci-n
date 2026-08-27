@@ -682,8 +682,10 @@ function renderKPIs() {
     // pero ignoran a propósito el resto de los filtros de paso (estado, depto,
     // búsqueda de texto) — aunque estés mirando solo "Proceso", acá se ve el total.
     const cat = busquedas.filter(inCategoria).filter(b => !selectorFiltroActivo || b.selector === selectorFiltroActivo);
-    const total       = cat.length;
-    const proceso     = cat.filter(b => b.status === 'Proceso').length;
+    const total            = cat.length;
+    const procesoActivas   = cat.filter(b => b.status === 'Proceso' && !b.reopened_from).length;
+    const procesoReabiertas = cat.filter(b => b.status === 'Proceso' && b.reopened_from).length;
+    const proceso           = procesoActivas + procesoReabiertas;
     const cerradas    = cat.filter(b => b.status === 'Cerrada').length;
     const finalizadas = cat.filter(b => b.status === 'Finalizada').length;
     const vencidas    = cat.filter(b => { const d = daysDiff(b.inicio); return d > (DEMORA_LIMITE[b.nivel] || 15) && b.status === 'Proceso'; }).length;
@@ -691,7 +693,7 @@ function renderKPIs() {
     const alertas72   = cat.filter(alertaSectorVencido).length;
     document.getElementById('kpi-row').innerHTML = `
         <div class="kpi"><div class="kpi-num">${total}</div><div class="kpi-lbl">Total búsquedas</div></div>
-        <div class="kpi"><div class="kpi-num" style="color:var(--blue)">${proceso}</div><div class="kpi-lbl">En proceso</div></div>
+        <div class="kpi"><div class="kpi-num" style="color:var(--blue)">${proceso}</div><div class="kpi-lbl">En proceso</div><div class="kpi-sub">${procesoActivas} activas + ${procesoReabiertas} reabiertas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--green)">${cerradas}</div><div class="kpi-lbl">Cerradas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:#92400e">${finalizadas}</div><div class="kpi-lbl">Finalizadas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--red)">${vencidas}</div><div class="kpi-lbl">Fuera de plazo</div></div>
