@@ -33,8 +33,7 @@ async function updateField(id, field, val) {
     const { data, error } = await sb.from('busquedas').update(update).eq('id', id).select();
     if (error) { toast('Error al guardar: ' + (error.message || error.code), true); return; }
     if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE en busquedas)', true); return; }
-    await loadData(id);
-    if (field === 'ingreso') await checkAndFinalizeSearches();
+    await loadData(id); // ya incluye el chequeo de los 90 días hábiles (ver loadData)
     refreshView();
     const cerrandoSinIngreso = field === 'status' && (val === 'Cerrada' || val === 'Finalizada') && !data[0].ingreso;
     toast(cerrandoSinIngreso ? 'Guardado — ojo: se cerró sin cargar la fecha de ingreso' : 'Guardado ✓');
