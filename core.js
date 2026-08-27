@@ -48,7 +48,17 @@ function renderSelectorChips() {
     if (!box) return;
     box.innerHTML = ['', ...SELECTORES].map(s => {
         const activo = s === selectorFiltroActivo;
-        return `<button class="selector-chip${activo ? ' active' : ''}" onclick="filtrarPorSelector('${s}')">${s || 'Todos'}</button>`;
+        // "Todos" queda con el estilo neutro por defecto (ver .selector-chip en el CSS);
+        // cada selector usa el mismo color que su tarjeta en la landing (SELECTOR_COLORS),
+        // así se distingue del fondo, del resto de los filtros y de los demás selectores.
+        const color = s ? SELECTOR_COLORS[s] : null;
+        // Sin color (chip "Todos") no se pone el atributo style: así el CSS puede
+        // distinguir con :not([style]) el chip neutro de los que tienen color propio.
+        const styleAttr = color
+            ? ` style="${activo ? `background:${color};border-color:${color};color:#fff;`
+                                 : `background:${color}1a;border-color:${color}66;color:${color};`}"`
+            : '';
+        return `<button class="selector-chip${activo ? ' active' : ''}"${styleAttr} onclick="filtrarPorSelector('${s}')">${s || 'Todos'}</button>`;
     }).join('');
 }
 // Filtra el Pipeline (y las fichas de Choferes/Ayudantes) por selector con un

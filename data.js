@@ -7,6 +7,19 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const SELECTORES = ['Silvina','Romina','Claudia','Soledad','Juan Pablo','Angel','Noelia','Milagros'];
+// Mismo color que la tarjeta de cada uno en la landing ("Nuestro equipo"), para que
+// los chips de filtro se distingan del fondo y entre sí de un vistazo. Angel no tiene
+// tarjeta en la landing, así que tiene un color propio elegido acá.
+const SELECTOR_COLORS = {
+    'Silvina':     '#6a4c93',
+    'Romina':      '#9b2226', // var(--red)
+    'Claudia':     '#ca6702', // var(--orange)
+    'Soledad':     '#3654ea', // var(--accent)
+    'Juan Pablo':  '#b5a300', // var(--yellow)
+    'Angel':       '#be185d',
+    'Noelia':      '#005f73', // var(--blue)
+    'Milagros':    '#2d6a4f', // var(--green)
+};
 const DEMORA_LIMITE = { 'Gerente/Director': 45, 'Jefe/Encargado': 30, 'Otros': 15 };
 const ALERTA_SECTOR_LIMITE_HD = 3; // 72hs hábiles sin respuesta del sector desde "Enviado al sector"
 const VERIF_EN_CURSO = ['Pendiente','En proceso'];
