@@ -29,90 +29,36 @@ let filteredIds = null;
 let currentCategoria = 'general';
 let currentProfile = null;
 let nroSeq = 1;
-// Selector elegido a mano en este navegador (uno de SELECTORES), ver applySelectorScope().
-// null = admin, o todavía no eligió nadie / eligió "ver todas".
-let miSelector = null;
+// Selector activo en el filtro de la barra (los chips clickeables), o '' = "Todos".
+// Es un filtro más, como el de estado o departamento — no identifica quién usa
+// el panel (todo el equipo entra con la misma cuenta), solo acota qué se ve.
+let selectorFiltroActivo = '';
 
 function isAdmin() { return currentProfile?.rol === 'admin'; }
 function today() { return new Date().toISOString().slice(0, 10); }
 
 // ══════════════════════════════════════════════
-//  VISIBILIDAD POR SELECTOR
-//  Todo el equipo entra con la MISMA cuenta de Supabase (no hay login por
-//  persona), así que no hay forma de saber automáticamente quién es quién.
-//  En vez de eso, cada quien elige su nombre a mano (como apretar un botón) la
-//  primera vez que usa el panel en su navegador; queda guardado en localStorage
-//  de ESE navegador y se puede cambiar en cualquier momento tocando la insignia.
-//  Los admin siempre ven todo, sin este paso.
+//  CHIPS DE SELECTOR — filtro por nombre con un clic, directo en la barra
 // ══════════════════════════════════════════════
-const MI_SELECTOR_KEY = 'panelSeleccion.miSelector';
-const SIN_FILTRAR = '__TODAS__'; // sentinel: "elegí ver todas las búsquedas, no preguntes de nuevo"
-
-// Lee la elección guardada en este navegador. Devuelve el nombre elegido,
-// SIN_FILTRAR si explícitamente pidió ver todas, o null si todavía no eligió
-// nada (localStorage puede fallar en modo privado/incógnito: se trata igual
-// que "no eligió nada" — nunca rompe el panel).
-function leerMiSelectorGuardado() {
-    try {
-        const v = localStorage.getItem(MI_SELECTOR_KEY);
-        if (v === SIN_FILTRAR) return SIN_FILTRAR;
-        return SELECTORES.includes(v) ? v : null;
-    } catch (e) { return null; }
+// Dibuja "Todos" + un botón por cada SELECTORES en la barra de filtros. Un
+// solo lugar de origen de la lista (antes estaba repetida a mano en varios
+// <select> del HTML).
+function renderSelectorChips() {
+    const box = document.getElementById('selector-chips');
+    if (!box) return;
+    box.innerHTML = ['', ...SELECTORES].map(s => {
+        const activo = s === selectorFiltroActivo;
+        return `<button class="selector-chip${activo ? ' active' : ''}" onclick="filtrarPorSelector('${s}')">${s || 'Todos'}</button>`;
+    }).join('');
 }
-function guardarMiSelector(valor) {
-    try { localStorage.setItem(MI_SELECTOR_KEY, valor); } catch (e) { /* modo privado: no persiste, no rompe nada */ }
-}
-
-// Ajusta el filtro de selector, la insignia de la barra y el combo de "Nueva Búsqueda"
-// según lo elegido en este navegador. Se llama al entrar al dashboard, y de nuevo cada
-// vez que se elige/cambia el nombre desde "¿Quién sos?".
-function applySelectorScope() {
-    const guardado = isAdmin() ? SIN_FILTRAR : leerMiSelectorGuardado();
-    miSelector = (guardado && guardado !== SIN_FILTRAR) ? guardado : null;
-    renderSelectorBadge();
-    if (!isAdmin() && guardado === null) abrirQuienSosModal();
-}
-
-function renderSelectorBadge() {
-    const selEl   = document.getElementById('f-selector');
-    const badge   = document.getElementById('selector-badge');
-    const badgeNm = document.getElementById('selector-badge-name');
-    if (miSelector) {
-        selEl.innerHTML = `<option value="${miSelector}">${miSelector}</option>`;
-        selEl.value = miSelector;
-        selEl.disabled = true;
-        selEl.title = 'Ves solo las búsquedas de ' + miSelector + ' — tocá la insignia para cambiar';
-        badgeNm.textContent = miSelector;
-        badge.classList.remove('hidden');
-    } else {
-        badge.classList.add('hidden');
-    }
-}
-
-// Abre el selector "¿Quién sos?" (un botón por cada nombre, más la opción de ver
-// todas). Se abre solo la primera vez en un navegador, o a mano tocando la
-// insignia de la barra de filtros.
-function abrirQuienSosModal() {
-    const box = document.getElementById('quien-sos-botones');
-    box.innerHTML = SELECTORES.map(s => `<button class="quien-sos-btn" onclick="elegirMiSelector('${s}')">${s}</button>`).join('');
-    openModal('modal-quien-sos');
-}
-function elegirMiSelector(nombre) {
-    guardarMiSelector(nombre);
-    miSelector = nombre;
-    closeModal('modal-quien-sos');
-    renderSelectorBadge();
+// Filtra el Pipeline (y las fichas de Choferes/Ayudantes) por selector con un
+// clic — se comporta exactamente igual que cualquier otro filtro de la barra.
+function filtrarPorSelector(nombre) {
+    selectorFiltroActivo = nombre;
+    renderSelectorChips();
     applyFilters(); // ya llama refreshView()
-    toast('Viendo las búsquedas de ' + nombre + ' ✓');
 }
-function verTodasLasBusquedas() {
-    guardarMiSelector(SIN_FILTRAR);
-    miSelector = null;
-    closeModal('modal-quien-sos');
-    renderSelectorBadge();
-    applyFilters();
-    toast('Viendo todas las búsquedas');
-}
+renderSelectorChips(); // los chips no dependen de datos: se dibujan apenas carga el script
 
 // Evita que el scroll del mouse sobre un input de fecha/número (foco activo) modifique
 // su valor "de arriba" sin que el usuario se dé cuenta (ej: año 2026 -> 0202 al scrollear).
@@ -426,8 +372,9 @@ async function initDashboard() {
         document.getElementById('nav-stats').classList.add('hidden');
         document.getElementById('nav-charts').classList.add('hidden');
     }
-    applySelectorScope();
-    if (miSelector) applyFilters(); else refreshView(); // applyFilters() ya llama refreshView()
+    selectorFiltroActivo = ''; // arranca sin filtrar, como el resto de los filtros
+    renderSelectorChips();
+    refreshView();
 }
 
 async function initApp() {

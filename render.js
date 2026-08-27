@@ -636,9 +636,9 @@ function renderFichas() {
     let cards = [];
     list.forEach(b => (b.candidatos || []).forEach(c => cards.push({ c, b })));
     // Los postulantes sin búsqueda no heredan el filtro de "list" (no tienen b.selector):
-    // si la vista está acotada a un selector, se filtran por el "selector a cargo" del postulante.
+    // si hay un chip de selector activo, se filtran por el "selector a cargo" del postulante.
     unassignedCandidatos
-        .filter(c => !miSelector || c.selector === miSelector)
+        .filter(c => !selectorFiltroActivo || c.selector === selectorFiltroActivo)
         .forEach(c => cards.push({ c, b: null }));
     if (choferRes) cards = cards.filter(({ c }) => (c.resultado_chofer || 'Pendiente') === choferRes);
 
@@ -678,11 +678,10 @@ function toggleComentarios(id, btn) {
 }
 
 function renderKPIs() {
-    // Los KPI ignoran los filtros "de paso" (estado, depto, búsqueda de texto) a propósito
-    // — muestran el total de la categoría aunque estés mirando solo "Proceso", por ejemplo.
-    // La única excepción es el acotado por selector: eso no es un filtro que se elige y se
-    // saca, es quién sos vos — si tu vista está limitada a tus búsquedas, los KPI también.
-    const cat = busquedas.filter(inCategoria).filter(b => !miSelector || b.selector === miSelector);
+    // Los KPI muestran el total de la categoría a propósito, ignorando los filtros de
+    // paso (selector, estado, depto, búsqueda de texto) — aunque estés mirando solo
+    // "Proceso" o el selector Silvina, acá siempre se ve el total de la categoría.
+    const cat = busquedas.filter(inCategoria);
     const total       = cat.length;
     const proceso     = cat.filter(b => b.status === 'Proceso').length;
     const cerradas    = cat.filter(b => b.status === 'Cerrada').length;
@@ -710,7 +709,7 @@ function applyFiltersDebounced() {
 }
 
 function applyFilters() {
-    const sel    = document.getElementById('f-selector').value;
+    const sel    = selectorFiltroActivo;
     const tipo   = document.getElementById('f-tipo').value;
     const depto  = document.getElementById('f-depto').value;
     const status = document.getElementById('f-status').value;
@@ -739,7 +738,6 @@ function applyFilters() {
 function updateDeptoFilter() {
     const deptos = [...new Set(busquedas
         .filter(inCategoria)
-        .filter(b => !miSelector || b.selector === miSelector)
         .map(b => b.depto).filter(Boolean))];
     const sel = document.getElementById('f-depto');
     const cur = sel.value;

@@ -79,29 +79,17 @@ function showView(v, btn) {
     if (v === 'informe') renderInforme();
     if (v === 'pipeline' || v === 'choferes') {
         currentCategoria = (v === 'choferes') ? 'choferes' : 'general';
-        // Se resetean los filtros "de paso" al cambiar de pestaña, pero NUNCA el de selector
-        // cuando está bloqueado por applySelectorScope() — si no, alcanzaría con ir y volver
-        // de pestaña para que un selector viera las búsquedas de todo el equipo.
+        filteredIds = null;
+        selectorFiltroActivo = '';
+        renderSelectorChips();
         ['f-tipo','f-depto','f-status','f-reabierta','f-alerta72','f-search','f-chofer-resultado'].forEach(fid => { const el = document.getElementById(fid); if (el) el.value = ''; });
-        if (miSelector) {
-            document.getElementById('f-selector').value = miSelector;
-            applyFilters(); // recalcula filteredIds ya acotado a miSelector (llama refreshView adentro)
-        } else {
-            document.getElementById('f-selector').value = '';
-            filteredIds = null;
-            refreshView();
-        }
+        refreshView();
     }
     if (v === 'stats')  renderStats('general');
     if (v === 'charts') { destroyCharts(); renderCharts('general'); }
 }
 function openModal(id = 'modal-nueva') {
     document.getElementById(id).classList.remove('hidden');
-    if (id === 'modal-nueva' && miSelector) {
-        const sel = document.getElementById('n-selector');
-        sel.value = miSelector;
-        sel.disabled = true;
-    }
 }
 function closeModal(id = 'modal-nueva') { document.getElementById(id).classList.add('hidden'); }
 document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.add('hidden'); }));
