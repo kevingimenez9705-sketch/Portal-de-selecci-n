@@ -121,6 +121,7 @@
             <button class="inline-nav-btn" id="nav-choferes" onclick="showView('choferes',this)"><i class="fas fa-truck"></i> Choferes y Ayudantes</button>
             <button class="inline-nav-btn" id="nav-stats" onclick="showView('stats',this)"><i class="fas fa-chart-bar"></i> Estadísticas</button>
             <button class="inline-nav-btn" id="nav-charts" onclick="showView('charts',this)"><i class="fas fa-chart-pie"></i> Gráficos</button>
+            <button class="inline-nav-btn" id="nav-analisis" onclick="showView('analisis',this)"><i class="fas fa-user-check"></i> Análisis</button>
             <button class="inline-nav-btn" id="nav-informe" onclick="showView('informe',this)"><i class="fas fa-file-export"></i> Informe</button>
             <div class="inline-nav-sep"></div>
             <button class="inline-nav-btn" onclick="openModal()"><i class="fas fa-plus"></i> Nueva Búsqueda</button>
@@ -206,6 +207,11 @@
                 <button class="page-tab" onclick="switchChartsTab('selectores',this)">Selectores</button>
             </div>
             <div id="charts-content"></div>
+        </div>
+
+        <!-- ANÁLISIS POR SELECTOR -->
+        <div id="view-analisis" class="hidden">
+            <div id="analisis-content"></div>
         </div>
 
         <!-- INFORME -->

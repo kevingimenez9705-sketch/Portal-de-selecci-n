@@ -385,6 +385,7 @@ async function initDashboard() {
     if (!esAdmin) {
         document.getElementById('nav-stats').classList.add('hidden');
         document.getElementById('nav-charts').classList.add('hidden');
+        document.getElementById('nav-analisis').classList.add('hidden');
     }
     selectorFiltroActivo = ''; // arranca sin filtrar, como el resto de los filtros
     renderSelectorChips();
