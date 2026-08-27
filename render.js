@@ -678,10 +678,10 @@ function toggleComentarios(id, btn) {
 }
 
 function renderKPIs() {
-    // Los KPI muestran el total de la categoría a propósito, ignorando los filtros de
-    // paso (selector, estado, depto, búsqueda de texto) — aunque estés mirando solo
-    // "Proceso" o el selector Silvina, acá siempre se ve el total de la categoría.
-    const cat = busquedas.filter(inCategoria);
+    // Los KPI respetan el chip de selector activo (si hay uno, se ven SUS números),
+    // pero ignoran a propósito el resto de los filtros de paso (estado, depto,
+    // búsqueda de texto) — aunque estés mirando solo "Proceso", acá se ve el total.
+    const cat = busquedas.filter(inCategoria).filter(b => !selectorFiltroActivo || b.selector === selectorFiltroActivo);
     const total       = cat.length;
     const proceso     = cat.filter(b => b.status === 'Proceso').length;
     const cerradas    = cat.filter(b => b.status === 'Cerrada').length;
