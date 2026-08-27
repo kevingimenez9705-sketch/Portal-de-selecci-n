@@ -282,3 +282,89 @@ function renderChartsSelectores() {
     chartInstances['selcand']  = new Chart(document.getElementById('ch-selcand'),  { type: 'bar', data: { labels: activos, datasets: [{ label: 'Candidatos',     data: activos.map(s => data[s].candidatos),     backgroundColor: '#ca6702cc', borderColor: '#ca6702', borderWidth: 2, borderRadius: 6 }] }, options: cOpts });
     chartInstances['selpsico'] = new Chart(document.getElementById('ch-selpsico'), { type: 'bar', data: { labels: activos, datasets: [{ label: 'Psico realizados', data: activos.map(s => data[s].psico_realizado), backgroundColor: '#005f73cc', borderColor: '#005f73', borderWidth: 2, borderRadius: 6 }] }, options: cOpts });
 }
+
+// ══════════════════════════════════════════════
+//  ANÁLISIS POR SELECTOR — pestaña aparte de Gráficos/Informe para no mezclar:
+//  conversión de candidatos, retención a 90 días hábiles, reaperturas, fuera
+//  de plazo y alertas 72hs, todo desglosado por selector, más la evolución
+//  mensual de aperturas vs ingresos efectivos.
+// ══════════════════════════════════════════════
+function renderAnalisis() {
+    const data = {};
+    SELECTORES.forEach(s => { data[s] = {
+        total: 0, candidatos: 0, ofertas: 0,
+        reaperturas: 0, conIngreso: 0, retenidos90: 0,
+        vencidas: 0, alertas72: 0
+    }; });
+    busquedas.forEach(b => {
+        if (!data[b.selector]) return;
+        const d = data[b.selector];
+        d.total++;
+        d.candidatos += b.candidatos.length;
+        d.ofertas += b.candidatos.filter(c => c.estado === 'Oferta').length;
+        if (b.reopened_from) d.reaperturas++;
+        if (b.ingreso) {
+            d.conIngreso++;
+            if (daysDiff(b.ingreso, b.fecha_baja || null) >= 90) d.retenidos90++;
+        }
+        if (b.status === 'Proceso' && daysDiff(b.inicio) > (DEMORA_LIMITE[b.nivel] || 15)) d.vencidas++;
+        if (alertaSectorVencido(b)) d.alertas72++;
+    });
+    const activos     = SELECTORES.filter(s => data[s].total > 0);
+    const conversion  = activos.map(s => data[s].candidatos ? Math.round((data[s].ofertas    / data[s].candidatos) * 100) : 0);
+    const retencion   = activos.map(s => data[s].conIngreso ? Math.round((data[s].retenidos90 / data[s].conIngreso) * 100) : 0);
+
+    // ── Evolución mensual: aperturas (inicio) vs ingresos efectivos (ingreso), últimos 12 meses ──
+    const hoy = new Date();
+    const meses = [];
+    for (let i = 11; i >= 0; i--) {
+        const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+        meses.push({ key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, label: d.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' }) });
+    }
+    const aperturasPorMes = {}; const ingresosPorMes = {};
+    meses.forEach(m => { aperturasPorMes[m.key] = 0; ingresosPorMes[m.key] = 0; });
+    busquedas.forEach(b => {
+        if (b.inicio  && b.inicio.slice(0, 7)  in aperturasPorMes) aperturasPorMes[b.inicio.slice(0, 7)]++;
+        if (b.ingreso && b.ingreso.slice(0, 7) in ingresosPorMes)  ingresosPorMes[b.ingreso.slice(0, 7)]++;
+    });
+
+    document.getElementById('analisis-content').innerHTML = `
+    <div style="font-size:11px;color:var(--muted);margin-bottom:16px;padding:6px 12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;display:inline-block">
+        <i class="fas fa-info-circle"></i> Conversión = candidatos con oferta / candidatos enviados. Retención = ingresos que llegaron a 90 días hábiles en la empresa. Fuera de plazo y Alertas 72hs son del momento actual.
+    </div>
+    <div class="charts-grid">
+        <div class="chart-card"><div class="chart-card-title"><i class="fas fa-percentage"></i> Tasa de Conversión (Oferta / Candidatos enviados)</div><div class="chart-wrap"><canvas id="an-conversion"></canvas></div></div>
+        <div class="chart-card"><div class="chart-card-title"><i class="fas fa-user-check"></i> Retención · 90 días hábiles en empresa</div><div class="chart-wrap"><canvas id="an-retencion"></canvas></div></div>
+        <div class="chart-card"><div class="chart-card-title"><i class="fas fa-redo"></i> Reaperturas</div><div class="chart-wrap"><canvas id="an-reaperturas"></canvas></div></div>
+        <div class="chart-card"><div class="chart-card-title"><i class="fas fa-hourglass-end"></i> Fuera de Plazo (actual)</div><div class="chart-wrap"><canvas id="an-vencidas"></canvas></div></div>
+        <div class="chart-card"><div class="chart-card-title"><i class="fas fa-bell"></i> Alertas 72hs Sector</div><div class="chart-wrap"><canvas id="an-alertas"></canvas></div></div>
+    </div>
+    <div style="margin-top:20px"><div class="chart-card full">
+        <div class="chart-card-title"><i class="fas fa-chart-line"></i> Evolución Mensual — Aperturas vs Ingresos efectivos (últimos 12 meses)</div>
+        <div class="chart-wrap"><canvas id="an-evolucion"></canvas></div>
+    </div></div>
+    <div style="margin-top:20px"><div class="chart-card full"><div class="chart-card-title"><i class="fas fa-table"></i> Panel comparativo por Selector</div>
+        <div style="overflow-x:auto"><table style="width:100%;min-width:760px;border-collapse:collapse">
+            <thead><tr>${['Selector', 'Conversión', 'Retención 90d', 'Reaperturas', 'Fuera de plazo', 'Alertas 72hs'].map(h => `<th style="padding:10px 14px;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);text-align:left">${h}</th>`).join('')}</tr></thead>
+            <tbody>${activos.map((s, i) => `<tr style="background:${i % 2 === 0 ? 'var(--bg)' : 'transparent'}">
+                <td style="padding:10px 14px;font-weight:700">${s}</td>
+                <td style="padding:10px 14px;font-family:'DM Mono',monospace;font-weight:700;color:${!data[s].candidatos ? 'var(--muted)' : conversion[i] >= 30 ? 'var(--green)' : 'var(--red)'}">${data[s].candidatos ? conversion[i] + '%' : '—'}</td>
+                <td style="padding:10px 14px;font-family:'DM Mono',monospace;font-weight:700;color:${!data[s].conIngreso ? 'var(--muted)' : retencion[i] >= 70 ? 'var(--green)' : 'var(--red)'}">${data[s].conIngreso ? retencion[i] + '%' : '—'}</td>
+                <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:${data[s].reaperturas > 0 ? 'var(--red)' : 'var(--muted)'}">${data[s].reaperturas}</td>
+                <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:${data[s].vencidas > 0 ? 'var(--red)' : 'var(--muted)'}">${data[s].vencidas}</td>
+                <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:${data[s].alertas72 > 0 ? 'var(--red)' : 'var(--muted)'}">${data[s].alertas72}</td>
+            </tr>`).join('')}</tbody>
+        </table></div>
+    </div></div>`;
+
+    const cOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0, font: { family: 'DM Mono', size: 10 } }, grid: { color: '#e5e0d8' } }, x: { ticks: { font: { family: 'DM Sans', size: 11 } }, grid: { display: false } } } };
+    chartInstances['anConversion']  = new Chart(document.getElementById('an-conversion'),  { type: 'bar', data: { labels: activos, datasets: [{ data: conversion, backgroundColor: conversion.map(v => v >= 30 ? '#d1e7ddcc' : '#f8d7dacc'), borderColor: conversion.map(v => v >= 30 ? '#0a3622' : '#721c24'), borderWidth: 2, borderRadius: 6 }] }, options: { ...cOpts, scales: { ...cOpts.scales, y: { ...cOpts.scales.y, max: 100 } } } });
+    chartInstances['anRetencion']   = new Chart(document.getElementById('an-retencion'),   { type: 'bar', data: { labels: activos, datasets: [{ data: retencion,  backgroundColor: retencion.map(v  => v >= 70 ? '#d1e7ddcc' : '#f8d7dacc'), borderColor: retencion.map(v  => v >= 70 ? '#0a3622' : '#721c24'), borderWidth: 2, borderRadius: 6 }] }, options: { ...cOpts, scales: { ...cOpts.scales, y: { ...cOpts.scales.y, max: 100 } } } });
+    chartInstances['anReaperturas'] = new Chart(document.getElementById('an-reaperturas'), { type: 'bar', data: { labels: activos, datasets: [{ data: activos.map(s => data[s].reaperturas), backgroundColor: '#9b2226cc', borderColor: '#9b2226', borderWidth: 2, borderRadius: 6 }] }, options: cOpts });
+    chartInstances['anVencidas']    = new Chart(document.getElementById('an-vencidas'),    { type: 'bar', data: { labels: activos, datasets: [{ data: activos.map(s => data[s].vencidas),    backgroundColor: '#ca6702cc', borderColor: '#ca6702', borderWidth: 2, borderRadius: 6 }] }, options: cOpts });
+    chartInstances['anAlertas']     = new Chart(document.getElementById('an-alertas'),     { type: 'bar', data: { labels: activos, datasets: [{ data: activos.map(s => data[s].alertas72),   backgroundColor: '#9b2226cc', borderColor: '#9b2226', borderWidth: 2, borderRadius: 6 }] }, options: cOpts });
+    chartInstances['anEvolucion']   = new Chart(document.getElementById('an-evolucion'),   { type: 'line', data: { labels: meses.map(m => m.label), datasets: [
+        { label: 'Aperturas',                     data: meses.map(m => aperturasPorMes[m.key]), borderColor: '#005f73', backgroundColor: '#005f7333', borderWidth: 2, tension: 0.3, fill: true },
+        { label: 'Ingresos (cierres efectivos)',  data: meses.map(m => ingresosPorMes[m.key]),  borderColor: '#2d6a4f', backgroundColor: '#2d6a4f33', borderWidth: 2, tension: 0.3, fill: true }
+    ] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { font: { family: 'DM Sans', size: 11 } } } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
+}

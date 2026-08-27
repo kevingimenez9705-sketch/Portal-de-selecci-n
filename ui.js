@@ -58,10 +58,10 @@ function descargarInformeCSV() {
 }
 
 function showView(v, btn) {
-    if ((v === 'stats' || v === 'charts') && !isAdmin()) { toast('Acceso restringido a administradores', true); return; }
+    if ((v === 'stats' || v === 'charts' || v === 'analisis') && !isAdmin()) { toast('Acceso restringido a administradores', true); return; }
     // 'pipeline' usa #view-pipeline (tabla); 'choferes' usa #view-fichas (tarjetas)
     const domView = (v === 'choferes') ? 'fichas' : v;
-    ['pipeline', 'fichas', 'stats', 'charts', 'informe'].forEach(id => document.getElementById('view-' + id).classList.toggle('hidden', id !== domView));
+    ['pipeline', 'fichas', 'stats', 'charts', 'analisis', 'informe'].forEach(id => document.getElementById('view-' + id).classList.toggle('hidden', id !== domView));
     document.querySelectorAll('.inline-nav-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -70,6 +70,7 @@ function showView(v, btn) {
         choferes: ['Choferes y Ayudantes', 'Fichas de postulantes a chofer y ayudante'],
         stats:    ['Estadísticas', 'Análisis de rendimiento y métricas'],
         charts:   ['Gráficos', 'Visualizaciones interactivas del pipeline'],
+        analisis: ['Análisis por Selector', 'Conversión, retención, reaperturas, plazos y evolución mensual'],
         informe:  ['Informe', 'Resumen y exportación de datos para reportes']
     };
     document.getElementById('main-title').textContent = titles[v][0];
@@ -85,8 +86,9 @@ function showView(v, btn) {
         ['f-tipo','f-depto','f-status','f-reabierta','f-alerta72','f-search','f-chofer-resultado'].forEach(fid => { const el = document.getElementById(fid); if (el) el.value = ''; });
         refreshView();
     }
-    if (v === 'stats')  renderStats('general');
-    if (v === 'charts') { destroyCharts(); renderCharts('general'); }
+    if (v === 'stats')    renderStats('general');
+    if (v === 'charts')   { destroyCharts(); renderCharts('general'); }
+    if (v === 'analisis') { destroyCharts(); renderAnalisis(); }
 }
 function openModal(id = 'modal-nueva') {
     document.getElementById(id).classList.remove('hidden');
