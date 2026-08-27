@@ -75,14 +75,16 @@ function renderChartsGeneral() {
     })).sort((a, b) => b.dias - a.dias);
     // Distribución por rango en vez de una barra por persona: con pocos ingresos una
     // barra por persona se lee bien, pero no escala — con cientos de ingresos se vuelve
-    // una lista infinita. Los rangos usan los mismos umbrales que ya usaba el color
-    // (22/65/130 hd ≈ 1/3/6 meses).
-    const permRangos  = { '0–21hd (–1m)': 0, '22–64hd (1–3m)': 0, '65–129hd (3–6m)': 0, '130+hd (6m+)': 0 };
+    // una lista infinita. Los rangos están alineados al corte real de 90 días hábiles
+    // (el mismo que define "Finalizada"), no a meses genéricos — así el bloque de 90+
+    // coincide visualmente con quién ya "cumplió" retención.
+    const permRangos  = { '0–29hd': 0, '30–59hd': 0, '60–89hd': 0, '90–119hd (cumplió)': 0, '120hd+ (cumplió)': 0 };
     permData.forEach(p => {
-        if (p.dias < 22) permRangos['0–21hd (–1m)']++;
-        else if (p.dias < 65) permRangos['22–64hd (1–3m)']++;
-        else if (p.dias < 130) permRangos['65–129hd (3–6m)']++;
-        else permRangos['130+hd (6m+)']++;
+        if (p.dias < 30) permRangos['0–29hd']++;
+        else if (p.dias < 60) permRangos['30–59hd']++;
+        else if (p.dias < 90) permRangos['60–89hd']++;
+        else if (p.dias < 120) permRangos['90–119hd (cumplió)']++;
+        else permRangos['120hd+ (cumplió)']++;
     });
     // Lo accionable no es ver a TODOS, es ver a los de menor permanencia (riesgo de fuga temprana).
     const permMenorPermanencia = [...permData].sort((a, b) => a.dias - b.dias).slice(0, 5);
@@ -162,7 +164,7 @@ function renderChartsGeneral() {
         { label: 'Límite (hd)', data: demoraPorNivel.map(d => d.limite), backgroundColor: '#7a716633', borderColor: '#7a7166', borderWidth: 2, borderRadius: 6 }
     ] }, options: { ...cd, plugins: { legend: { labels: { font: { family: 'DM Sans', size: 11 } } } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
     if (permData.length > 0) {
-        chartInstances['perm'] = new Chart(document.getElementById('ch-perm'), { type: 'bar', data: { labels: Object.keys(permRangos), datasets: [{ label: 'Personas', data: Object.values(permRangos), backgroundColor: ['#f8d7dacc','#fff3cdcc','#cfe2ffcc','#d1e7ddcc'], borderColor: ['#721c24','#664d03','#0a367a','#0a3622'], borderWidth: 2, borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
+        chartInstances['perm'] = new Chart(document.getElementById('ch-perm'), { type: 'bar', data: { labels: Object.keys(permRangos), datasets: [{ label: 'Personas', data: Object.values(permRangos), backgroundColor: ['#f8d7dacc','#ffe1b3cc','#fff3cdcc','#d1e7ddcc','#c3e6d3cc'], borderColor: ['#721c24','#7c3d00','#664d03','#0a3622','#0a3622'], borderWidth: 2, borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
     }
 }
 
