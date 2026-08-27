@@ -9,15 +9,12 @@ function switchStatsTab(tab, btn) {
 function renderStats(tab) {
     const subset = tab === 'general' ? busquedas : busquedas.filter(b => b.tipo === (tab === 'staff' ? 'Staff' : 'Fábrica'));
     const total = subset.length || 1;
-    const bySelector = {};
-    subset.forEach(b => {
-        if (!bySelector[b.selector]) bySelector[b.selector] = { total: 0, cerradas: 0, dias: [] };
-        bySelector[b.selector].total++;
-        if (b.status === 'Cerrada' || b.status === 'Finalizada') bySelector[b.selector].cerradas++;
-        bySelector[b.selector].dias.push(b.cp ? daysDiff(b.inicio, b.cp) : (b.ingreso ? daysDiff(b.inicio, b.ingreso) : daysDiff(b.inicio)));
-    });
+    // "Rendimiento por Selector" y "Por Estado" ya no van acá — quedaban duplicados con
+    // la tabla comparativa de Gráficos → Selectores y con el KPI-row de arriba de cada
+    // pestaña, mostrando el mismo número en formatos distintos. Estadísticas se queda con
+    // lo que no está en ningún otro lado: Por Departamento, Psicotécnicos por Selector y
+    // el Resumen General.
     const byDepto  = {}; subset.forEach(b => { byDepto[b.depto]   = (byDepto[b.depto]   || 0) + 1; });
-    const byStatus = {}; subset.forEach(b => { byStatus[b.status] = (byStatus[b.status] || 0) + 1; });
     const psicoBySelector = {};
     subset.forEach(b => b.psicotecnicos.forEach(p => {
         const k = p.selector_psico || '(sin asignar)';
@@ -27,20 +24,10 @@ function renderStats(tab) {
         if (p.resultado === 'No Apto') psicoBySelector[k].noApto++;
     }));
     const totalPsicoSub = subset.reduce((a, b) => a + b.psicotecnicos.length, 0);
-    const selectorHtml = Object.entries(bySelector).map(([name, d]) => {
-        const p   = Math.round((d.cerradas / Math.max(d.total, 1)) * 100);
-        const avg = d.dias.length ? Math.round(d.dias.reduce((a, b) => a + b, 0) / d.dias.length) : 0;
-        return `<div class="bar-row"><div class="bar-row-top"><span>${name}</span><span>${d.cerradas}/${d.total} cerradas · ⌀ ${avg}hd</span></div><div class="bar-track"><div class="bar-fill ${tab === 'staff' ? 'bar-fill-staff' : tab === 'fabrica' ? 'bar-fill-fab' : ''}" style="width:${p}%"></div></div></div>`;
-    }).join('');
     const deptoHtml = Object.entries(byDepto).map(([name, c]) => {
         const p = Math.round((c / total) * 100);
         return `<div class="bar-row"><div class="bar-row-top"><span>${name}</span><span>${c} (${p}%)</span></div><div class="bar-track"><div class="bar-fill" style="width:${p}%"></div></div></div>`;
     }).join('');
-    const statusHtml = Object.entries(byStatus).map(([s, c]) => `
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg);border-radius:8px;margin-bottom:6px">
-            <span class="tag ${tagClass(s)}">${s}</span>
-            <span style="font-family:'DM Mono',monospace;font-weight:600;font-size:15px">${c}</span>
-        </div>`).join('');
     const psicoSelHtml = Object.entries(psicoBySelector).length > 0
         ? Object.entries(psicoBySelector).sort((a, b) => b[1].total - a[1].total).map(([sel, d]) => {
             const p = Math.round((d.total / Math.max(totalPsicoSub, 1)) * 100);
@@ -49,9 +36,7 @@ function renderStats(tab) {
         : '<span class="tip">Sin datos de psicotécnicos asignados</span>';
     document.getElementById('stats-content').innerHTML = `
         <div class="stats-grid">
-            <div class="stat-card"><div class="stat-card-title">Rendimiento por Selector</div>${selectorHtml || '<span class="tip">Sin datos</span>'}</div>
             <div class="stat-card"><div class="stat-card-title">Por Departamento</div>${deptoHtml || '<span class="tip">Sin datos</span>'}</div>
-            <div class="stat-card"><div class="stat-card-title">Por Estado</div>${statusHtml || '<span class="tip">Sin datos</span>'}</div>
             <div class="stat-card"><div class="stat-card-title"><i class="fas fa-brain" style="margin-right:5px;color:var(--blue)"></i>Psicotécnicos por Selector</div>${psicoSelHtml}</div>
             <div class="stat-card"><div class="stat-card-title">Resumen General</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -88,6 +73,19 @@ function renderChartsGeneral() {
         nombre: (b.ingreso_nombre && b.ingreso_nombre.trim()) ? b.ingreso_nombre : (b.puesto || '(sin nombre)'),
         dias: daysDiff(b.ingreso, b.fecha_baja || null), puesto: b.puesto
     })).sort((a, b) => b.dias - a.dias);
+    // Distribución por rango en vez de una barra por persona: con pocos ingresos una
+    // barra por persona se lee bien, pero no escala — con cientos de ingresos se vuelve
+    // una lista infinita. Los rangos usan los mismos umbrales que ya usaba el color
+    // (22/65/130 hd ≈ 1/3/6 meses).
+    const permRangos  = { '0–21hd (–1m)': 0, '22–64hd (1–3m)': 0, '65–129hd (3–6m)': 0, '130+hd (6m+)': 0 };
+    permData.forEach(p => {
+        if (p.dias < 22) permRangos['0–21hd (–1m)']++;
+        else if (p.dias < 65) permRangos['22–64hd (1–3m)']++;
+        else if (p.dias < 130) permRangos['65–129hd (3–6m)']++;
+        else permRangos['130+hd (6m+)']++;
+    });
+    // Lo accionable no es ver a TODOS, es ver a los de menor permanencia (riesgo de fuga temprana).
+    const permMenorPermanencia = [...permData].sort((a, b) => a.dias - b.dias).slice(0, 5);
 
     // ── Tasa de cobertura (búsquedas cerradas/finalizadas sobre el total) — Staff = personal de Oficina ──
     const coberturaStaff   = staff   ? Math.round((busquedas.filter(b => b.tipo === 'Staff'   && (b.status === 'Cerrada' || b.status === 'Finalizada')).length / staff)   * 100) : 0;
@@ -144,16 +142,13 @@ function renderChartsGeneral() {
     </div>
     <div style="margin-top:20px">
         <div class="chart-card">
-            <details id="perm-details" ${permData.length > 0 && permData.length <= 8 ? 'open' : ''} ontoggle="if(this.open && chartInstances['perm']) setTimeout(()=>chartInstances['perm'].resize(),50)">
-                <summary style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">
-                    <i class="fas fa-chevron-right"></i> <i class="fas fa-user-clock"></i> Permanencia por Persona (días hábiles en empresa) · ${permData.length} ingresos
-                </summary>
-                <div style="margin-top:14px">
-                ${permData.length > 0
-                    ? `<div style="position:relative;height:${Math.max(180, permData.length * 28)}px"><canvas id="ch-perm"></canvas></div>`
-                    : `<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Sin ingresos registrados aún</div>`}
-                </div>
-            </details>
+            <div class="chart-card-title"><i class="fas fa-user-clock"></i> Distribución de Permanencia (días hábiles en empresa) · ${permData.length} ingresos</div>
+            ${permData.length > 0 ? `
+            <div class="chart-wrap"><canvas id="ch-perm"></canvas></div>
+            <div style="margin-top:16px">
+                <div class="section-hdr" style="margin-bottom:8px">Menor permanencia (posible riesgo)</div>
+                ${permMenorPermanencia.map(p => `<div class="bar-row"><div class="bar-row-top"><span>${p.nombre} <span style="font-size:11px;color:var(--muted)">· ${p.puesto}</span></span><span style="font-family:'DM Mono',monospace;font-weight:700;color:${p.dias < 22 ? 'var(--red)' : 'var(--muted)'}">${p.dias}hd</span></div></div>`).join('')}
+            </div>` : `<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Sin ingresos registrados aún</div>`}
         </div>
     </div>`;
 
@@ -167,8 +162,7 @@ function renderChartsGeneral() {
         { label: 'Límite (hd)', data: demoraPorNivel.map(d => d.limite), backgroundColor: '#7a716633', borderColor: '#7a7166', borderWidth: 2, borderRadius: 6 }
     ] }, options: { ...cd, plugins: { legend: { labels: { font: { family: 'DM Sans', size: 11 } } } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
     if (permData.length > 0) {
-        const permColors = permData.map(p => p.dias >= 130 ? '#2d6a4f' : p.dias >= 65 ? '#005f73' : p.dias >= 22 ? '#ca6702' : '#9b2226');
-        chartInstances['perm'] = new Chart(document.getElementById('ch-perm'), { type: 'bar', data: { labels: permData.map(p => p.nombre), datasets: [{ label: 'Días hábiles en empresa', data: permData.map(p => p.dias), backgroundColor: permColors.map(c => c + 'cc'), borderColor: permColors, borderWidth: 2, borderRadius: 5 }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => { const p = permData[ctx.dataIndex]; const m = p.dias >= 130 ? ' 🏆 6m+' : p.dias >= 65 ? ' ✓ 3m+' : p.dias >= 22 ? ' 1m+' : ''; return ` ${p.dias} días háb. en empresa${m}`; }, afterLabel: ctx => ` Puesto: ${permData[ctx.dataIndex].puesto}` } } }, scales: { x: { beginAtZero: true, ticks: { precision: 0, font: { family: 'DM Mono', size: 10 } }, grid: { color: '#e5e0d8' } }, y: { ticks: { font: { family: 'DM Sans', size: 11 } }, grid: { display: false } } } } });
+        chartInstances['perm'] = new Chart(document.getElementById('ch-perm'), { type: 'bar', data: { labels: Object.keys(permRangos), datasets: [{ label: 'Personas', data: Object.values(permRangos), backgroundColor: ['#f8d7dacc','#fff3cdcc','#cfe2ffcc','#d1e7ddcc'], borderColor: ['#721c24','#664d03','#0a367a','#0a3622'], borderWidth: 2, borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
     }
 }
 
@@ -186,6 +180,13 @@ function renderChartsTiempo() {
     const byNivel = {};
     cerradas.forEach(b => { if (!byNivel[b.nivel]) byNivel[b.nivel] = []; byNivel[b.nivel].push(daysDiff(b.inicio, b.ingreso)); });
     const nivelAvg = Object.entries(byNivel).map(([n, d]) => ({ nivel: n, avg: Math.round(d.reduce((a, c) => a + c, 0) / d.length), limite: DEMORA_LIMITE[n] || 15 }));
+
+    // ── Ranking de cierres: más rápidas y más lentas (misma lista, ordenada una vez) ──
+    const rankingRows = [...cerradas].sort((a, b) => daysDiff(a.inicio, a.ingreso) - daysDiff(b.inicio, b.ingreso));
+    const rankRowHtml = (b, i) => {
+        const d = daysDiff(b.inicio, b.ingreso), lim = DEMORA_LIMITE[b.nivel] || 15;
+        return `<div class="rank-row"><span class="rank-pos">#${i + 1}</span><span class="rank-name">${b.puesto} <span style="font-size:11px;color:var(--muted)">· ${b.selector}</span></span><span class="rank-stat" style="color:${d <= lim ? 'var(--green)' : 'var(--red)'}">${d}hd</span><span style="font-size:11px;color:var(--muted);margin-left:6px">lim. ${lim}hd</span></div>`;
+    };
 
     // ── % de búsquedas cerradas dentro de plazo vs excedidas ──
     const enTiempo    = cerradas.filter(b => daysDiff(b.inicio, b.ingreso) <= (DEMORA_LIMITE[b.nivel] || 15)).length;
@@ -225,9 +226,14 @@ function renderChartsTiempo() {
         <div class="chart-card"><div class="chart-card-title"><i class="fas fa-check-double"></i> % En Tiempo vs Excedidas</div><div class="chart-wrap-sm"><canvas id="ch-entiempo"></canvas></div></div>
         <div class="chart-card full"><div class="chart-card-title"><i class="fas fa-people-arrows"></i> Demora: Equipo (envío al sector) vs Cliente Interno (decisión del sector)</div><div class="chart-wrap"><canvas id="ch-equipocliente"></canvas></div></div>
     </div>
-    <div style="margin-top:20px"><div class="chart-card"><div class="chart-card-title"><i class="fas fa-list-ol"></i> Ranking más rápidas</div>
-    <div>${cerradas.sort((a, b) => daysDiff(a.inicio, a.ingreso) - daysDiff(b.inicio, b.ingreso)).slice(0, 6).map((b, i) => { const d = daysDiff(b.inicio, b.ingreso); const lim = DEMORA_LIMITE[b.nivel] || 15; return `<div class="rank-row"><span class="rank-pos">#${i + 1}</span><span class="rank-name">${b.puesto} <span style="font-size:11px;color:var(--muted)">· ${b.selector}</span></span><span class="rank-stat" style="color:${d <= lim ? 'var(--green)' : 'var(--red)'}">${d}hd</span><span style="font-size:11px;color:var(--muted);margin-left:6px">lim. ${lim}hd</span></div>`; }).join('')}</div>
-    </div></div>`;
+    <div class="charts-grid-2" style="margin-top:20px">
+        <div class="chart-card"><div class="chart-card-title"><i class="fas fa-list-ol"></i> Ranking más rápidas</div>
+        <div>${rankingRows.slice(0, 6).map(rankRowHtml).join('')}</div>
+        </div>
+        <div class="chart-card"><div class="chart-card-title"><i class="fas fa-triangle-exclamation"></i> Ranking más lentas</div>
+        <div>${[...rankingRows].reverse().slice(0, 6).map(rankRowHtml).join('')}</div>
+        </div>
+    </div>`;
     chartInstances['dist']     = new Chart(document.getElementById('ch-dist'),     { type: 'bar', data: { labels: Object.keys(rangos), datasets: [{ label: 'Búsquedas', data: Object.values(rangos), backgroundColor: ['#d1e7dd','#cfe2ff','#fff3cd','#ffd6a5','#f8d7da'], borderColor: ['#0a3622','#0a367a','#664d03','#7c3d00','#721c24'], borderWidth: 2, borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
     chartInstances['seltime']  = new Chart(document.getElementById('ch-seltime'),  { type: 'bar', data: { labels: selAvg.map(s => s.sel), datasets: [{ label: 'Días háb. promedio', data: selAvg.map(s => s.avg), backgroundColor: selAvg.map(s => s.avg > 14 ? '#f8d7da' : '#d1e7dd'), borderColor: selAvg.map(s => s.avg > 14 ? '#721c24' : '#0a3622'), borderWidth: 2, borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });
     chartInstances['nivellib'] = new Chart(document.getElementById('ch-nivellib'), { type: 'bar', data: { labels: nivelAvg.map(n => n.nivel), datasets: [{ label: 'Tiempo real (hd)', data: nivelAvg.map(n => n.avg), backgroundColor: '#005f73cc', borderRadius: 4 }, { label: 'Límite establecido (hd)', data: nivelAvg.map(n => n.limite), backgroundColor: '#9b222633', borderColor: '#9b2226', borderWidth: 2, borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } } });

@@ -220,9 +220,15 @@
             <div class="chart-card" style="margin-top:20px">
                 <div class="chart-card-title"><i class="fas fa-file-csv"></i> Exportar informe completo</div>
                 <p style="font-size:12px;color:var(--muted);margin-bottom:12px;max-width:640px">
-                    Descarga un CSV con todas las búsquedas: fechas, demora total y ajustada (con descuentos justificados), estado, cobertura, alertas de 72hs y datos incompletos — listo para abrir en Excel o Google Sheets.
+                    Descarga un CSV con las búsquedas: fechas, demora total y ajustada (con descuentos justificados), estado, cobertura, alertas de 72hs y datos incompletos — listo para abrir en Excel o Google Sheets.
                 </p>
-                <button class="btn-primary" onclick="descargarInformeCSV()"><i class="fas fa-download"></i> Descargar CSV</button>
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                    <select class="form-input" id="informe-selector-filter" style="max-width:220px">
+                        <option value="">Todos los selectores</option>
+                        <option>Silvina</option><option>Romina</option><option>Claudia</option><option>Soledad</option><option>Juan Pablo</option><option>Angel</option><option>Noelia</option><option>Milagros</option>
+                    </select>
+                    <button class="btn-primary" onclick="descargarInformeCSV()"><i class="fas fa-download"></i> Descargar CSV</button>
+                </div>
             </div>
         </div>
     </main>
