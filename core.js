@@ -317,9 +317,9 @@ async function loadDataFull() {
 // 6 tablas relacionadas de TODAS las búsquedas — mucho más rápido para una edición suelta.
 // Sin id (o si la búsqueda no se encuentra en memoria), recarga todo como antes.
 async function loadData(scopeId = null) {
-    if (!scopeId) { await loadDataFull(); return; }
+    if (!scopeId) { await loadDataFull(); await checkAndFinalizeSearches(); return; }
     const idx = busquedas.findIndex(b => b.id === scopeId);
-    if (idx === -1) { await loadDataFull(); return; }
+    if (idx === -1) { await loadDataFull(); await checkAndFinalizeSearches(); return; }
     const { data, error } = await sb
         .from('busquedas')
         .select(BUSQUEDA_SELECT)
@@ -328,6 +328,9 @@ async function loadData(scopeId = null) {
     if (error) { toast('Error al recargar', true); return; }
     if (!data) { busquedas.splice(idx, 1); return; } // se borró entretanto
     busquedas[idx] = mapRow(data);
+    // Cada recarga vuelve a chequear los 90 días hábiles: así una búsqueda que recién
+    // los cumplió se marca "Finalizada" y entra en el indicador sin esperar a un login nuevo.
+    await checkAndFinalizeSearches();
 }
 
 // Busca a qué búsqueda pertenece un candidato/psicotécnico/verificación/comentario/archivo
@@ -374,8 +377,7 @@ async function initDashboard() {
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('loading-screen').classList.remove('hidden');
     await loadProfile();
-    await loadData();
-    await checkAndFinalizeSearches();
+    await loadData(); // ya incluye el chequeo de los 90 días hábiles (ver loadData)
     document.getElementById('loading-screen').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
     const esAdmin = isAdmin();
