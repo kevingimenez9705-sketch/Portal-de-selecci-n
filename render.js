@@ -688,6 +688,9 @@ function renderKPIs() {
     const proceso           = procesoActivas + procesoReabiertas;
     const cerradas    = cat.filter(b => b.status === 'Cerrada').length;
     const finalizadas = cat.filter(b => b.status === 'Finalizada').length;
+    // Finalizada es, en el fondo, una Cerrada que ya pasó los 90 días hábiles en la empresa —
+    // esta tarjeta muestra el total combinado de las dos, ya que ambas son búsquedas cubiertas.
+    const cerradasTotal = cerradas + finalizadas;
     const vencidas    = cat.filter(b => { const d = daysDiff(b.inicio); return d > (DEMORA_LIMITE[b.nivel] || 15) && b.status === 'Proceso'; }).length;
     const reabiertas  = cat.filter(b => b.reopened_from).length;
     const alertas72   = cat.filter(alertaSectorVencido).length;
@@ -696,6 +699,7 @@ function renderKPIs() {
         <div class="kpi"><div class="kpi-num" style="color:var(--blue)">${proceso}</div><div class="kpi-lbl">En proceso</div><div class="kpi-sub">${procesoActivas} activas + ${procesoReabiertas} reabiertas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--green)">${cerradas}</div><div class="kpi-lbl">Cerradas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:#92400e">${finalizadas}</div><div class="kpi-lbl">Finalizadas</div></div>
+        <div class="kpi"><div class="kpi-num" style="color:var(--green)">${cerradasTotal}</div><div class="kpi-lbl">Cerradas + Finalizadas</div><div class="kpi-sub">${cerradas} cerradas + ${finalizadas} finalizadas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--red)">${vencidas}</div><div class="kpi-lbl">Fuera de plazo</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--blue)">${reabiertas}</div><div class="kpi-lbl">Reabiertas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--red)">${alertas72}</div><div class="kpi-lbl">Alertas 72hs sector</div></div>`;
