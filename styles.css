@@ -165,7 +165,8 @@
         .cand-tl-badge-wait { background: #dbeafe; color: #1e40af; }
         .cand-tl-badge-done { background: #d1fae5; color: #065f46; }
         .cand-tl-badge-rejected { background: #f8d7da; color: #721c24; }
-        .cand-tl-badge-alerta { background: var(--danger); color: var(--danger-text); animation: alertapulse 1.6s infinite; }
+        .cand-tl-badge-alerta { position: relative; background: var(--danger); color: var(--danger-text); }
+        .cand-tl-badge-alerta::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: var(--danger); animation: alertapulse 1.6s infinite; pointer-events: none; }
         .cand-tl-desc { font-size: 9px; font-weight: 600; opacity: .8; }
         .cand-justificar { margin-top: 5px; }
         .cand-justificar summary { font-size: 10px !important; color: var(--muted); }
@@ -277,7 +278,10 @@
         .dm-row.dm-ajustado .dm-val { color: var(--ok-text); }
         .dm-row.dm-ajustado .dm-lbl { color: var(--ok-text); opacity: .75; }
         .dm-row.dm-ajustado .dm-rango { color: var(--ok-text); opacity: .7; }
-        @keyframes alertapulse { 0%,100% { box-shadow: 0 0 0 0 rgba(155,34,38,.25); } 50% { box-shadow: 0 0 0 5px rgba(155,34,38,0); } }
+        /* transform+opacity en vez de box-shadow: misma animación pero la resuelve el
+           compositor (GPU), no el hilo principal — con varias alertas 72hs pulsando
+           a la vez en la tabla, box-shadow forzaba repintado continuo y se sentía tildado. */
+        @keyframes alertapulse { 0% { transform: scale(1); opacity: .55; } 100% { transform: scale(1.7); opacity: 0; } }
         .dm-live { font-size: 6px; color: var(--blue); margin-left: 5px; animation: dmpulse 1.4s infinite; }
         @keyframes dmpulse { 0%,100% { opacity: 1; } 50% { opacity: .15; } }
 
