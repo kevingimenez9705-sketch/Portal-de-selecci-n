@@ -107,16 +107,21 @@ function workingDaysDiff(from, to = null) {
     const end   = to ? new Date(to + 'T00:00:00') : new Date();
     start.setHours(0, 0, 0, 0);
     end.setHours(0, 0, 0, 0);
-    if (end <= start) return 0;
-    let count = 0;
-    const cur = new Date(start);
-    cur.setDate(cur.getDate() + 1);
-    while (cur <= end) {
-        const dow = cur.getDay();
-        if (dow !== 0 && dow !== 6) count++;
-        cur.setDate(cur.getDate() + 1);
+    if (isNaN(start) || isNaN(end) || end <= start) return 0;
+    // Cálculo directo (sin iterar día por día): una fecha con año corrupto puede colar
+    // como Date válida aunque el salto sea de miles de años — iterar uno por uno ahí
+    // cuelga la pestaña entera (justo lo que pasaba). Con esta cuenta es siempre O(1).
+    const MS_DIA = 86400000;
+    const totalDias = Math.round((end - start) / MS_DIA);
+    if (totalDias > 200000) return 0; // ~550 años: dato corrupto, no una demora real
+    const count = Math.floor(totalDias / 7) * 5;
+    let dow = (start.getDay() + 1) % 7; // primer día después de "start"
+    let extra = 0;
+    for (let i = 0; i < totalDias % 7; i++) {
+        if (dow !== 0 && dow !== 6) extra++;
+        dow = (dow + 1) % 7;
     }
-    return count;
+    return count + extra;
 }
 function daysDiff(from, to = null) { return workingDaysDiff(from, to); }
 
