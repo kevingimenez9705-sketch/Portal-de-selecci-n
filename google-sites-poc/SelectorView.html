@@ -2,15 +2,8 @@
 <html>
 <head><?!= include('Styles'); ?></head>
 <body>
-  <a class="back" href="<?= baseUrl ?>">← Vistazo general</a>
   <h1>Búsquedas de <?= selector ?></h1>
   <p class="sub">Solo vos podés editar estas búsquedas — el servidor lo valida, no es solo visual.</p>
-
-  <div class="selectores">
-    <? selectores.forEach(function(s) { ?>
-      <a class="<?= s === selector ? 'mine' : '' ?>" href="<?= baseUrl ?>?selector=<?= encodeURIComponent(s) ?>"><?= s ?></a>
-    <? }); ?>
-  </div>
 
   <div id="msg" class="msg"></div>
 
