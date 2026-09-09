@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head><base target="_top"><?!= include('Styles'); ?></head>
+<body>
+  <a class="back" href="<?= baseUrl ?>">← Vistazo general</a>
+  <h1>Búsquedas de <?= selector ?></h1>
+  <p class="sub">Solo vos podés editar estas búsquedas — el servidor lo valida, no es solo visual.</p>
+
+  <div class="selectores">
+    <? selectores.forEach(function(s) { ?>
+      <a class="<?= s === selector ? 'mine' : '' ?>" href="<?= baseUrl ?>?selector=<?= encodeURIComponent(s) ?>"><?= s ?></a>
+    <? }); ?>
+  </div>
+
+  <div id="msg" class="msg"></div>
+
+  <div class="row">
+    <button id="btn-nueva">+ Nueva búsqueda</button>
+  </div>
+  <div id="form-nueva" class="card" style="display:none">
+    <h3>Nueva búsqueda</h3>
+    <div class="row">
+      <input id="n-puesto" placeholder="Puesto">
+      <select id="n-nivel"><option>Gerente/Director</option><option>Jefe/Encargado</option><option selected>Otros</option></select>
+      <button id="n-guardar">Guardar</button>
+      <button class="secondary" id="n-cancelar">Cancelar</button>
+    </div>
+  </div>
+
+  <div id="lista"></div>
+
+  <script>
+    const SELECTOR = <?!= JSON.stringify(selector) ?>;
+
+    function msg(text, ok) {
+      const el = document.getElementById('msg');
+      el.textContent = text; el.className = 'msg ' + (ok ? 'ok' : 'err'); el.style.display = 'block';
+      setTimeout(() => el.style.display = 'none', 4000);
+    }
+
+    function cargar() {
+      google.script.run.withSuccessHandler(render).withFailureHandler(e => msg(e.message, false))
+        .listBusquedasPorSelector_(SELECTOR);
+    }
+
+    function render(busquedas) {
+      const cont = document.getElementById('lista');
+      cont.innerHTML = '';
+      if (!busquedas.length) { cont.innerHTML = '<p class="sub">Todavía no tenés búsquedas cargadas.</p>'; return; }
+      busquedas.forEach(b => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <h3>#${b.numero} — ${b.puesto || '(sin puesto)'} <span class="status ${b.status}">${b.status}</span></h3>
+          <div class="meta">Nivel: ${b.nivel || '—'} · Iniciada: ${b.inicio || '—'}</div>
+          <div class="row">
+            <select data-action="status" data-id="${b.id}">
+              ${['Proceso','Cerrada','Sustituida','Finalizada'].map(s => `<option ${s===b.status?'selected':''}>${s}</option>`).join('')}
+            </select>
+            <button data-action="reabrir" data-id="${b.id}" class="secondary">Reabrir</button>
+          </div>
+          <div class="row">
+            <input type="text" placeholder="Nuevo candidato…" data-action="cand-nombre" data-id="${b.id}">
+            <button data-action="cand-agregar" data-id="${b.id}">Agregar candidato</button>
+          </div>
+          <div class="row">
+            <input type="text" placeholder="Comentario de seguimiento…" data-action="coment-texto" data-id="${b.id}">
+            <button data-action="coment-agregar" data-id="${b.id}">Guardar comentario</button>
+          </div>
+          <div class="row">
+            <input type="file" accept="application/pdf" data-action="pdf-file" data-id="${b.id}">
+          </div>
+        `;
+        cont.appendChild(card);
+      });
+      cont.querySelectorAll('[data-action="status"]').forEach(el => el.addEventListener('change', onStatusChange));
+      cont.querySelectorAll('[data-action="reabrir"]').forEach(el => el.addEventListener('click', onReabrir));
+      cont.querySelectorAll('[data-action="cand-agregar"]').forEach(el => el.addEventListener('click', onAgregarCandidato));
+      cont.querySelectorAll('[data-action="coment-agregar"]').forEach(el => el.addEventListener('click', onAgregarComentario));
+      cont.querySelectorAll('[data-action="pdf-file"]').forEach(el => el.addEventListener('change', onSubirPDF));
+    }
+
+    function onStatusChange(e) {
+      const id = e.target.dataset.id, val = e.target.value;
+      google.script.run.withSuccessHandler(() => { msg('Estado actualizado ✓', true); cargar(); })
+        .withFailureHandler(err => msg(err.message, false))
+        .actualizarCampoBusqueda_(SELECTOR, id, 'status', val);
+    }
+
+    function onReabrir(e) {
+      const id = e.target.dataset.id;
+      google.script.run.withSuccessHandler(() => { msg('Búsqueda reabierta ✓', true); cargar(); })
+        .withFailureHandler(err => msg(err.message, false))
+        .reabrirBusqueda_(SELECTOR, id);
+    }
+
+    function onAgregarCandidato(e) {
+      const id = e.target.dataset.id;
+      const input = document.querySelector(`[data-action="cand-nombre"][data-id="${id}"]`);
+      if (!input.value.trim()) return;
+      google.script.run.withSuccessHandler(() => { msg('Candidato agregado ✓', true); input.value=''; })
+        .withFailureHandler(err => msg(err.message, false))
+        .agregarCandidato_(SELECTOR, id, input.value.trim());
+    }
+
+    function onAgregarComentario(e) {
+      const id = e.target.dataset.id;
+      const input = document.querySelector(`[data-action="coment-texto"][data-id="${id}"]`);
+      if (!input.value.trim()) return;
+      google.script.run.withSuccessHandler(() => { msg('Comentario guardado ✓', true); input.value=''; })
+        .withFailureHandler(err => msg(err.message, false))
+        .agregarComentario_(SELECTOR, id, input.value.trim());
+    }
+
+    function onSubirPDF(e) {
+      const id = e.target.dataset.id;
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function() {
+        const base64 = reader.result.split(',')[1];
+        google.script.run.withSuccessHandler(() => msg('PDF subido a Drive ✓', true))
+          .withFailureHandler(err => msg(err.message, false))
+          .subirPDF_(SELECTOR, id, file.name, base64, file.type);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    document.getElementById('btn-nueva').addEventListener('click', () => {
+      document.getElementById('form-nueva').style.display = 'block';
+    });
+    document.getElementById('n-cancelar').addEventListener('click', () => {
+      document.getElementById('form-nueva').style.display = 'none';
+    });
+    document.getElementById('n-guardar').addEventListener('click', () => {
+      const puesto = document.getElementById('n-puesto').value.trim();
+      const nivel = document.getElementById('n-nivel').value;
+      if (!puesto) return msg('Falta el puesto', false);
+      google.script.run.withSuccessHandler(() => {
+        msg('Búsqueda creada ✓', true);
+        document.getElementById('form-nueva').style.display = 'none';
+        document.getElementById('n-puesto').value = '';
+        cargar();
+      }).withFailureHandler(err => msg(err.message, false))
+        .crearBusqueda_(SELECTOR, { puesto, nivel });
+    });
+
+    cargar();
+  </script>
+</body>
+</html>

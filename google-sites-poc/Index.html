@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head><base target="_top"><?!= include('Styles'); ?></head>
+<body>
+  <h1>Vistazo general</h1>
+  <p class="sub">Solo lectura — para editar, entrá por tu botón.</p>
+
+  <div class="selectores">
+    <? selectores.forEach(function(s) { ?>
+      <a href="<?= baseUrl ?>?selector=<?= encodeURIComponent(s) ?>"><?= s ?></a>
+    <? }); ?>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>#</th><th>Puesto</th><th>Selector</th><th>Nivel</th><th>Estado</th><th>Días abierta</th><th></th></tr>
+    </thead>
+    <tbody>
+      <? vistazo.forEach(function(b) { ?>
+        <tr>
+          <td><?= b.numero ?></td>
+          <td><?= b.puesto ?></td>
+          <td><?= b.selector ?></td>
+          <td><?= b.nivel ?></td>
+          <td><span class="status <?= b.status ?>"><?= b.status ?></span></td>
+          <td><?= b.diasAbierta ?> hd</td>
+          <td><? if (b.alerta) { ?><span class="alerta">⚠ +72hs sin respuesta</span><? } ?></td>
+        </tr>
+      <? }); ?>
+      <? if (vistazo.length === 0) { ?>
+        <tr><td colspan="7">Todavía no hay búsquedas cargadas.</td></tr>
+      <? } ?>
+    </tbody>
+  </table>
+</body>
+</html>

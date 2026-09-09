@@ -1,0 +1,35 @@
+<style>
+  body { font-family: 'Google Sans', Arial, sans-serif; margin: 0; padding: 20px 24px 40px; color: #1f2430; background: #fafafa; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #666; font-size: 13px; margin: 0 0 20px; }
+  .selectores { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .selectores a {
+    display: inline-block; padding: 8px 14px; border-radius: 20px; text-decoration: none;
+    font-size: 13px; font-weight: 600; color: #3654ea; background: #e8ecfd; border: 1px solid #c7d1fb;
+  }
+  .selectores a.mine { background: #3654ea; color: #fff; border-color: #3654ea; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; border-radius: 8px; overflow: hidden; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid #eee; }
+  th { background: #f0f1f5; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #666; }
+  .status { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .status.Proceso { background: #fff3cd; color: #664d03; }
+  .status.Cerrada, .status.Finalizada { background: #d1e7dd; color: #0a3622; }
+  .status.Sustituida { background: #e2e3e5; color: #41464b; }
+  .alerta { color: #9b2226; font-weight: 700; }
+  .card { background: #fff; border: 1px solid #e5e5e5; border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+  .card h3 { margin: 0 0 8px; font-size: 15px; }
+  .card .meta { color: #777; font-size: 12px; margin-bottom: 10px; }
+  input, select, textarea, button {
+    font-family: inherit; font-size: 13px; padding: 7px 9px; border: 1px solid #ccc; border-radius: 6px;
+  }
+  button { background: #3654ea; color: #fff; border: none; cursor: pointer; font-weight: 600; }
+  button:hover { background: #2c44c9; }
+  button.secondary { background: #eee; color: #333; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+  .list { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+  .list li { padding: 4px 0; border-bottom: 1px dashed #eee; }
+  .back { font-size: 13px; color: #3654ea; text-decoration: none; }
+  .msg { font-size: 12.5px; padding: 6px 10px; border-radius: 6px; margin-bottom: 10px; display: none; }
+  .msg.ok { background: #d1e7dd; color: #0a3622; }
+  .msg.err { background: #f8d7da; color: #721c24; }
+</style>
