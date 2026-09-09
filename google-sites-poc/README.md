@@ -24,26 +24,41 @@ con el mismo patrón que `EstadoLog.gs` (leer/agregar por `busqueda_id`).
 Tampoco hay login por email todavía: el selector se elige por URL
 (`?selector=Romina`), no por quién inició sesión — ver "Siguiente paso" abajo.
 
-## Cómo levantarlo (10-15 min)
+## Cómo levantarlo (20-25 min) — Sites primero, Apps Script después
 
-1. **Crear el Sheet**: Google Sheets → hoja nueva, nombrala "Portal de
-   Selección — Datos".
-2. **Abrir el editor**: Extensiones → Apps Script.
-3. **Pegar el código**: en el editor, creá un archivo de script por cada
-   `.gs` de esta carpeta (`Data`, `Setup`, `Busquedas`, `Candidatos`,
-   `EstadoLog`, `Archivos`, `Code`) y un archivo HTML por cada `.html`
-   (`Index`, `SelectorView`, `Styles`) — mismo nombre, pegando el contenido
-   tal cual. Reemplazá el `appsscript.json` del proyecto por el de acá
-   (ícono de engranaje → "Mostrar archivo de manifiesto").
-4. **Inicializar las pestañas**: elegí `initializePortal` en el dropdown de
-   funciones (arriba) y ejecutá (▶). La primera vez pide autorizar permisos
-   (Sheets + Drive) — es tu propio script, es esperable.
-5. **Publicar como Web App**: Implementar → Nueva implementación → tipo
-   "Aplicación web". "Ejecutar como": tu cuenta. "Quién tiene acceso":
-   Cualquier usuario (con cuenta Gmail, ya que no hay Workspace). Copiá la
-   URL que te da.
-6. **Embeber en Sites**: en la página de Sites, Insertar → Insertar →
-   "Por URL", pegá la URL del Web App.
+### Fase 1 — Estructura del sitio en Sites (sin la URL todavía)
+1. sites.google.com → Sitio en blanco → nombralo "Portal de Selección".
+2. En el menú de páginas (derecha): renombrá "Inicio" a **"Vistazo general"**.
+3. Agregá 8 páginas más, una por selector, con el nombre exacto de cada
+   uno: Silvina, Romina, Claudia, Soledad, Juan Pablo, Angel, Noelia,
+   Milagros.
+4. Guardá el borrador (no hace falta publicar todavía — los embeds se
+   completan en la Fase 3).
+
+### Fase 2 — Backend en Apps Script
+5. Google Sheets → hoja nueva, nombrala "Portal de Selección — Datos".
+6. Extensiones → Apps Script.
+7. Creá un archivo de script por cada `.gs` de esta carpeta (`Data`,
+   `Setup`, `Busquedas`, `Candidatos`, `EstadoLog`, `Archivos`, `Code`) y
+   un archivo HTML por cada `.html` (`Index`, `SelectorView`, `Styles`) —
+   mismo nombre, pegando el contenido tal cual. Reemplazá el
+   `appsscript.json` del proyecto por el de acá (ícono de engranaje →
+   "Mostrar archivo de manifiesto").
+8. Elegí `initializePortal` en el dropdown de funciones (arriba) y
+   ejecutá (▶). La primera vez pide autorizar permisos (Sheets + Drive) —
+   es tu propio script, es esperable.
+9. Implementar → Nueva implementación → tipo "Aplicación web". "Ejecutar
+   como": tu cuenta. "Quién tiene acceso": Cualquier usuario. Copiá la URL
+   que te da (termina en `/exec`).
+
+### Fase 3 — Volver a Sites y completar los embeds
+10. Página "Vistazo general" → Insertar → Insertar → "Por URL" → pegá la
+    URL del Web App tal cual.
+11. En cada página de selector → mismo embed, pero con
+    `?selector=NombreExacto` al final (ej.
+    `https://script.google.com/macros/s/AKfycb.../exec?selector=Romina`;
+    "Juan Pablo" lleva el espacio como `%20`).
+12. Publicar el sitio.
 
 ## Si cambiás algo en el código luego de publicar
 
