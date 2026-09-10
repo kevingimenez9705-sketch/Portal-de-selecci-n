@@ -112,6 +112,10 @@ function showView(v, btn) {
     document.querySelectorAll('.inline-nav-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Los chips de selector solo filtran Pipeline y Fichas — en Estadísticas/
+    // Gráficos/Análisis/Informe no hacen nada (esas vistas siempre muestran a
+    // todo el equipo), así que ahí molestan más de lo que ayudan.
+    document.getElementById('selector-chips')?.classList.toggle('hidden', vistaAislada || (v !== 'pipeline' && v !== 'choferes'));
     const titles = {
         pipeline: ['Pipeline de Selección', 'Control de búsquedas, seguimiento y feedback'],
         choferes: ['Choferes y Ayudantes', 'Fichas de postulantes a chofer y ayudante'],
