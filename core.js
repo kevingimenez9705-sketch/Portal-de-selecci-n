@@ -30,12 +30,21 @@ let currentCategoria = 'general';
 let currentProfile = null;
 let nroSeq = 1;
 // Selector activo en el filtro de la barra (los chips clickeables), o '' = "Todos".
-// Es un filtro más, como el de estado o departamento — no identifica quién usa
-// el panel (todo el equipo entra con la misma cuenta), solo acota qué se ve.
+// Para admin es un filtro más, como el de estado o departamento (cada quien
+// tiene su propia cuenta en profiles, pero el admin puede mirar a cualquiera).
+// Para un selector normal, initDashboard() lo fija a su propio nombre (según
+// su login) y lo deja bloqueado: solo ve su propia info, nunca el panel general.
 let selectorFiltroActivo = '';
 
 function isAdmin() { return currentProfile?.rol === 'admin'; }
 function today() { return new Date().toISOString().slice(0, 10); }
+
+// Compara nombres sin importar mayúsculas/acentos/espacios extra — para hacer
+// matchear el "nombre" del perfil logueado (tabla profiles) contra la lista
+// SELECTORES sin que un tilde de más rompa el match.
+function normalizeNombre(s) {
+    return (s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
+}
 
 // ══════════════════════════════════════════════
 //  CHIPS DE SELECTOR — filtro por nombre con un clic, directo en la barra
@@ -64,6 +73,10 @@ function renderSelectorChips() {
 // Filtra el Pipeline (y las fichas de Choferes/Ayudantes) por selector con un
 // clic — se comporta exactamente igual que cualquier otro filtro de la barra.
 function filtrarPorSelector(nombre) {
+    // El panel general (ver/filtrar por cualquier selector) es solo para admin.
+    // Un selector normal tiene su propio filtro fijado en initDashboard() y no
+    // puede cambiarlo — los chips ni siquiera se muestran en ese caso.
+    if (!isAdmin()) return;
     selectorFiltroActivo = nombre;
     renderSelectorChips();
     applyFilters(); // ya llama refreshView()
@@ -391,10 +404,26 @@ async function initDashboard() {
         document.getElementById('nav-stats').classList.add('hidden');
         document.getElementById('nav-charts').classList.add('hidden');
         document.getElementById('nav-analisis').classList.add('hidden');
+        // "Informe" muestra un ranking/CSV con las búsquedas de TODO el equipo
+        // (no respeta el filtro de selector) — es panel general, va con el resto.
+        document.getElementById('nav-informe').classList.add('hidden');
     }
-    selectorFiltroActivo = ''; // arranca sin filtrar, como el resto de los filtros
-    renderSelectorChips();
-    refreshView();
+    // Panel general (todo el equipo + Estadísticas/Gráficos/Análisis) solo
+    // para admin. Un selector normal ve nada más su propia info: se detecta
+    // por su perfil de login (profiles.nombre) y queda fijo, sin chip para
+    // cambiarlo — filtrarPorSelector() también lo bloquea por las dudas.
+    const chipsBox = document.getElementById('selector-chips');
+    if (esAdmin) {
+        selectorFiltroActivo = ''; // arranca sin filtrar, como el resto de los filtros
+        if (chipsBox) chipsBox.classList.remove('hidden');
+        renderSelectorChips();
+    } else {
+        const propio = SELECTORES.find(s => normalizeNombre(s) === normalizeNombre(currentProfile?.nombre));
+        if (!propio) toast('No se pudo identificar tu selector (revisar "nombre" en profiles) — se muestra todo', true);
+        selectorFiltroActivo = propio || '';
+        if (chipsBox) chipsBox.classList.add('hidden');
+    }
+    applyFilters(); // recalcula filteredIds con el filtro ya fijado y refresca la vista
 }
 
 async function initApp() {
