@@ -318,6 +318,7 @@ async function goToApp(selectorInicial) {
     document.getElementById('landing-screen').classList.add('hidden');
     await initDashboard();
     if (selectorInicial) entrarVistaAislada(selectorInicial);
+    else showView('pipeline', document.getElementById('nav-pipeline'));
 }
 
 // Botón aparte de las fotos de selectores: entra directo al panel general en
@@ -441,11 +442,18 @@ async function initDashboard() {
     const nombre = esAdmin ? '🔑 ' + (currentProfile?.nombre || 'Administrador') : '👤 ' + (currentProfile?.nombre || 'Selector');
     document.getElementById('topnav-nombre').textContent = nombre;
     document.getElementById('topnav-rol').textContent = esAdmin ? 'admin' : 'selector';
+    // Solo reinicia el estado de filtros — todavía no renderiza ninguna vista.
+    // Quien llama a initDashboard() decide qué mostrar primero (showView /
+    // entrarVistaAislada / verPanelGeneral): así evitamos armar de arriba la
+    // tabla completa del Pipeline con TODAS las búsquedas del equipo cuando
+    // el destino real es otro (ej: entrar directo a Gráficos quedaba tildado
+    // porque de paso se armaba el Pipeline entero, aunque no se llegara a ver).
+    currentCategoria = 'general';
+    filteredIds = null;
     vistaAislada = false;
-    selectorFiltroActivo = ''; // arranca sin filtrar, como el resto de los filtros
+    selectorFiltroActivo = '';
     renderSelectorChips();
     aplicarVisibilidadPanelGeneral();
-    applyFilters(); // recalcula filteredIds y refresca la vista
 }
 
 async function initApp() {
