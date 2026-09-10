@@ -30,20 +30,37 @@ let currentCategoria = 'general';
 let currentProfile = null;
 let nroSeq = 1;
 // Selector activo en el filtro de la barra (los chips clickeables), o '' = "Todos".
-// Para admin es un filtro más, como el de estado o departamento (cada quien
-// tiene su propia cuenta en profiles, pero el admin puede mirar a cualquiera).
-// Para un selector normal, initDashboard() lo fija a su propio nombre (según
-// su login) y lo deja bloqueado: solo ve su propia info, nunca el panel general.
+// Es un filtro más, como el de estado o departamento — no identifica quién usa
+// el panel (todo el equipo entra con la misma cuenta), solo acota qué se ve.
 let selectorFiltroActivo = '';
+
+// true cuando se entró "aislado" a la info de un solo selector (clic en su
+// foto en la landing). Todo el equipo comparte el mismo login — esto no es un
+// permiso por persona, es solo un modo de pantalla: mientras está activo se
+// ve nada más lo de ese selector y se ocultan los chips de los demás y el
+// panel general (Estadísticas/Gráficos/Análisis/Informe). Se sale con el
+// botón "Ver panel general" y vuelve todo a la vista de siempre, sin filtrar.
+let vistaAislada = false;
 
 function isAdmin() { return currentProfile?.rol === 'admin'; }
 function today() { return new Date().toISOString().slice(0, 10); }
 
-// Compara nombres sin importar mayúsculas/acentos/espacios extra — para hacer
-// matchear el "nombre" del perfil logueado (tabla profiles) contra la lista
-// SELECTORES sin que un tilde de más rompa el match.
-function normalizeNombre(s) {
-    return (s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
+// Muestra/oculta los chips, el botón de salida y las pestañas de panel general
+// según el modo actual. Se llama al entrar al dashboard, al entrar/salir de
+// la vista aislada, y al loguearse (por si cambió el rol admin).
+function aplicarVisibilidadPanelGeneral() {
+    const esAdmin = isAdmin();
+    const chipsBox = document.getElementById('selector-chips');
+    const salirBtn = document.getElementById('salir-vista-aislada');
+    if (chipsBox) chipsBox.classList.toggle('hidden', vistaAislada);
+    if (salirBtn) salirBtn.classList.toggle('hidden', !vistaAislada);
+    // Estadísticas/Gráficos/Análisis ya eran solo-admin de antes; Informe se
+    // suma acá porque también es un resumen de TODO el equipo (no respeta el
+    // filtro de selector). Cualquiera de los dos motivos alcanza para ocultar.
+    ['nav-stats', 'nav-charts', 'nav-analisis'].forEach(id => {
+        document.getElementById(id)?.classList.toggle('hidden', vistaAislada || !esAdmin);
+    });
+    document.getElementById('nav-informe')?.classList.toggle('hidden', vistaAislada);
 }
 
 // ══════════════════════════════════════════════
@@ -72,16 +89,32 @@ function renderSelectorChips() {
 }
 // Filtra el Pipeline (y las fichas de Choferes/Ayudantes) por selector con un
 // clic — se comporta exactamente igual que cualquier otro filtro de la barra.
+// (Los chips están ocultos en vista aislada, pero el guard queda por las dudas.)
 function filtrarPorSelector(nombre) {
-    // El panel general (ver/filtrar por cualquier selector) es solo para admin.
-    // Un selector normal tiene su propio filtro fijado en initDashboard() y no
-    // puede cambiarlo — los chips ni siquiera se muestran en ese caso.
-    if (!isAdmin()) return;
+    if (vistaAislada) return;
     selectorFiltroActivo = nombre;
     renderSelectorChips();
     applyFilters(); // ya llama refreshView()
 }
 renderSelectorChips(); // los chips no dependen de datos: se dibujan apenas carga el script
+
+// Entra a la vista aislada de un selector (clic en su foto en la landing):
+// deja el Pipeline/Fichas fijos en su nombre y oculta chips + panel general.
+function entrarVistaAislada(nombre) {
+    vistaAislada = true;
+    selectorFiltroActivo = nombre;
+    aplicarVisibilidadPanelGeneral();
+    applyFilters();
+}
+
+// Vuelve del modo aislado a la vista general sin filtrar (botón "Ver panel general").
+function salirVistaAislada() {
+    vistaAislada = false;
+    selectorFiltroActivo = '';
+    renderSelectorChips();
+    aplicarVisibilidadPanelGeneral();
+    applyFilters();
+}
 
 // Evita que el scroll del mouse sobre un input de fecha/número (foco activo) modifique
 // su valor "de arriba" sin que el usuario se dé cuenta (ej: año 2026 -> 0202 al scrollear).
@@ -279,12 +312,12 @@ function showHome() {
 }
 
 // Si se pasa un nombre (clic en la foto de un selector desde la landing), entra
-// directo al Pipeline ya filtrado por esa persona — mismo efecto que entrar y
-// tocar su chip en la barra de filtros.
+// directo a la vista aislada de esa persona (ver entrarVistaAislada): solo su
+// info, sin chips ni panel general, hasta que se toque "Ver panel general".
 async function goToApp(selectorInicial) {
     document.getElementById('landing-screen').classList.add('hidden');
     await initDashboard();
-    if (selectorInicial) filtrarPorSelector(selectorInicial);
+    if (selectorInicial) entrarVistaAislada(selectorInicial);
 }
 
 async function login() {
@@ -400,30 +433,11 @@ async function initDashboard() {
     const nombre = esAdmin ? '🔑 ' + (currentProfile?.nombre || 'Administrador') : '👤 ' + (currentProfile?.nombre || 'Selector');
     document.getElementById('topnav-nombre').textContent = nombre;
     document.getElementById('topnav-rol').textContent = esAdmin ? 'admin' : 'selector';
-    if (!esAdmin) {
-        document.getElementById('nav-stats').classList.add('hidden');
-        document.getElementById('nav-charts').classList.add('hidden');
-        document.getElementById('nav-analisis').classList.add('hidden');
-        // "Informe" muestra un ranking/CSV con las búsquedas de TODO el equipo
-        // (no respeta el filtro de selector) — es panel general, va con el resto.
-        document.getElementById('nav-informe').classList.add('hidden');
-    }
-    // Panel general (todo el equipo + Estadísticas/Gráficos/Análisis) solo
-    // para admin. Un selector normal ve nada más su propia info: se detecta
-    // por su perfil de login (profiles.nombre) y queda fijo, sin chip para
-    // cambiarlo — filtrarPorSelector() también lo bloquea por las dudas.
-    const chipsBox = document.getElementById('selector-chips');
-    if (esAdmin) {
-        selectorFiltroActivo = ''; // arranca sin filtrar, como el resto de los filtros
-        if (chipsBox) chipsBox.classList.remove('hidden');
-        renderSelectorChips();
-    } else {
-        const propio = SELECTORES.find(s => normalizeNombre(s) === normalizeNombre(currentProfile?.nombre));
-        if (!propio) toast('No se pudo identificar tu selector (revisar "nombre" en profiles) — se muestra todo', true);
-        selectorFiltroActivo = propio || '';
-        if (chipsBox) chipsBox.classList.add('hidden');
-    }
-    applyFilters(); // recalcula filteredIds con el filtro ya fijado y refresca la vista
+    vistaAislada = false;
+    selectorFiltroActivo = ''; // arranca sin filtrar, como el resto de los filtros
+    renderSelectorChips();
+    aplicarVisibilidadPanelGeneral();
+    applyFilters(); // recalcula filteredIds y refresca la vista
 }
 
 async function initApp() {
