@@ -26,6 +26,11 @@
         .landing-hero-sub { font-size: 13px; color: rgba(255,255,255,.55); margin-top: 4px; }
         .landing-hero-btn { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; border: none; padding: 13px 24px; border-radius: 10px; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 9px; white-space: nowrap; transition: transform .15s, box-shadow .15s; box-shadow: 0 8px 20px rgba(54,84,234,.4); }
         .landing-hero-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 26px rgba(54,84,234,.5); }
+        .landing-hero-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        /* Botón secundario: mismo panel general, apartado de las fotos de selectores — entra
+           directo a Gráficos (números totales del equipo) en vez de al Pipeline. */
+        .landing-hero-btn.secondary { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.2); box-shadow: none; }
+        .landing-hero-btn.secondary:hover { background: rgba(255,255,255,.14); box-shadow: none; }
 
         .landing-section-hdr { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; margin-bottom: 14px; }
 
