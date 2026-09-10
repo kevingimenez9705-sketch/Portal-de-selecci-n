@@ -320,6 +320,14 @@ async function goToApp(selectorInicial) {
     if (selectorInicial) entrarVistaAislada(selectorInicial);
 }
 
+// Botón aparte de las fotos de selectores: entra directo al panel general en
+// la vista de Gráficos (números totales del equipo), sin pasar por Pipeline.
+async function verPanelGeneral() {
+    document.getElementById('landing-screen').classList.add('hidden');
+    await initDashboard();
+    showView('charts', document.getElementById('nav-charts'));
+}
+
 async function login() {
     const email = document.getElementById('login-email').value.trim();
     const pass  = document.getElementById('login-pass').value;
