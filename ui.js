@@ -99,7 +99,13 @@ function descargarInformeCSV() {
 }
 
 function showView(v, btn) {
-    if ((v === 'stats' || v === 'charts' || v === 'analisis') && !isAdmin()) { toast('Acceso restringido a administradores', true); return; }
+    // Si el destino queda bloqueado, cae a Pipeline en vez de dejar la pantalla
+    // en blanco (initDashboard ya no renderiza Pipeline "por las dudas" antes
+    // de saber a dónde se va, así que acá tiene que resolverse el fallback).
+    if ((v === 'stats' || v === 'charts' || v === 'analisis') && !isAdmin()) {
+        toast('Acceso restringido a administradores', true);
+        v = 'pipeline'; btn = document.getElementById('nav-pipeline');
+    }
     // 'pipeline' usa #view-pipeline (tabla); 'choferes' usa #view-fichas (tarjetas)
     const domView = (v === 'choferes') ? 'fichas' : v;
     ['pipeline', 'fichas', 'stats', 'charts', 'analisis', 'informe'].forEach(id => document.getElementById('view-' + id).classList.toggle('hidden', id !== domView));
