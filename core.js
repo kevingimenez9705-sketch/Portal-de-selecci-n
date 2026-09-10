@@ -34,8 +34,34 @@ let nroSeq = 1;
 // el panel (todo el equipo entra con la misma cuenta), solo acota qué se ve.
 let selectorFiltroActivo = '';
 
+// true cuando se entró "aislado" a la info de un solo selector (clic en su
+// foto en la landing). Todo el equipo comparte el mismo login — esto no es un
+// permiso por persona, es solo un modo de pantalla: mientras está activo se
+// ve nada más lo de ese selector y se ocultan los chips de los demás y el
+// panel general (Estadísticas/Gráficos/Análisis/Informe). Se sale con el
+// botón "Ver panel general" y vuelve todo a la vista de siempre, sin filtrar.
+let vistaAislada = false;
+
 function isAdmin() { return currentProfile?.rol === 'admin'; }
 function today() { return new Date().toISOString().slice(0, 10); }
+
+// Muestra/oculta los chips, el botón de salida y las pestañas de panel general
+// según el modo actual. Se llama al entrar al dashboard, al entrar/salir de
+// la vista aislada, y al loguearse (por si cambió el rol admin).
+function aplicarVisibilidadPanelGeneral() {
+    const esAdmin = isAdmin();
+    const chipsBox = document.getElementById('selector-chips');
+    const salirBtn = document.getElementById('salir-vista-aislada');
+    if (chipsBox) chipsBox.classList.toggle('hidden', vistaAislada);
+    if (salirBtn) salirBtn.classList.toggle('hidden', !vistaAislada);
+    // Estadísticas/Gráficos/Análisis ya eran solo-admin de antes; Informe se
+    // suma acá porque también es un resumen de TODO el equipo (no respeta el
+    // filtro de selector). Cualquiera de los dos motivos alcanza para ocultar.
+    ['nav-stats', 'nav-charts', 'nav-analisis'].forEach(id => {
+        document.getElementById(id)?.classList.toggle('hidden', vistaAislada || !esAdmin);
+    });
+    document.getElementById('nav-informe')?.classList.toggle('hidden', vistaAislada);
+}
 
 // ══════════════════════════════════════════════
 //  CHIPS DE SELECTOR — filtro por nombre con un clic, directo en la barra
@@ -63,12 +89,32 @@ function renderSelectorChips() {
 }
 // Filtra el Pipeline (y las fichas de Choferes/Ayudantes) por selector con un
 // clic — se comporta exactamente igual que cualquier otro filtro de la barra.
+// (Los chips están ocultos en vista aislada, pero el guard queda por las dudas.)
 function filtrarPorSelector(nombre) {
+    if (vistaAislada) return;
     selectorFiltroActivo = nombre;
     renderSelectorChips();
     applyFilters(); // ya llama refreshView()
 }
 renderSelectorChips(); // los chips no dependen de datos: se dibujan apenas carga el script
+
+// Entra a la vista aislada de un selector (clic en su foto en la landing):
+// deja el Pipeline/Fichas fijos en su nombre y oculta chips + panel general.
+function entrarVistaAislada(nombre) {
+    vistaAislada = true;
+    selectorFiltroActivo = nombre;
+    aplicarVisibilidadPanelGeneral();
+    applyFilters();
+}
+
+// Vuelve del modo aislado a la vista general sin filtrar (botón "Ver panel general").
+function salirVistaAislada() {
+    vistaAislada = false;
+    selectorFiltroActivo = '';
+    renderSelectorChips();
+    aplicarVisibilidadPanelGeneral();
+    applyFilters();
+}
 
 // Evita que el scroll del mouse sobre un input de fecha/número (foco activo) modifique
 // su valor "de arriba" sin que el usuario se dé cuenta (ej: año 2026 -> 0202 al scrollear).
@@ -266,12 +312,12 @@ function showHome() {
 }
 
 // Si se pasa un nombre (clic en la foto de un selector desde la landing), entra
-// directo al Pipeline ya filtrado por esa persona — mismo efecto que entrar y
-// tocar su chip en la barra de filtros.
+// directo a la vista aislada de esa persona (ver entrarVistaAislada): solo su
+// info, sin chips ni panel general, hasta que se toque "Ver panel general".
 async function goToApp(selectorInicial) {
     document.getElementById('landing-screen').classList.add('hidden');
     await initDashboard();
-    if (selectorInicial) filtrarPorSelector(selectorInicial);
+    if (selectorInicial) entrarVistaAislada(selectorInicial);
 }
 
 async function login() {
@@ -387,14 +433,11 @@ async function initDashboard() {
     const nombre = esAdmin ? '🔑 ' + (currentProfile?.nombre || 'Administrador') : '👤 ' + (currentProfile?.nombre || 'Selector');
     document.getElementById('topnav-nombre').textContent = nombre;
     document.getElementById('topnav-rol').textContent = esAdmin ? 'admin' : 'selector';
-    if (!esAdmin) {
-        document.getElementById('nav-stats').classList.add('hidden');
-        document.getElementById('nav-charts').classList.add('hidden');
-        document.getElementById('nav-analisis').classList.add('hidden');
-    }
+    vistaAislada = false;
     selectorFiltroActivo = ''; // arranca sin filtrar, como el resto de los filtros
     renderSelectorChips();
-    refreshView();
+    aplicarVisibilidadPanelGeneral();
+    applyFilters(); // recalcula filteredIds y refresca la vista
 }
 
 async function initApp() {
