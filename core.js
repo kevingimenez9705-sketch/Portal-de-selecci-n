@@ -107,13 +107,12 @@ function entrarVistaAislada(nombre) {
     applyFilters();
 }
 
-// Vuelve del modo aislado a la vista general sin filtrar (botón "Ver panel general").
+// Botón "Volver a selección": sale de la vista aislada y vuelve a la landing
+// (elegir selector), en vez de quedarse adentro con todo sin filtrar.
 function salirVistaAislada() {
     vistaAislada = false;
     selectorFiltroActivo = '';
-    renderSelectorChips();
-    aplicarVisibilidadPanelGeneral();
-    applyFilters();
+    showHome();
 }
 
 // Evita que el scroll del mouse sobre un input de fecha/número (foco activo) modifique
