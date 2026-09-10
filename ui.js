@@ -25,6 +25,13 @@ function renderInforme() {
     //    (datosIncompletos) pero que hasta ahora no se mostraba en ningún lado ──
     const ofertasSinDecision = busquedas.filter(b => (b.candidatos || []).some(c => c.estado === 'Oferta') && !b.decision_sector);
 
+    // ── Quiénes ya cumplieron los 90 días hábiles (mismo corte que pasa el estado a
+    //    "Finalizada" automáticamente) — el KPI de arriba da el número, esto da los nombres ──
+    const retenidosList = busquedas
+        .filter(b => b.ingreso && daysDiff(b.ingreso, b.fecha_baja || null) >= 90)
+        .map(b => ({ b, dias: daysDiff(b.ingreso, b.fecha_baja || null) }))
+        .sort((a, c) => c.dias - a.dias);
+
     document.getElementById('informe-content').innerHTML = `
     <div class="mini-kpi-row">
         <div class="mini-kpi"><div class="mini-kpi-num">${total}</div><div class="mini-kpi-lbl">Total búsquedas</div></div>
@@ -57,6 +64,25 @@ function renderInforme() {
             ${ofertasSinDecision.length ? `
             <div>${ofertasSinDecision.map(b => `<div class="bar-row"><div class="bar-row-top"><span>${b.puesto} <span style="font-size:11px;color:var(--muted)">· ${b.selector}</span></span><span style="font-size:11px;color:var(--muted)">${b.numero}</span></div></div>`).join('')}</div>
             ` : `<span class="tip">Sin ofertas pendientes de decisión</span>`}
+        </div>
+    </div>
+    <div style="margin-top:20px">
+        <div class="chart-card full">
+            <div class="chart-card-title"><i class="fas fa-user-check"></i> Cumplieron 90 Días Hábiles (Retención) · ${retenidosList.length}</div>
+            ${retenidosList.length ? `
+            <div style="overflow-x:auto"><table style="width:100%;min-width:640px;border-collapse:collapse">
+                <thead><tr>${['N°', 'Ingresó', 'Puesto', 'Selector', 'Fecha ingreso', 'Días háb.', 'Estado actual'].map(h => `<th style="padding:8px 10px;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);text-align:left">${h}</th>`).join('')}</tr></thead>
+                <tbody>${retenidosList.map(({ b, dias }, i) => `<tr style="background:${i % 2 === 0 ? 'var(--bg)' : 'transparent'}">
+                    <td style="padding:8px 10px;font-family:'DM Mono',monospace">${b.numero}</td>
+                    <td style="padding:8px 10px;font-weight:700">${b.ingreso_nombre || '—'}</td>
+                    <td style="padding:8px 10px">${b.puesto}</td>
+                    <td style="padding:8px 10px;color:var(--muted)">${b.selector}</td>
+                    <td style="padding:8px 10px;font-family:'DM Mono',monospace;color:var(--muted)">${fmtFechaCorta(b.ingreso)}</td>
+                    <td style="padding:8px 10px;font-family:'DM Mono',monospace;font-weight:700;color:var(--green)">${dias}hd</td>
+                    <td style="padding:8px 10px">${b.fecha_baja ? `<span style="color:var(--red)">Se dio de baja el ${fmtFechaCorta(b.fecha_baja)}</span>` : `<span style="color:var(--green)">Activo</span>`}</td>
+                </tr>`).join('')}</tbody>
+            </table></div>
+            ` : `<span class="tip">Todavía no hay candidatos que hayan llegado a 90 días hábiles</span>`}
         </div>
     </div>`;
 }
