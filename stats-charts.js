@@ -125,7 +125,9 @@ function renderChartsGeneral() {
                     <div class="bar-row"><div class="bar-row-top"><span>Fábrica</span><span>${coberturaFabrica}%</span></div><div class="bar-track"><div class="bar-fill bar-fill-fab" style="width:${coberturaFabrica}%"></div></div></div>
                 </div>
                 <div style="text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center">
-                    <div style="font-family:'Syne',sans-serif;font-size:38px;font-weight:800;color:var(--accent-dark)">${tasaPermanencia}%</div>
+                    ${conIngreso > 0 ? `<div style="position:relative;width:130px;height:130px"><canvas id="ch-permpct"></canvas>
+                        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--accent-dark)">${tasaPermanencia}%</div>
+                    </div>` : `<div style="font-family:'Syne',sans-serif;font-size:38px;font-weight:800;color:var(--accent-dark)">${tasaPermanencia}%</div>`}
                     <div class="mini-kpi-lbl" style="margin-top:4px">Tasa de Permanencia</div>
                     <div class="mini-kpi-sub">${retenidos90} de ${conIngreso} ingresos llegaron a 90 días háb.</div>
                 </div>
@@ -158,6 +160,11 @@ function renderChartsGeneral() {
     const cd = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { font: { family: 'DM Sans', size: 11 }, color: '#161b24' } } } };
     const MOTIVO_COLORS = { 'Expansión': '#cfe2ff', 'Rotación': '#ffd6a5', 'SOV': '#e2d6f5', 'Reemplazo': '#d8f3dc' };
     chartInstances['motivo'] = new Chart(document.getElementById('ch-motivo'), { type: 'doughnut', data: { labels: Object.keys(byMotivo), datasets: [{ data: Object.values(byMotivo), backgroundColor: Object.keys(byMotivo).map(m => MOTIVO_COLORS[m] || '#d8f3dc'), borderWidth: 2 }] }, options: { ...cd, cutout: '55%' } });
+    // Referencia visual de la Tasa de Permanencia: cuántos ingresos cumplieron los 90 días
+    // hábiles vs los que no (todavía) — el % de arriba ya lo dice, esto lo hace un vistazo.
+    if (conIngreso > 0) {
+        chartInstances['permpct'] = new Chart(document.getElementById('ch-permpct'), { type: 'doughnut', data: { labels: ['Cumplió 90hd', 'No llegó (aún)'], datasets: [{ data: [retenidos90, conIngreso - retenidos90], backgroundColor: ['#2d6a4fcc', '#e5e0d8'], borderColor: ['#2d6a4f', '#c9c2b5'], borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '72%', plugins: { legend: { display: false }, tooltip: { enabled: true } } } });
+    }
     chartInstances['nivel']  = new Chart(document.getElementById('ch-nivel'),  { type: 'bar', data: { labels: Object.keys(byNivel), datasets: [{ label: 'Cantidad', data: Object.values(byNivel), backgroundColor: ['#ca6702cc','#005f73cc','#9b2226cc'], borderRadius: 6 }] }, options: { ...cd, plugins: { legend: { display: false } }, indexAxis: 'y', scales: { x: { beginAtZero: true, ticks: { precision: 0 } }, y: { grid: { display: false } } } } });
     chartInstances['demoraNivel'] = new Chart(document.getElementById('ch-demora-nivel'), { type: 'bar', data: { labels: demoraPorNivel.map(d => `${d.nivel} (${d.count})`), datasets: [
         { label: 'Demora promedio (hd)', data: demoraPorNivel.map(d => d.avg), backgroundColor: demoraPorNivel.map(d => d.avg > d.limite ? '#9b2226cc' : '#2d6a4fcc'), borderColor: demoraPorNivel.map(d => d.avg > d.limite ? '#9b2226' : '#2d6a4f'), borderWidth: 2, borderRadius: 6 },
