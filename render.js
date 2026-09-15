@@ -683,10 +683,11 @@ function renderKPIs() {
     // búsqueda de texto) — aunque estés mirando solo "Proceso", acá se ve el total.
     const cat = busquedas.filter(inCategoria).filter(b => !selectorFiltroActivo || b.selector === selectorFiltroActivo);
     const total       = cat.length;
-    const activas     = cat.filter(b => b.status === 'Proceso').length;
-    const reabiertas  = cat.filter(b => b.reopened_from).length;
-    // "En proceso" = activas + reabiertas (suma real, no reparto del mismo total:
-    // reabiertas cuenta TODAS las reaperturas, estén o no en curso ahora mismo).
+    const activas     = cat.filter(b => b.status === 'Proceso' && !b.reopened_from).length;
+    const reabiertas  = cat.filter(b => b.status === 'Proceso' && b.reopened_from).length;
+    // "En proceso" = activas + reabiertas, sin doble conteo: reabiertas solo cuenta las
+    // reaperturas que siguen en curso ahora mismo. Si una reapertura se cierra o finaliza,
+    // pasa a esos estados y deja de contar como reabierta.
     const proceso     = activas + reabiertas;
     const cerradas    = cat.filter(b => b.status === 'Cerrada').length;
     const finalizadas = cat.filter(b => b.status === 'Finalizada').length;
