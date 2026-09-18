@@ -127,9 +127,6 @@ function inCategoria(b) {
 //  RENDER DISPATCH: pipeline (tabla) vs choferes (fichas)
 // ══════════════════════════════════════════════
 function refreshView() {
-    // Soledad no usa la tabla/fichas pesadas (ver esVistaResumenPesada en core.js) —
-    // su panel se resuelve entero con el Informe (resumen + descarga CSV).
-    if (esVistaResumenPesada()) return;
     if (currentCategoria === 'choferes') { renderFichas(); }
     else { renderTable(); }
 }
