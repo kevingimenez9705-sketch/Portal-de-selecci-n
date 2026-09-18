@@ -14,7 +14,7 @@ if (!window.supabase) {
             <div>
                 <h2 style="margin-bottom:10px">No se pudo cargar la página</h2>
                 <p style="opacity:.8;max-width:420px;margin:0 auto 18px">Falló la conexión con un recurso necesario (Supabase). Revisá tu internet o un bloqueador de contenido y volvé a intentar.</p>
-                <button onclick="location.reload()" style="padding:10px 22px;border:none;border-radius:8px;background:#3654ea;color:#fff;font-weight:700;cursor:pointer">Reintentar</button>
+                <button onclick="location.reload()" style="padding:10px 22px;border:none;border-radius:8px;background:#2b4c86;color:#fff;font-weight:700;cursor:pointer">Reintentar</button>
             </div>
         </div>`;
     throw new Error('window.supabase no está disponible — data.js no puede continuar');
@@ -29,7 +29,7 @@ const SELECTOR_COLORS = {
     'Silvina':     '#6a4c93',
     'Romina':      '#9b2226', // var(--red)
     'Claudia':     '#ca6702', // var(--orange)
-    'Soledad':     '#3654ea', // var(--accent)
+    'Soledad':     '#2b4c86', // var(--accent)
     'Juan Pablo':  '#b5a300', // var(--yellow)
     'Angel':       '#be185d',
     'Noelia':      '#005f73', // var(--blue)
