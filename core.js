@@ -322,6 +322,59 @@ function showHome() {
     document.getElementById('landing-screen').classList.remove('hidden');
 }
 
+// ══════════════════════════════════════════════
+//  LANDING CON VIDA — tilt 3D en las tarjetas del equipo (sigue al mouse),
+//  se atenúan las demás al enfocar una, botón principal "imán" y saludo
+//  según la hora. Todo progresivo: si algo falla, la landing sigue andando
+//  igual que antes (nada de esto es necesario para navegar).
+// ══════════════════════════════════════════════
+function initLandingVida() {
+    const sub = document.querySelector('.landing-hero-sub');
+    if (sub) {
+        const hora = new Date().getHours();
+        const saludo = hora < 12 ? 'Buenos días' : hora < 20 ? 'Buenas tardes' : 'Buenas noches';
+        sub.textContent = `${saludo} — acceso rápido a las búsquedas, postulantes y estadísticas del equipo.`;
+    }
+
+    document.querySelectorAll('.landing-team-card').forEach(card => {
+        card.addEventListener('mousemove', e => {
+            const r = card.getBoundingClientRect();
+            const px = (e.clientX - r.left) / r.width;
+            const py = (e.clientY - r.top) / r.height;
+            const rx = (0.5 - py) * 14;
+            const ry = (px - 0.5) * 14;
+            card.style.transition = 'box-shadow .3s ease, opacity .25s ease';
+            card.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg) translateY(-3px) scale(1.03)`;
+            card.style.boxShadow = `0 16px 28px rgba(22,27,36,.18), 0 0 0 1px ${getComputedStyle(card).borderTopColor}`;
+        });
+        card.addEventListener('mouseenter', () => {
+            Array.from(card.parentElement.children).forEach(c => { if (c !== card) c.style.opacity = '.55'; });
+        });
+        card.addEventListener('mouseleave', () => {
+            Array.from(card.parentElement.children).forEach(c => { c.style.opacity = '1'; });
+            card.style.transition = 'transform .5s ease, box-shadow .3s ease, opacity .25s ease';
+            card.style.transform = '';
+            card.style.boxShadow = '';
+        });
+    });
+
+    const btnPrincipal = document.querySelector('.landing-hero-btn:not(.secondary)');
+    if (btnPrincipal) {
+        btnPrincipal.addEventListener('mousemove', e => {
+            const r = btnPrincipal.getBoundingClientRect();
+            const x = (e.clientX - r.left - r.width / 2) * 0.3;
+            const y = (e.clientY - r.top - r.height / 2) * 0.3;
+            btnPrincipal.style.transition = 'none';
+            btnPrincipal.style.transform = `translate(${x}px, ${y}px)`;
+        });
+        btnPrincipal.addEventListener('mouseleave', () => {
+            btnPrincipal.style.transition = 'transform .35s cubic-bezier(.34,1.56,.64,1)';
+            btnPrincipal.style.transform = 'translate(0,0)';
+        });
+    }
+}
+initLandingVida();
+
 // Si se pasa un nombre (clic en la foto de un selector desde la landing), entra
 // directo a la vista aislada de esa persona (ver entrarVistaAislada): solo su
 // info, sin chips ni panel general, hasta que se toque "Ver panel general".

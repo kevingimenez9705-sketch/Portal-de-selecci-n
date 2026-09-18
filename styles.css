@@ -20,12 +20,16 @@
         .landing-main { padding: 28px 32px 48px; max-width: 1240px; margin: 0 auto; }
         .landing-hero { background: linear-gradient(120deg, #12161f 0%, #1d2333 100%); border-radius: 14px; padding: 32px 36px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 24px; box-shadow: var(--shadow-md); }
         .landing-hero-left { display: flex; align-items: center; gap: 20px; }
-        .landing-hero-icon { width: 62px; height: 62px; border-radius: 14px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--gold); flex-shrink: 0; }
+        .landing-hero-icon { width: 62px; height: 62px; border-radius: 14px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--gold); flex-shrink: 0; animation: landingIconFloat 3s ease-in-out infinite; }
+        @keyframes landingIconFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
         .landing-hero-eyebrow { font-size: 11px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 4px; }
         .landing-hero-title { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 700; letter-spacing: -.5px; color: #fff; }
         .landing-hero-title span { color: var(--gold); }
         .landing-hero-sub { font-size: 13px; color: rgba(255,255,255,.55); margin-top: 4px; }
-        .landing-hero-btn { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; border: none; padding: 13px 24px; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 9px; white-space: nowrap; transition: transform .15s, box-shadow .15s; box-shadow: 0 8px 20px rgba(43,76,134,.4); }
+        .landing-hero-btn { position: relative; background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; border: none; padding: 13px 24px; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 9px; white-space: nowrap; transition: transform .15s, box-shadow .15s; box-shadow: 0 8px 20px rgba(43,76,134,.4); }
+        /* Anillo que late en el CTA principal — guía el ojo sin ser el botón secundario (::after no se pinta en .secondary por el selector de abajo). */
+        .landing-hero-btn:not(.secondary)::after { content: ''; position: absolute; inset: 0; border-radius: 10px; box-shadow: 0 0 0 0 rgba(43,76,134,.45); animation: landingBtnPulse 2.4s ease-out infinite; pointer-events: none; }
+        @keyframes landingBtnPulse { 0% { box-shadow: 0 0 0 0 rgba(43,76,134,.45); } 70% { box-shadow: 0 0 0 12px rgba(43,76,134,0); } 100% { box-shadow: 0 0 0 0 rgba(43,76,134,0); } }
         .landing-hero-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 26px rgba(43,76,134,.5); }
         .landing-hero-actions { display: flex; gap: 10px; flex-wrap: wrap; }
         /* Botón secundario: mismo panel general, apartado de las fotos de selectores — entra
@@ -36,9 +40,11 @@
         .landing-section-hdr { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 700; margin-bottom: 14px; }
 
         /* ── LANDING: equipo (tarjetas, misma temática que los accesos rápidos) ── */
-        .landing-team-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; }
-        .landing-team-card { background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 12px; padding: 22px; text-align: center; box-shadow: var(--shadow-sm); transition: transform .15s, box-shadow .15s; flex: 1 1 220px; max-width: 260px; }
-        .landing-team-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .landing-team-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; perspective: 900px; }
+        .landing-team-card { position: relative; overflow: hidden; background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 12px; padding: 22px; text-align: center; box-shadow: var(--shadow-sm); transform-style: preserve-3d; transition: transform .5s ease, box-shadow .3s ease, opacity .25s ease; flex: 1 1 220px; max-width: 260px; }
+        /* Brillo diagonal que cruza la tarjeta al pasar el mouse (el tilt real lo hace initLandingVida() en core.js). */
+        .landing-team-card::before { content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%; background: linear-gradient(120deg, transparent, rgba(255,255,255,.5), transparent); transform: skewX(-20deg); transition: left .6s ease; pointer-events: none; }
+        .landing-team-card:hover::before { left: 130%; }
         .landing-team-avatar { width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-family: 'Fraunces', serif; font-weight: 700; font-size: 17px; color: #fff; background: var(--accent); overflow: hidden; }
         .landing-team-avatar img { width: 100%; height: 100%; object-fit: cover; }
         /* ── Foto clickeable: entra directo al Pipeline filtrado por esa persona (goToApp(nombre)) ── */
