@@ -157,10 +157,15 @@ function showView(v, btn) {
     if (v === 'informe') renderInforme();
     if (v === 'pipeline' || v === 'choferes') {
         currentCategoria = (v === 'choferes') ? 'choferes' : 'general';
-        filteredIds = null;
-        selectorFiltroActivo = '';
-        renderSelectorChips();
-        ['f-tipo','f-depto','f-status','f-reabierta','f-alerta72','f-search','f-chofer-resultado'].forEach(fid => { const el = document.getElementById(fid); if (el) el.value = ''; });
+        // En vista aislada NO se resetea el filtro de selector: si no, alternar
+        // Pipeline/Choferes rompía el aislamiento y de golpe se veía (y renderizaba)
+        // el total sin filtrar de todas las búsquedas.
+        if (!vistaAislada) {
+            filteredIds = null;
+            selectorFiltroActivo = '';
+            renderSelectorChips();
+            ['f-tipo','f-depto','f-status','f-reabierta','f-alerta72','f-search','f-chofer-resultado'].forEach(fid => { const el = document.getElementById(fid); if (el) el.value = ''; });
+        }
         refreshView();
     }
     if (v === 'stats')    renderStats('general');
