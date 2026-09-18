@@ -32,19 +32,28 @@ function renderInforme() {
         .map(b => ({ b, dias: daysDiff(b.ingreso, b.fecha_baja || null) }))
         .sort((a, c) => c.dias - a.dias);
 
+    const seccion = (titulo, sub) => `<div style="margin:28px 0 12px"><div class="section-hdr" style="font-size:12px;letter-spacing:1px">${titulo}</div><div class="tip" style="font-style:normal">${sub}</div></div>`;
+
     document.getElementById('informe-content').innerHTML = `
+    ${seccion('Volumen y cobertura', 'Cuántas búsquedas hay en total y qué porcentaje ya se cubrió.')}
     <div class="mini-kpi-row">
         <div class="mini-kpi"><div class="mini-kpi-num">${total}</div><div class="mini-kpi-lbl">Total búsquedas</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${cerradas}</div><div class="mini-kpi-lbl">Cerradas / Finalizadas</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--blue)">${coberturaStaff}%</div><div class="mini-kpi-lbl">Cobertura Staff (Oficina)</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${coberturaFabrica}%</div><div class="mini-kpi-lbl">Cobertura Fábrica</div></div>
-        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--accent-dark)">${tasaPermanencia}%</div><div class="mini-kpi-lbl">Tasa de Permanencia</div></div>
+    </div>
+
+    ${seccion('Riesgos y alertas', 'Lo que conviene revisar primero: qué se demora, qué está trabado y quién queda.')}
+    <div class="mini-kpi-row">
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--red)">${alertas72}</div><div class="mini-kpi-lbl">Alertas 72hs sector</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:${ofertasSinDecision.length ? 'var(--red)' : 'var(--green)'}">${ofertasSinDecision.length}</div><div class="mini-kpi-lbl">Ofertas sin Decisión</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--accent-dark)">${tasaPermanencia}%</div><div class="mini-kpi-lbl">Tasa de Permanencia</div></div>
     </div>
-    <div class="charts-grid-2" style="margin-top:20px">
-        <div class="chart-card">
-            <div class="chart-card-title"><i class="fas fa-hourglass-half"></i> Antigüedad de Búsquedas Abiertas</div>
+
+    <div style="margin-top:20px">
+        <div class="chart-card full">
+            <div class="chart-card-title"><i class="fas fa-hourglass-half"></i> Búsquedas abiertas más antiguas · ${abiertas.length}</div>
+            <div class="tip" style="display:block;margin:-8px 0 12px">Ordenadas de la más urgente a la más nueva — la columna "Días háb." en rojo ya pasó el límite normal para ese nivel de puesto.</div>
             ${abiertas.length ? `
             <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">
                 <thead><tr>${['N°', 'Puesto', 'Selector', 'Días háb.', 'Límite'].map(h => `<th style="padding:8px 10px;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);text-align:left">${h}</th>`).join('')}</tr></thead>
@@ -56,19 +65,25 @@ function renderInforme() {
                     <td style="padding:8px 10px;font-family:'DM Mono',monospace;color:var(--muted)">${lim}hd</td>
                 </tr>`).join('')}</tbody>
             </table></div>
-            ${abiertas.length > 10 ? `<div style="font-size:11px;color:var(--muted);margin-top:8px">+ ${abiertas.length - 10} más — descargá el CSV para verlas todas</div>` : ''}
+            ${abiertas.length > 10 ? `<div style="font-size:11px;color:var(--muted);margin-top:8px">+ ${abiertas.length - 10} más — descargá el CSV de arriba para verlas todas</div>` : ''}
             ` : `<span class="tip">No hay búsquedas en proceso</span>`}
         </div>
-        <div class="chart-card">
-            <div class="chart-card-title"><i class="fas fa-file-signature"></i> Ofertas sin Decisión del Sector</div>
+    </div>
+
+    <div style="margin-top:20px">
+        <div class="chart-card full">
+            <div class="chart-card-title"><i class="fas fa-file-signature"></i> Ofertas sin Decisión del Sector · ${ofertasSinDecision.length}</div>
+            <div class="tip" style="display:block;margin:-8px 0 12px">El candidato ya tiene una oferta hecha pero todavía no se cargó si el sector la aprobó o no.</div>
             ${ofertasSinDecision.length ? `
             <div>${ofertasSinDecision.map(b => `<div class="bar-row"><div class="bar-row-top"><span>${b.puesto} <span style="font-size:11px;color:var(--muted)">· ${b.selector}</span></span><span style="font-size:11px;color:var(--muted)">${b.numero}</span></div></div>`).join('')}</div>
             ` : `<span class="tip">Sin ofertas pendientes de decisión</span>`}
         </div>
     </div>
+
     <div style="margin-top:20px">
         <div class="chart-card full">
             <div class="chart-card-title"><i class="fas fa-user-check"></i> Cumplieron 90 Días Hábiles (Retención) · ${retenidosList.length}</div>
+            <div class="tip" style="display:block;margin:-8px 0 12px">Ingresos que ya llegaron al corte de 90 días hábiles que usa la Tasa de Permanencia de arriba.</div>
             ${retenidosList.length ? `
             <div style="overflow-x:auto"><table style="width:100%;min-width:640px;border-collapse:collapse">
                 <thead><tr>${['N°', 'Ingresó', 'Puesto', 'Selector', 'Fecha ingreso', 'Días háb.', 'Estado actual'].map(h => `<th style="padding:8px 10px;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);text-align:left">${h}</th>`).join('')}</tr></thead>
