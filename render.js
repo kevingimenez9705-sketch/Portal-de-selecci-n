@@ -442,11 +442,22 @@ function fmtFechaCorta(iso) {
     return `${d}/${m}`;
 }
 
+// Límites del selector de fecha de nacimiento: entre 80 y 16 años atrás desde hoy.
+// Evita cargas erróneas (años tipeados a mano, siglos equivocados, fechas futuras).
+function fechaNacMin() {
+    const d = new Date(); d.setFullYear(d.getFullYear() - 80);
+    return d.toISOString().slice(0, 10);
+}
+function fechaNacMax() {
+    const d = new Date(); d.setFullYear(d.getFullYear() - 16);
+    return d.toISOString().slice(0, 10);
+}
+
 function buildFichaTableHtml(c, b) {
     const isLocked = (b.status === 'Cerrada' || b.status === 'Finalizada' || b.status === 'Sustituida') && !isAdmin();
-    const inp = (field, val, type = 'text', ph = '') => isLocked
+    const inp = (field, val, type = 'text', ph = '', extra = '') => isLocked
         ? `<span>${val || '—'}</span>`
-        : `<input class="ficha-input" type="${type}" value="${val || ''}" placeholder="${ph}" onchange="updateFichaField(${c.id},'${field}',this.value)">`;
+        : `<input class="ficha-input" type="${type}" value="${val || ''}" placeholder="${ph}" ${extra} onchange="updateFichaField(${c.id},'${field}',this.value)">`;
     const sel = (field, val, opts) => isLocked
         ? `<span>${val || 'Pendiente'}</span>`
         : `<select class="ficha-input" onchange="updateFichaField(${c.id},'${field}',this.value)">${opts.map(o => `<option value="${o}" ${(val || 'Pendiente') === o ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
@@ -496,7 +507,7 @@ function buildFichaTableHtml(c, b) {
             <tr><td class="ficha-lbl">APELLIDO</td><td class="ficha-val" colspan="11">${inp('apellido', c.apellido)}</td></tr>
             <tr><td class="ficha-lbl">DNI</td><td class="ficha-val" colspan="11">${inp('dni', c.dni)}</td></tr>
             <tr><td class="ficha-lbl">CUIL</td><td class="ficha-val" colspan="11">${inp('cuil', c.cuil)}</td></tr>
-            <tr><td class="ficha-lbl">Fecha nacimiento</td><td class="ficha-val" colspan="11">${inp('fecha_nacimiento', c.fecha_nacimiento, 'date')}</td></tr>
+            <tr><td class="ficha-lbl">Fecha nacimiento</td><td class="ficha-val" colspan="11">${inp('fecha_nacimiento', c.fecha_nacimiento, 'date', '', `min="${fechaNacMin()}" max="${fechaNacMax()}"`)}</td></tr>
             <tr><td class="ficha-lbl">CEL</td><td class="ficha-val" colspan="11">${inp('celular', c.celular)}</td></tr>
             <tr><td class="ficha-lbl">DOMICILIO</td><td class="ficha-val" colspan="11">${inp('domicilio', c.domicilio)}</td></tr>
             <tr><td class="ficha-lbl">PUESTO</td><td class="ficha-val" colspan="11">${inp('puesto_candidato', c.puesto_candidato || b.puesto)}</td></tr>
