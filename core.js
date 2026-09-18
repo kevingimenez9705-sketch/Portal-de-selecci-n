@@ -45,11 +45,18 @@ let vistaAislada = false;
 function isAdmin() { return currentProfile?.rol === 'admin'; }
 function today() { return new Date().toISOString().slice(0, 10); }
 
+// Soledad (jefa de Selección Staff) queda como selector de un montón de búsquedas
+// viejas: su Pipeline/Fichas terminan mostrando prácticamente todo, y esa tabla
+// tan pesada tilda el navegador. Para ella el panel se resuelve con el resumen
+// (Informe) + la descarga en CSV, no con la tabla fila por fila.
+function esVistaResumenPesada() { return vistaAislada && selectorFiltroActivo === 'Soledad'; }
+
 // Muestra/oculta los chips, el botón de salida y las pestañas de panel general
 // según el modo actual. Se llama al entrar al dashboard, al entrar/salir de
 // la vista aislada, y al loguearse (por si cambió el rol admin).
 function aplicarVisibilidadPanelGeneral() {
     const esAdmin = isAdmin();
+    const resumenPesado = esVistaResumenPesada();
     const chipsBox = document.getElementById('selector-chips');
     const salirBtn = document.getElementById('salir-vista-aislada');
     if (chipsBox) chipsBox.classList.toggle('hidden', vistaAislada);
@@ -60,7 +67,10 @@ function aplicarVisibilidadPanelGeneral() {
     ['nav-stats', 'nav-charts', 'nav-analisis'].forEach(id => {
         document.getElementById(id)?.classList.toggle('hidden', vistaAislada || !esAdmin);
     });
-    document.getElementById('nav-informe')?.classList.toggle('hidden', vistaAislada);
+    document.getElementById('nav-informe')?.classList.toggle('hidden', vistaAislada && !resumenPesado);
+    ['nav-pipeline', 'nav-choferes'].forEach(id => {
+        document.getElementById(id)?.classList.toggle('hidden', resumenPesado);
+    });
 }
 
 // ══════════════════════════════════════════════
@@ -316,7 +326,12 @@ function showHome() {
 async function goToApp(selectorInicial) {
     document.getElementById('landing-screen').classList.add('hidden');
     await initDashboard();
-    if (selectorInicial) entrarVistaAislada(selectorInicial);
+    if (selectorInicial) {
+        entrarVistaAislada(selectorInicial);
+        // Soledad entra directo al Informe (resumen + descarga), no al Pipeline
+        // completo — ver esVistaResumenPesada().
+        if (esVistaResumenPesada()) showView('informe', document.getElementById('nav-informe'));
+    }
     else showView('pipeline', document.getElementById('nav-pipeline'));
 }
 
