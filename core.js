@@ -152,7 +152,7 @@ function toast(msg, isError = false) {
     t.textContent = msg;
     t.className = 'show' + (isError ? ' error' : '');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.className = '', 3000);
+    toastTimer = setTimeout(() => t.className = '', isError ? 6000 : 3000);
 }
 
 // ══════════════════════════════════════════════
@@ -422,7 +422,7 @@ async function loadDataFull() {
         .from('busquedas')
         .select(BUSQUEDA_SELECT)
         .order('id', { ascending: false });
-    if (error) { toast('Error al cargar datos', true); return; }
+    if (error) { console.error('Error cargando búsquedas:', error); toast('Error al cargar datos: ' + (error.message || error.code), true); return; }
     busquedas = (data || []).map(mapRow);
     const nums = busquedas.map(b => parseInt((b.numero || '').replace('SEL-', '')) || 0);
     nroSeq = nums.length ? Math.max(...nums) + 1 : 1;
@@ -433,6 +433,7 @@ async function loadDataFull() {
         .select('*')
         .is('busqueda_id', null)
         .order('id', { ascending: false });
+    if (errSA) console.error('Error cargando postulantes sin asignar:', errSA);
     unassignedCandidatos = errSA ? [] : (sinAsignar || []);
 }
 
@@ -449,7 +450,7 @@ async function loadData(scopeId = null) {
         .select(BUSQUEDA_SELECT)
         .eq('id', scopeId)
         .maybeSingle();
-    if (error) { toast('Error al recargar', true); return; }
+    if (error) { console.error('Error recargando búsqueda:', error); toast('Error al recargar: ' + (error.message || error.code), true); return; }
     if (!data) { busquedas.splice(idx, 1); return; } // se borró entretanto
     busquedas[idx] = mapRow(data);
 }
