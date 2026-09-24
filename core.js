@@ -434,7 +434,7 @@ async function loadDataFull() {
         .is('busqueda_id', null)
         .order('id', { ascending: false });
     if (errSA) console.error('Error cargando postulantes sin asignar:', errSA);
-    unassignedCandidatos = errSA ? [] : (sinAsignar || []);
+    unassignedCandidatos = errSA ? [] : (sinAsignar || []).map(c => ({ ...c, selector: canonicalSelector(c.selector) }));
 }
 
 // Recarga los datos tras guardar un cambio. Si se pasa el id de una búsqueda puntual,
@@ -465,15 +465,31 @@ function findBusquedaId(predicate) {
 }
 function busquedaIdDeCandidato(candId) { return findBusquedaId(b => (b.candidatos || []).some(c => c.id === candId)); }
 
+// Lleva el nombre de selector tal como vino de la base (a veces cargado a mano o
+// desde n8n: "Juan", "juan pablo", "Juan Pablo ", "Ángel"...) a su forma oficial de
+// SELECTORES. Sin esto, el panel de cada selector compara por igualdad exacta y esas
+// búsquedas solo aparecían en el panel general. Si no se reconoce, queda como vino.
+function _normNombre(s) { return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim().toLowerCase(); }
+function canonicalSelector(nombre) {
+    const n = _normNombre(nombre);
+    if (!n) return nombre;
+    const exacto = SELECTORES.find(s => _normNombre(s) === n);
+    if (exacto) return exacto;
+    // "Juan" → "Juan Pablo", "Juan Pablo Alecha" → "Juan Pablo" (solo si es un único match).
+    const parcial = SELECTORES.filter(s => { const c = _normNombre(s); return c.startsWith(n + ' ') || n.startsWith(c + ' '); });
+    return parcial.length === 1 ? parcial[0] : (nombre || '').trim();
+}
+
 function mapRow(b) {
     return {
         ...b,
+        selector:        canonicalSelector(b.selector),
         cp:              b.enviado_sector,   // alias: la columna DB pasó a llamarse enviado_sector
         historial:       (b.historial   || []).sort((a,x) => a.id - x.id),
         estado_busqueda: (b.estado_log  || []).sort((a,x) => a.id - x.id),
-        candidatos:      (b.candidatos  || []).sort((a,x) => a.id - x.id),
-        psicotecnicos:   (b.psicotecnicos || []).map(p => ({...p, auth: p.auth_por})).sort((a,x) => a.id - x.id),
-        verificaciones:  (b.verificaciones || []).sort((a,x) => a.id - x.id),
+        candidatos:      (b.candidatos  || []).map(c => ({...c, selector: canonicalSelector(c.selector)})).sort((a,x) => a.id - x.id),
+        psicotecnicos:   (b.psicotecnicos || []).map(p => ({...p, auth: p.auth_por, selector_psico: canonicalSelector(p.selector_psico)})).sort((a,x) => a.id - x.id),
+        verificaciones:  (b.verificaciones || []).map(v => ({...v, selector_verif: canonicalSelector(v.selector_verif)})).sort((a,x) => a.id - x.id),
         archivos:        (b.archivos    || []).sort((a,x) => a.id - x.id),
     };
 }
