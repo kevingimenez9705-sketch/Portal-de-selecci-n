@@ -696,16 +696,13 @@ function renderKPIs() {
     const total       = cat.length;
     const activas     = cat.filter(b => b.status === 'Proceso').length;
     const reabiertas  = cat.filter(b => b.reopened_from).length;
-    // "En proceso" = activas + reabiertas (suma real, no reparto del mismo total:
-    // reabiertas cuenta TODAS las reaperturas, estén o no en curso ahora mismo).
-    const proceso     = activas + reabiertas;
     const cerradas    = cat.filter(b => b.status === 'Cerrada').length;
     const finalizadas = cat.filter(b => b.status === 'Finalizada').length;
     const vencidas    = cat.filter(b => { const d = daysDiff(b.inicio); return d > (DEMORA_LIMITE[b.nivel] || 15) && b.status === 'Proceso'; }).length;
     const alertas72   = cat.filter(alertaSectorVencido).length;
     document.getElementById('kpi-row').innerHTML = `
         <div class="kpi"><div class="kpi-num">${total}</div><div class="kpi-lbl">Total búsquedas</div></div>
-        <div class="kpi"><div class="kpi-num" style="color:var(--blue)">${proceso}</div><div class="kpi-lbl">En proceso</div><div class="kpi-sub">${activas} activas + ${reabiertas} reabiertas</div></div>
+        <div class="kpi"><div class="kpi-num" style="color:var(--blue)">${activas}</div><div class="kpi-lbl">En proceso</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--green)">${cerradas}</div><div class="kpi-lbl">Cerradas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:#92400e">${finalizadas}</div><div class="kpi-lbl">Finalizadas</div></div>
         <div class="kpi"><div class="kpi-num" style="color:var(--red)">${vencidas}</div><div class="kpi-lbl">Fuera de plazo</div></div>
