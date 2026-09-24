@@ -127,6 +127,10 @@ function inCategoria(b) {
 //  RENDER DISPATCH: pipeline (tabla) vs choferes (fichas)
 // ══════════════════════════════════════════════
 function refreshView() {
+    // filteredIds es una lista fija de ids: si hay un filtro activo se recalcula
+    // antes de dibujar, así las búsquedas creadas/reabiertas/sustituidas después
+    // de filtrar (ej: dentro del panel de un selector) también aparecen.
+    if (filteredIds) filteredIds = computeFilteredIds();
     if (currentCategoria === 'choferes') { renderFichas(); }
     else { renderTable(); }
 }
@@ -720,6 +724,11 @@ function applyFiltersDebounced() {
 }
 
 function applyFilters() {
+    filteredIds = computeFilteredIds();
+    refreshView();
+}
+
+function computeFilteredIds() {
     const sel    = selectorFiltroActivo;
     const tipo   = document.getElementById('f-tipo').value;
     const depto  = document.getElementById('f-depto').value;
@@ -727,7 +736,7 @@ function applyFilters() {
     const reab   = document.getElementById('f-reabierta').value;
     const alerta72 = document.getElementById('f-alerta72').value;
     const search = (document.getElementById('f-search').value || '').trim().toLowerCase();
-    filteredIds = busquedas
+    return busquedas
         .filter(inCategoria)
         .filter(b => {
             if (sel    && (b.selector || '') !== sel)  return false;
@@ -743,7 +752,6 @@ function applyFilters() {
             }
             return true;
         }).map(b => b.id);
-    refreshView();
 }
 
 function updateDeptoFilter() {
