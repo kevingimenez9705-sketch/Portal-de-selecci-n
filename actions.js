@@ -55,7 +55,7 @@ async function updateField(id, field, val) {
         const msg = isAdmin()
             ? 'Vas a cargar la fecha de ingreso: esto cambia el Estado a "Cerrada" automáticamente. ¿Confirmás?'
             : 'Vas a cargar la fecha de ingreso: esto cierra automáticamente la búsqueda (Estado: Cerrada) y, al no ser admin, vos mismo/a vas a dejar de poder editarla después. ¿Confirmás?';
-        if (!confirm(msg)) { refreshView(); return; }
+        if (!(await confirmar(msg))) { refreshView(); return; }
     }
     const update = { [field]: val };
     if (field === 'ingreso' && val) update.status = 'Cerrada';
@@ -82,7 +82,7 @@ async function addEstadoEntry(id) {
 
 async function removeEstadoEntry(entryId) {
     if (!isAdmin()) { toast('Solo un administrador puede eliminar comentarios', true); return; }
-    if (!confirm('¿Eliminar este comentario? Esta acción no se puede deshacer.')) return;
+    if (!(await confirmar('¿Eliminar este comentario? Esta acción no se puede deshacer.'))) return;
     const bid = findBusquedaId(b => (b.estado_busqueda || []).some(e => e.id === entryId));
     await sb.from('estado_log').delete().eq('id', entryId);
     await loadData(bid); refreshBusqueda(bid); toast('Eliminado');
@@ -168,7 +168,7 @@ async function saveCand() {
 }
 
 async function removeCand(candId) {
-    if (!confirm('¿Eliminar este candidato? Esta acción no se puede deshacer.')) return;
+    if (!(await confirmar('¿Eliminar este candidato? Esta acción no se puede deshacer.'))) return;
     const bid = busquedaIdDeCandidato(candId);
     const { error } = await sb.from('candidatos').delete().eq('id', candId);
     if (error) { toast('Error al eliminar: ' + (error.message || error.code), true); return; }
@@ -310,7 +310,7 @@ async function savePsico() {
     closeModal('modal-psico'); await loadData(id); refreshBusqueda(id); toast('Psicotécnico agregado ✓');
 }
 async function removePsico(psicoId) {
-    if (!confirm('¿Eliminar este psicotécnico? Esta acción no se puede deshacer.')) return;
+    if (!(await confirmar('¿Eliminar este psicotécnico? Esta acción no se puede deshacer.'))) return;
     const bid = findBusquedaId(b => (b.psicotecnicos || []).some(p => p.id === psicoId));
     await sb.from('psicotecnicos').delete().eq('id', psicoId);
     await loadData(bid); refreshBusqueda(bid); toast('Eliminado');
@@ -365,7 +365,7 @@ async function updateVerifEstado(verifId, resultado) {
 }
 
 async function removeVerif(verifId) {
-    if (!confirm('¿Eliminar esta verificación? Esta acción no se puede deshacer.')) return;
+    if (!(await confirmar('¿Eliminar esta verificación? Esta acción no se puede deshacer.'))) return;
     const bid = findBusquedaId(b => (b.verificaciones || []).some(x => x.id === verifId));
     await sb.from('verificaciones').delete().eq('id', verifId);
     await loadData(bid); refreshBusqueda(bid); toast('Eliminado');
@@ -403,7 +403,7 @@ async function addNew() {
 async function reabrir(id) {
     const orig = busquedas.find(x => x.id === id);
     if (!orig) { toast('No se encontró la búsqueda', true); return; }
-    if (!confirm('¿Reabrir búsqueda "' + orig.puesto + '"? Se creará una nueva entrada en Proceso.')) return;
+    if (!(await confirmar('¿Reabrir búsqueda "' + orig.puesto + '"? Se creará una nueva entrada en Proceso.'))) return;
     const nuevaRow = {
         numero: await nextNro(), puesto: orig.puesto, selector: orig.selector,
         depto: orig.depto, tipo: orig.tipo, motivo: orig.motivo, nivel: orig.nivel,
@@ -432,7 +432,7 @@ async function reabrir(id) {
         }
         await sb.from('historial').insert(histEntries);
     } catch (e) { console.warn('No se pudo copiar historial:', e); }
-    let fechaBaja = prompt('Fecha de baja del que ingresó (AAAA-MM-DD). Dejá vacío si seguía hasta hoy:', today());
+    let fechaBaja = await pedirTexto('Fecha de baja del que ingresó (AAAA-MM-DD). Dejá vacío si seguía hasta hoy:', today());
     const updOrig = { status: 'Cerrada' };
     if (fechaBaja && fechaBaja.trim()) {
         const f = fechaBaja.trim();
@@ -450,7 +450,7 @@ async function reabrir(id) {
 async function reabrirPorDemora(id) {
     const orig = busquedas.find(x => x.id === id);
     if (!orig) { toast('No se encontró la búsqueda', true); return; }
-    if (!confirm('¿Reabrir "' + orig.puesto + '" con el contador en 0? Se marcará esta entrada como Sustituida y se creará una nueva con fecha de inicio hoy.')) return;
+    if (!(await confirmar('¿Reabrir "' + orig.puesto + '" con el contador en 0? Se marcará esta entrada como Sustituida y se creará una nueva con fecha de inicio hoy.'))) return;
     const nuevaRow = {
         numero: await nextNro(), puesto: orig.puesto, selector: orig.selector,
         depto: orig.depto, tipo: orig.tipo, motivo: orig.motivo, nivel: orig.nivel,
@@ -487,7 +487,7 @@ async function reabrirContinuarConteo(id) {
     const orig = busquedas.find(x => x.id === id);
     if (!orig) { toast('No se encontró la búsqueda', true); return; }
     const totalActual = tramosDemora(orig).total;
-    if (!confirm('¿Reabrir "' + orig.puesto + '" continuando el conteo actual (Total Proceso: ' + totalActual + 'hd)? Se creará una búsqueda nueva con la misma fecha de inicio y se marcará esta como Sustituida.')) return;
+    if (!(await confirmar('¿Reabrir "' + orig.puesto + '" continuando el conteo actual (Total Proceso: ' + totalActual + 'hd)? Se creará una búsqueda nueva con la misma fecha de inicio y se marcará esta como Sustituida.'))) return;
     const nuevaRow = {
         numero: await nextNro(), puesto: orig.puesto, selector: orig.selector,
         depto: orig.depto, tipo: orig.tipo, motivo: orig.motivo, nivel: orig.nivel,
@@ -524,9 +524,22 @@ async function reabrirContinuarConteo(id) {
 
 async function eliminar(id) {
     if (!isAdmin()) { toast('Solo un administrador puede eliminar búsquedas', true); return; }
-    if (!confirm('¿Eliminar esta búsqueda? Esta acción no se puede deshacer.')) return;
-    const { error } = await sb.from('busquedas').delete().eq('id', id);
+    if (!(await confirmar('¿Eliminar esta búsqueda? Esta acción no se puede deshacer.'))) return;
+    let { data: borradas, error } = await sb.from('busquedas').delete().eq('id', id).select('id');
+    // 23503 = la búsqueda tiene datos relacionados y la clave foránea no borra en cascada:
+    // se borran primero candidatos, comentarios, psicotécnicos, etc. y se reintenta.
+    if (error && error.code === '23503') {
+        const archivos = busquedas.find(b => b.id === id)?.archivos || [];
+        if (archivos.length) await sb.storage.from('Busquedas-pdfs').remove(archivos.map(a => a.url));
+        for (const t of ['estado_log', 'candidatos', 'psicotecnicos', 'verificaciones', 'archivos', 'historial']) {
+            const { error: e } = await sb.from(t).delete().eq('busqueda_id', id);
+            if (e) { toast(`Error al borrar ${t}: ` + (e.message || e.code), true); return; }
+        }
+        ({ data: borradas, error } = await sb.from('busquedas').delete().eq('id', id).select('id'));
+    }
     if (error) { toast('Error al eliminar: ' + (error.message || error.code), true); return; }
+    // Sin error pero sin filas borradas = la policy DELETE de Supabase no lo permite.
+    if (!borradas || borradas.length === 0) { toast('No se eliminó: falta permiso DELETE en "busquedas" (policy de Supabase)', true); return; }
     busquedas = busquedas.filter(b => b.id !== id);
     marcarResumenViejo();
     refreshView(); toast('Búsqueda eliminada');
@@ -556,10 +569,12 @@ async function subirPDF(busquedaId, input) {
 async function abrirPDF(storagePath) {
     const { data, error } = await sb.storage.from('Busquedas-pdfs').createSignedUrl(storagePath, 3600);
     if (error || !data) { toast('No se pudo abrir el archivo', true); return; }
-    window.open(data.signedUrl, '_blank');
+    // Dentro de Google Sites el navegador puede bloquear la ventana nueva.
+    const w = window.open(data.signedUrl, '_blank');
+    if (!w) toast('El navegador bloqueó la ventana del archivo: permití ventanas emergentes o abrí el panel fuera de Google Sites', true);
 }
 async function eliminarPDF(archivoId, storagePath) {
-    if (!confirm('¿Eliminar este archivo? Esta acción no se puede deshacer.')) return;
+    if (!(await confirmar('¿Eliminar este archivo? Esta acción no se puede deshacer.'))) return;
     const bid = findBusquedaId(b => (b.archivos || []).some(a => a.id === archivoId));
     await sb.storage.from('Busquedas-pdfs').remove([storagePath]);
     await sb.from('archivos').delete().eq('id', archivoId);
