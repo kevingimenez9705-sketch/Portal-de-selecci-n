@@ -22,6 +22,7 @@ async function agregarBusquedaEnMemoria(id) {
     const { data, error } = await conTimeout(sb.from('busquedas').select(BUSQUEDA_SELECT).eq('id', id).maybeSingle());
     if (error || !data) { await loadDataFull(); return; }
     busquedas = [mapRow(data), ...busquedas.filter(b => b.id !== id)];
+    marcarResumenViejo();
 }
 
 // "historial" ya no viene en la carga masiva: se pide solo al reabrir.
@@ -527,6 +528,7 @@ async function eliminar(id) {
     const { error } = await sb.from('busquedas').delete().eq('id', id);
     if (error) { toast('Error al eliminar: ' + (error.message || error.code), true); return; }
     busquedas = busquedas.filter(b => b.id !== id);
+    marcarResumenViejo();
     refreshView(); toast('Búsqueda eliminada');
 }
 

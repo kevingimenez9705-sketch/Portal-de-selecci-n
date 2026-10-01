@@ -447,6 +447,50 @@ let datosCargados       = false;
 let errorCarga          = null;   // mensaje del último fallo de carga (para el aviso)
 let _cargaEnCurso       = null;   // evita dos cargas completas en paralelo
 
+// ── Resumen del historial completo para los paneles generales ──
+// Estadísticas/Gráficos/Análisis/Informe usan la función busquedas_resumen() de Supabase
+// (ver sql/estadisticas_resumen.sql): todas las búsquedas, con solo los campos que esos
+// paneles necesitan. Si la función no existe todavía, se usan las búsquedas cargadas.
+const VISTAS_PANEL = ['stats', 'charts', 'analisis', 'informe'];
+let resumenPanel = null;     // array de búsquedas livianas (mismo formato que mapRow)
+let resumenError = null;
+async function cargarResumenPanel() {
+    let data, error;
+    try { ({ data, error } = await conTimeout(sb.rpc('busquedas_resumen'))); }
+    catch (e) { error = e; }
+    if (error) {
+        console.warn('busquedas_resumen no disponible:', error);
+        resumenError = /PGRST202|Could not find the function/i.test((error.code || '') + (error.message || ''))
+            ? 'falta crear la función busquedas_resumen en Supabase (sql/estadisticas_resumen.sql)'
+            : mensajeError(error);
+        resumenPanel = null;
+        return false;
+    }
+    resumenError = null;
+    resumenPanel = (data || []).map(mapRow);
+    return true;
+}
+// Fuente de datos de los paneles generales.
+function datosPanel() { return resumenPanel || busquedas; }
+// Después de cualquier cambio, el resumen queda viejo: se vuelve a pedir al abrir un panel.
+function marcarResumenViejo() { resumenPanel = null; }
+
+// Abre un panel general: primero asegura el resumen y después dibuja.
+async function renderPanelGeneral(v) {
+    if (!resumenPanel) {
+        const box = { stats: 'stats-content', informe: 'informe-content' }[v];
+        const el = box && document.getElementById(box);
+        if (el) el.innerHTML = '<span class="tip">Calculando totales…</span>';
+        await cargarResumenPanel();
+    }
+    if (vistaActual() !== v) return; // el usuario ya se fue a otra pestaña
+    renderDataBanner();
+    if (v === 'informe')  renderInforme();
+    if (v === 'stats')    renderStats('general');
+    if (v === 'charts')   { destroyCharts(); renderCharts('general'); }
+    if (v === 'analisis') { destroyCharts(); renderAnalisis(); }
+}
+
 function fechaDesdeRecientes() {
     const d = new Date(); d.setMonth(d.getMonth() - MESES_RECIENTES);
     return fechaLocalISO(d);
@@ -518,6 +562,7 @@ async function loadDataFull(completo = historialCompleto) {
 // solo se vuelve a pedir ESA fila (con sus candidatos/psicotécnicos/etc.).
 // Sin id (o si la búsqueda no se encuentra en memoria), recarga todo.
 async function loadData(scopeId = null) {
+    marcarResumenViejo();
     if (!scopeId) { await loadDataFull(); return; }
     const idx = busquedas.findIndex(b => b.id === scopeId);
     if (idx === -1) { await loadDataFull(); return; }
@@ -538,12 +583,14 @@ async function loadData(scopeId = null) {
 function aplicarCambiosBusqueda(row) {
     const b = row && busquedas.find(x => x.id === row.id);
     if (!b) return false;
+    marcarResumenViejo();
     Object.assign(b, row, { cp: row.enviado_sector });
     return true;
 }
 
 // Botón "Actualizar" / "Cargar historial completo" / "Reintentar" del aviso.
 async function recargarDatos(completo = historialCompleto) {
+    marcarResumenViejo();
     const ok = await loadDataFull(completo);
     if (!ok) return;
     await checkAndFinalizeSearches();
@@ -570,6 +617,14 @@ function renderDataBanner() {
     }
     if (!datosCargados) { el.className = 'data-banner hidden'; el.innerHTML = ''; return; }
     el.className = 'data-banner';
+    if (VISTAS_PANEL.includes(vistaActual())) {
+        el.innerHTML = resumenPanel
+            ? `<i class="fas fa-chart-line"></i><span>Totales sobre el <strong>historial completo</strong>: ${resumenPanel.length} búsquedas.</span>
+               <button class="btn-sm" onclick="recargarDatos()"><i class="fas fa-sync-alt" style="font-size:9px"></i> Actualizar</button>`
+            : `<i class="fas fa-info-circle"></i><span>No se pudo traer el resumen completo (${esc(resumenError || 'sin datos')}). Se muestran solo las ${busquedas.length} búsquedas cargadas${historialCompleto ? '' : ' (vista liviana)'}.</span>
+               ${historialCompleto ? '' : '<button class="btn-sm" onclick="recargarDatos(true)">Cargar historial completo</button>'}`;
+        return;
+    }
     el.innerHTML = historialCompleto
         ? `<i class="fas fa-database"></i><span>Historial completo cargado · <strong>${busquedas.length}</strong> búsquedas.</span>
            <button class="btn-sm" onclick="recargarDatos(false)">Volver a vista liviana</button>

@@ -3,6 +3,7 @@
 // ══════════════════════════════════════════════
 // ── INFORME ──
 function renderInforme() {
+    const busquedas = datosPanel(); // resumen del historial completo (ver core.js)
     const total       = busquedas.length;
     const cerradas    = busquedas.filter(b => b.status === 'Cerrada' || b.status === 'Finalizada').length;
     const staff       = busquedas.filter(b => b.tipo === 'Staff').length;
@@ -111,11 +112,15 @@ function csvEscape(val) {
 async function descargarInformeCSV() {
     // Con la vista liviana en memoria solo hay activas + últimos meses: el informe tiene
     // que salir completo, así que se baja el historial (paginado) justo antes de exportar.
-    if (!historialCompleto) {
+    // El informe sale del resumen del historial completo (función busquedas_resumen).
+    // Si esa función no está creada, se baja el historial completo como antes.
+    if (!resumenPanel) await cargarResumenPanel();
+    if (!resumenPanel && !historialCompleto) {
         toast('Cargando historial completo para el informe…');
         const ok = await loadDataFull(true);
         if (!ok) return; // loadDataFull ya mostró el error
     }
+    const busquedas = datosPanel();
     // Filtro opcional por selector (dropdown al lado del botón) — para exportar solo lo de
     // una persona sin tener que filtrar en Excel después de descargar todo.
     const selectorFiltro = document.getElementById('informe-selector-filter')?.value || '';
@@ -176,7 +181,6 @@ function showView(v, btn) {
     document.getElementById('main-sub').textContent   = titles[v][1];
     const fChoferSel = document.getElementById('f-chofer-resultado');
     if (fChoferSel) fChoferSel.classList.toggle('hidden', v !== 'choferes');
-    if (v === 'informe') renderInforme();
     if (v === 'pipeline' || v === 'choferes') {
         currentCategoria = (v === 'choferes') ? 'choferes' : 'general';
         // En vista aislada NO se resetea el filtro de selector: si no, alternar
@@ -191,9 +195,8 @@ function showView(v, btn) {
         }
         refreshView();
     }
-    if (v === 'stats')    renderStats('general');
-    if (v === 'charts')   { destroyCharts(); renderCharts('general'); }
-    if (v === 'analisis') { destroyCharts(); renderAnalisis(); }
+    if (VISTAS_PANEL.includes(v)) renderPanelGeneral(v);
+    else renderDataBanner();
 }
 function openModal(id = 'modal-nueva') {
     document.getElementById(id).classList.remove('hidden');

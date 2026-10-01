@@ -1,5 +1,6 @@
 // ══════════════════════════════════════════════
 //  STATS-CHARTS.JS — pestañas de Estadísticas y Gráficos (solo admin).
+//  Usan datosPanel(): el resumen del historial completo (o lo cargado, si no está).
 // ══════════════════════════════════════════════
 // ── STATS ──
 function switchStatsTab(tab, btn) {
@@ -7,7 +8,7 @@ function switchStatsTab(tab, btn) {
     btn.classList.add('active'); renderStats(tab);
 }
 function renderStats(tab) {
-    const subset = tab === 'general' ? busquedas : busquedas.filter(b => b.tipo === (tab === 'staff' ? 'Staff' : 'Fábrica'));
+    const subset = tab === 'general' ? datosPanel() : datosPanel().filter(b => b.tipo === (tab === 'staff' ? 'Staff' : 'Fábrica'));
     const total = subset.length || 1;
     // "Rendimiento por Selector" y "Por Estado" ya no van acá — quedaban duplicados con
     // la tabla comparativa de Gráficos → Selectores y con el KPI-row de arriba de cada
@@ -57,19 +58,19 @@ function switchChartsTab(tab, btn) { document.querySelectorAll('#view-charts .pa
 function renderCharts(tab) { destroyCharts(); if (tab === 'general') renderChartsGeneral(); else if (tab === 'tiempo') renderChartsTiempo(); else if (tab === 'selectores') renderChartsSelectores(); }
 
 function renderChartsGeneral() {
-    const cerradas    = busquedas.filter(b => b.status === 'Cerrada' || b.status === 'Finalizada').length;
-    const proceso     = busquedas.filter(b => b.status === 'Proceso').length;
-    const pausadas    = busquedas.filter(b => b.status === 'Pausada').length;
-    const finalizadas = busquedas.filter(b => b.status === 'Finalizada').length;
-    const tasaCierre  = Math.round((cerradas / Math.max(busquedas.length, 1)) * 100);
-    const totalCands  = busquedas.reduce((a, b) => a + b.candidatos.length, 0);
-    const byStatus    = {}; busquedas.forEach(b => { byStatus[b.status] = (byStatus[b.status] || 0) + 1; });
-    const staff       = busquedas.filter(b => b.tipo === 'Staff').length;
-    const fabrica     = busquedas.filter(b => b.tipo === 'Fábrica').length;
-    const byMotivo    = {}; busquedas.forEach(b => { byMotivo[b.motivo] = (byMotivo[b.motivo] || 0) + 1; });
-    const byDepto     = {}; busquedas.forEach(b => { byDepto[b.depto]   = (byDepto[b.depto]   || 0) + 1; });
-    const byNivel     = {}; busquedas.forEach(b => { byNivel[b.nivel]   = (byNivel[b.nivel]   || 0) + 1; });
-    const permData    = busquedas.filter(b => b.ingreso).map(b => ({
+    const cerradas    = datosPanel().filter(b => b.status === 'Cerrada' || b.status === 'Finalizada').length;
+    const proceso     = datosPanel().filter(b => b.status === 'Proceso').length;
+    const pausadas    = datosPanel().filter(b => b.status === 'Pausada').length;
+    const finalizadas = datosPanel().filter(b => b.status === 'Finalizada').length;
+    const tasaCierre  = Math.round((cerradas / Math.max(datosPanel().length, 1)) * 100);
+    const totalCands  = datosPanel().reduce((a, b) => a + b.candidatos.length, 0);
+    const byStatus    = {}; datosPanel().forEach(b => { byStatus[b.status] = (byStatus[b.status] || 0) + 1; });
+    const staff       = datosPanel().filter(b => b.tipo === 'Staff').length;
+    const fabrica     = datosPanel().filter(b => b.tipo === 'Fábrica').length;
+    const byMotivo    = {}; datosPanel().forEach(b => { byMotivo[b.motivo] = (byMotivo[b.motivo] || 0) + 1; });
+    const byDepto     = {}; datosPanel().forEach(b => { byDepto[b.depto]   = (byDepto[b.depto]   || 0) + 1; });
+    const byNivel     = {}; datosPanel().forEach(b => { byNivel[b.nivel]   = (byNivel[b.nivel]   || 0) + 1; });
+    const permData    = datosPanel().filter(b => b.ingreso).map(b => ({
         nombre: (b.ingreso_nombre && b.ingreso_nombre.trim()) ? b.ingreso_nombre : (b.puesto || '(sin nombre)'),
         dias: daysDiff(b.ingreso, b.fecha_baja || null), puesto: b.puesto
     })).sort((a, b) => b.dias - a.dias);
@@ -90,18 +91,18 @@ function renderChartsGeneral() {
     const permMenorPermanencia = [...permData].sort((a, b) => a.dias - b.dias).slice(0, 5);
 
     // ── Tasa de cobertura (búsquedas cerradas/finalizadas sobre el total) — Staff = personal de Oficina ──
-    const coberturaStaff   = staff   ? Math.round((busquedas.filter(b => b.tipo === 'Staff'   && (b.status === 'Cerrada' || b.status === 'Finalizada')).length / staff)   * 100) : 0;
-    const coberturaFabrica = fabrica ? Math.round((busquedas.filter(b => b.tipo === 'Fábrica' && (b.status === 'Cerrada' || b.status === 'Finalizada')).length / fabrica) * 100) : 0;
+    const coberturaStaff   = staff   ? Math.round((datosPanel().filter(b => b.tipo === 'Staff'   && (b.status === 'Cerrada' || b.status === 'Finalizada')).length / staff)   * 100) : 0;
+    const coberturaFabrica = fabrica ? Math.round((datosPanel().filter(b => b.tipo === 'Fábrica' && (b.status === 'Cerrada' || b.status === 'Finalizada')).length / fabrica) * 100) : 0;
 
     // ── Tasa de permanencia: % de ingresados que llegaron a los 90 días hábiles en la empresa ──
-    const conIngreso    = busquedas.filter(b => b.ingreso).length;
-    const retenidos90   = busquedas.filter(b => b.ingreso && daysDiff(b.ingreso, b.fecha_baja || null) >= 90).length;
+    const conIngreso    = datosPanel().filter(b => b.ingreso).length;
+    const retenidos90   = datosPanel().filter(b => b.ingreso && daysDiff(b.ingreso, b.fecha_baja || null) >= 90).length;
     const tasaPermanencia = conIngreso ? Math.round((retenidos90 / conIngreso) * 100) : 0;
 
     // ── Demora promedio por nivel (Otros / Jefe-Encargado / Gerente-Director) ──
     const NIVELES = ['Otros', 'Jefe/Encargado', 'Gerente/Director'];
     const demoraPorNivel = NIVELES.map(n => {
-        const items = busquedas.filter(b => (b.nivel || 'Otros') === n);
+        const items = datosPanel().filter(b => (b.nivel || 'Otros') === n);
         const dl = items.map(b => b.cp ? daysDiff(b.inicio, b.cp) : (b.ingreso ? daysDiff(b.inicio, b.ingreso) : daysDiff(b.inicio)));
         const avg = dl.length ? Math.round(dl.reduce((a, c) => a + c, 0) / dl.length) : 0;
         return { nivel: n, avg, limite: DEMORA_LIMITE[n] || 15, count: items.length };
@@ -109,9 +110,9 @@ function renderChartsGeneral() {
 
     document.getElementById('charts-content').innerHTML = `
     <div class="mini-kpi-row">
-        <div class="mini-kpi"><div class="mini-kpi-num">${busquedas.length}</div><div class="mini-kpi-lbl">Total</div><div class="mini-kpi-sub">${proceso} en curso · ${pausadas} pausadas</div></div>
-        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${tasaCierre}%</div><div class="mini-kpi-lbl">Tasa de Cierre</div><div class="mini-kpi-sub">${cerradas} de ${busquedas.length}</div></div>
-        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--orange)">${totalCands}</div><div class="mini-kpi-lbl">Candidatos</div><div class="mini-kpi-sub">⌀ ${(totalCands / Math.max(busquedas.length, 1)).toFixed(1)} por búsqueda</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num">${datosPanel().length}</div><div class="mini-kpi-lbl">Total</div><div class="mini-kpi-sub">${proceso} en curso · ${pausadas} pausadas</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${tasaCierre}%</div><div class="mini-kpi-lbl">Tasa de Cierre</div><div class="mini-kpi-sub">${cerradas} de ${datosPanel().length}</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--orange)">${totalCands}</div><div class="mini-kpi-lbl">Candidatos</div><div class="mini-kpi-sub">⌀ ${(totalCands / Math.max(datosPanel().length, 1)).toFixed(1)} por búsqueda</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:#92400e">${finalizadas}</div><div class="mini-kpi-lbl">Finalizadas</div><div class="mini-kpi-sub">≥ 90 días háb. en empresa</div></div>
     </div>
     <div style="margin-top:20px">
@@ -176,7 +177,7 @@ function renderChartsGeneral() {
 }
 
 function renderChartsTiempo() {
-    const cerradas = busquedas.filter(b => (b.status === 'Cerrada' || b.status === 'Finalizada') && b.ingreso);
+    const cerradas = datosPanel().filter(b => (b.status === 'Cerrada' || b.status === 'Finalizada') && b.ingreso);
     const diasList = cerradas.map(b => daysDiff(b.inicio, b.ingreso));
     const avgDias  = diasList.length ? Math.round(diasList.reduce((a, c) => a + c, 0) / diasList.length) : 0;
     const minDias  = diasList.length ? Math.min(...diasList) : 0;
@@ -204,7 +205,7 @@ function renderChartsTiempo() {
 
     // ── Demora: cuánto tardó el equipo de Selección (envío al sector) vs el cliente interno (decisión del sector), por selector ──
     const bySelDemora = {};
-    busquedas.forEach(b => {
+    datosPanel().forEach(b => {
         const t = tramosDemora(b);
         if (t.t2NA) return;
         if (!bySelDemora[b.selector]) bySelDemora[b.selector] = { t1: [], t2: [] };
@@ -222,7 +223,7 @@ function renderChartsTiempo() {
         <div class="mini-kpi"><div class="mini-kpi-num">${avgDias}hd</div><div class="mini-kpi-lbl">Tiempo promedio</div><div class="mini-kpi-sub">${cerradas.length} búsquedas cerradas</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${minDias}hd</div><div class="mini-kpi-lbl">Más rápida</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--red)">${maxDias}hd</div><div class="mini-kpi-lbl">Más lenta</div></div>
-        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--orange)">${busquedas.filter(b => { const d = daysDiff(b.inicio); return d > (DEMORA_LIMITE[b.nivel] || 15) && b.status === 'Proceso'; }).length}</div><div class="mini-kpi-lbl">Fuera de plazo</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--orange)">${datosPanel().filter(b => { const d = daysDiff(b.inicio); return d > (DEMORA_LIMITE[b.nivel] || 15) && b.status === 'Proceso'; }).length}</div><div class="mini-kpi-lbl">Fuera de plazo</div></div>
         <div class="mini-kpi"><div class="mini-kpi-num" style="color:var(--green)">${pctEnTiempo}%</div><div class="mini-kpi-lbl">Cerradas en tiempo</div><div class="mini-kpi-sub">${enTiempo} en tiempo · ${excedidas} excedidas</div></div>
     </div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:12px;padding:6px 12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;display:inline-block">
@@ -256,7 +257,7 @@ function renderChartsTiempo() {
 function renderChartsSelectores() {
     const data = {};
     SELECTORES.forEach(s => { data[s] = { total: 0, cerradas: 0, proceso: 0, candidatos: 0, psico: 0, psico_realizado: 0, dias: [] }; });
-    busquedas.forEach(b => {
+    datosPanel().forEach(b => {
         if (!data[b.selector]) return;
         data[b.selector].total++;
         if (b.status === 'Cerrada' || b.status === 'Finalizada') { data[b.selector].cerradas++; if (b.ingreso) data[b.selector].dias.push(daysDiff(b.inicio, b.ingreso)); }
@@ -311,7 +312,7 @@ function renderAnalisis() {
         reaperturas: 0, conIngreso: 0, retenidos90: 0,
         vencidas: 0, alertas72: 0
     }; });
-    busquedas.forEach(b => {
+    datosPanel().forEach(b => {
         if (!data[b.selector]) return;
         const d = data[b.selector];
         d.total++;
@@ -338,7 +339,7 @@ function renderAnalisis() {
     }
     const aperturasPorMes = {}; const ingresosPorMes = {};
     meses.forEach(m => { aperturasPorMes[m.key] = 0; ingresosPorMes[m.key] = 0; });
-    busquedas.forEach(b => {
+    datosPanel().forEach(b => {
         if (b.inicio  && b.inicio.slice(0, 7)  in aperturasPorMes) aperturasPorMes[b.inicio.slice(0, 7)]++;
         if (b.ingreso && b.ingreso.slice(0, 7) in ingresosPorMes)  ingresosPorMes[b.ingreso.slice(0, 7)]++;
     });
