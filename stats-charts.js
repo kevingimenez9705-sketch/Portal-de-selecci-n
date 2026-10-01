@@ -27,12 +27,12 @@ function renderStats(tab) {
     const totalPsicoSub = subset.reduce((a, b) => a + b.psicotecnicos.length, 0);
     const deptoHtml = Object.entries(byDepto).map(([name, c]) => {
         const p = Math.round((c / total) * 100);
-        return `<div class="bar-row"><div class="bar-row-top"><span>${name}</span><span>${c} (${p}%)</span></div><div class="bar-track"><div class="bar-fill" style="width:${p}%"></div></div></div>`;
+        return `<div class="bar-row"><div class="bar-row-top"><span>${esc(name)}</span><span>${c} (${p}%)</span></div><div class="bar-track"><div class="bar-fill" style="width:${p}%"></div></div></div>`;
     }).join('');
     const psicoSelHtml = Object.entries(psicoBySelector).length > 0
         ? Object.entries(psicoBySelector).sort((a, b) => b[1].total - a[1].total).map(([sel, d]) => {
             const p = Math.round((d.total / Math.max(totalPsicoSub, 1)) * 100);
-            return `<div class="bar-row"><div class="bar-row-top"><span>${sel}</span><span>${d.total} psico · ${d.apto} aptos · ${d.noApto} no aptos</span></div><div class="bar-track"><div class="bar-fill bar-fill-staff" style="width:${p}%"></div></div></div>`;
+            return `<div class="bar-row"><div class="bar-row-top"><span>${esc(sel)}</span><span>${d.total} psico · ${d.apto} aptos · ${d.noApto} no aptos</span></div><div class="bar-track"><div class="bar-fill bar-fill-staff" style="width:${p}%"></div></div></div>`;
         }).join('')
         : '<span class="tip">Sin datos de psicotécnicos asignados</span>';
     document.getElementById('stats-content').innerHTML = `
@@ -55,7 +55,10 @@ function renderStats(tab) {
 let chartInstances = {};
 function destroyCharts() { Object.values(chartInstances).forEach(c => { try { c.destroy(); } catch (e) {} }); chartInstances = {}; }
 function switchChartsTab(tab, btn) { document.querySelectorAll('#view-charts .page-tab').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderCharts(tab); }
-function renderCharts(tab) { destroyCharts(); if (tab === 'general') renderChartsGeneral(); else if (tab === 'tiempo') renderChartsTiempo(); else if (tab === 'selectores') renderChartsSelectores(); }
+function renderCharts(tab) {
+    // Si el CDN de Chart.js no cargó (red/bloqueador), avisar en vez de romper la pestaña.
+    if (typeof Chart === 'undefined') { document.getElementById('charts-content').innerHTML = '<span class="tip">No se pudo cargar la librería de gráficos (Chart.js). Revisá la conexión o un bloqueador y recargá.</span>'; return; }
+    destroyCharts(); if (tab === 'general') renderChartsGeneral(); else if (tab === 'tiempo') renderChartsTiempo(); else if (tab === 'selectores') renderChartsSelectores(); }
 
 function renderChartsGeneral() {
     const cerradas    = datosPanel().filter(b => b.status === 'Cerrada' || b.status === 'Finalizada').length;
@@ -152,7 +155,7 @@ function renderChartsGeneral() {
             <div class="chart-wrap"><canvas id="ch-perm"></canvas></div>
             <div style="margin-top:16px">
                 <div class="section-hdr" style="margin-bottom:8px">Menor permanencia (posible riesgo)</div>
-                ${permMenorPermanencia.map(p => `<div class="bar-row"><div class="bar-row-top"><span>${p.nombre} <span style="font-size:11px;color:var(--muted)">· ${p.puesto}</span></span><span style="font-family:'DM Mono',monospace;font-weight:700;color:${p.dias < 22 ? 'var(--red)' : 'var(--muted)'}">${p.dias}hd</span></div></div>`).join('')}
+                ${permMenorPermanencia.map(p => `<div class="bar-row"><div class="bar-row-top"><span>${esc(p.nombre)} <span style="font-size:11px;color:var(--muted)">· ${esc(p.puesto)}</span></span><span style="font-family:'DM Mono',monospace;font-weight:700;color:${p.dias < 22 ? 'var(--red)' : 'var(--muted)'}">${p.dias}hd</span></div></div>`).join('')}
             </div>` : `<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Sin ingresos registrados aún</div>`}
         </div>
     </div>`;
@@ -195,7 +198,7 @@ function renderChartsTiempo() {
     const rankingRows = [...cerradas].sort((a, b) => daysDiff(a.inicio, a.ingreso) - daysDiff(b.inicio, b.ingreso));
     const rankRowHtml = (b, i) => {
         const d = daysDiff(b.inicio, b.ingreso), lim = DEMORA_LIMITE[b.nivel] || 15;
-        return `<div class="rank-row"><span class="rank-pos">#${i + 1}</span><span class="rank-name">${b.puesto} <span style="font-size:11px;color:var(--muted)">· ${b.selector}</span></span><span class="rank-stat" style="color:${d <= lim ? 'var(--green)' : 'var(--red)'}">${d}hd</span><span style="font-size:11px;color:var(--muted);margin-left:6px">lim. ${lim}hd</span></div>`;
+        return `<div class="rank-row"><span class="rank-pos">#${i + 1}</span><span class="rank-name">${esc(b.puesto)} <span style="font-size:11px;color:var(--muted)">· ${esc(b.selector)}</span></span><span class="rank-stat" style="color:${d <= lim ? 'var(--green)' : 'var(--red)'}">${d}hd</span><span style="font-size:11px;color:var(--muted);margin-left:6px">lim. ${lim}hd</span></div>`;
     };
 
     // ── % de búsquedas cerradas dentro de plazo vs excedidas ──
@@ -269,7 +272,7 @@ function renderChartsSelectores() {
     const activos      = SELECTORES.filter(s => data[s].total > 0);
     const avgDiasPerSel = activos.map(s => data[s].dias.length ? Math.round(data[s].dias.reduce((a, c) => a + c, 0) / data[s].dias.length) : 0);
     document.getElementById('charts-content').innerHTML = `
-    <div class="mini-kpi-row">${activos.map(s => `<div class="mini-kpi"><div class="mini-kpi-num">${data[s].total}</div><div class="mini-kpi-lbl">${s}</div><div class="mini-kpi-sub">${data[s].cerradas} cerradas · ${data[s].proceso} en curso</div></div>`).join('')}</div>
+    <div class="mini-kpi-row">${activos.map(s => `<div class="mini-kpi"><div class="mini-kpi-num">${data[s].total}</div><div class="mini-kpi-lbl">${esc(s)}</div><div class="mini-kpi-sub">${data[s].cerradas} cerradas · ${data[s].proceso} en curso</div></div>`).join('')}</div>
     <div class="charts-grid">
         <div class="chart-card"><div class="chart-card-title"><i class="fas fa-briefcase"></i> Búsquedas por Selector</div><div class="chart-wrap"><canvas id="ch-seltotal"></canvas></div></div>
         <div class="chart-card"><div class="chart-card-title"><i class="fas fa-check-circle"></i> Tasa de Cierre</div><div class="chart-wrap"><canvas id="ch-seltasa"></canvas></div></div>
@@ -280,7 +283,7 @@ function renderChartsSelectores() {
         <div style="overflow-x:auto"><table style="width:100%;min-width:700px;border-collapse:collapse">
             <thead><tr>${['Selector','Total','Cerradas','En proceso','Candidatos','Psico en búsqueda','Psico realizados','⌀ días háb. cierre'].map(h => `<th style="padding:10px 14px;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);text-align:left">${h}</th>`).join('')}</tr></thead>
             <tbody>${activos.map((s, i) => `<tr style="background:${i % 2 === 0 ? 'var(--bg)' : 'transparent'}">
-                <td style="padding:10px 14px;font-weight:700">${s}</td>
+                <td style="padding:10px 14px;font-weight:700">${esc(s)}</td>
                 <td style="padding:10px 14px;font-family:'DM Mono',monospace">${data[s].total}</td>
                 <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:var(--green);font-weight:700">${data[s].cerradas}</td>
                 <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:var(--blue)">${data[s].proceso}</td>
@@ -306,6 +309,7 @@ function renderChartsSelectores() {
 //  mensual de aperturas vs ingresos efectivos.
 // ══════════════════════════════════════════════
 function renderAnalisis() {
+    if (typeof Chart === 'undefined') { document.getElementById('analisis-content').innerHTML = '<span class="tip">No se pudo cargar la librería de gráficos (Chart.js). Recargá la página.</span>'; return; }
     const data = {};
     SELECTORES.forEach(s => { data[s] = {
         total: 0, candidatos: 0, ofertas: 0,
@@ -363,7 +367,7 @@ function renderAnalisis() {
         <div style="overflow-x:auto"><table style="width:100%;min-width:760px;border-collapse:collapse">
             <thead><tr>${['Selector', '% con Oferta', 'Retención 90d', 'Reaperturas', 'Fuera de plazo', 'Alertas 72hs'].map(h => `<th style="padding:10px 14px;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);text-align:left">${h}</th>`).join('')}</tr></thead>
             <tbody>${activos.map((s, i) => `<tr style="background:${i % 2 === 0 ? 'var(--bg)' : 'transparent'}">
-                <td style="padding:10px 14px;font-weight:700">${s}</td>
+                <td style="padding:10px 14px;font-weight:700">${esc(s)}</td>
                 <td style="padding:10px 14px;font-family:'DM Mono',monospace;font-weight:700;color:${!data[s].candidatos ? 'var(--muted)' : conversion[i] >= 30 ? 'var(--green)' : 'var(--red)'}">${data[s].candidatos ? conversion[i] + '%' : '—'}</td>
                 <td style="padding:10px 14px;font-family:'DM Mono',monospace;font-weight:700;color:${!data[s].conIngreso ? 'var(--muted)' : retencion[i] >= 70 ? 'var(--green)' : 'var(--red)'}">${data[s].conIngreso ? retencion[i] + '%' : '—'}</td>
                 <td style="padding:10px 14px;font-family:'DM Mono',monospace;color:${data[s].reaperturas > 0 ? 'var(--red)' : 'var(--muted)'}">${data[s].reaperturas}</td>

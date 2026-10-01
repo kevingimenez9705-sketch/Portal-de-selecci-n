@@ -376,7 +376,7 @@ async function addNew() {
     if (!puesto) { toast('Ingresá el puesto', true); return; }
     const nivel = document.getElementById('n-nivel').value.trim() || 'Otros';
     const row = {
-        numero: nextNro(), puesto,
+        numero: await nextNro(), puesto,
         selector:  document.getElementById('n-selector').value,
         depto:     document.getElementById('n-depto').value || 'Sin definir',
         tipo:      document.getElementById('n-tipo').value,
@@ -405,7 +405,7 @@ async function reabrir(id) {
     if (!orig) { toast('No se encontró la búsqueda', true); return; }
     if (!confirm('¿Reabrir búsqueda "' + orig.puesto + '"? Se creará una nueva entrada en Proceso.')) return;
     const nuevaRow = {
-        numero: nextNro(), puesto: orig.puesto, selector: orig.selector,
+        numero: await nextNro(), puesto: orig.puesto, selector: orig.selector,
         depto: orig.depto, tipo: orig.tipo, motivo: orig.motivo, nivel: orig.nivel,
         sueldo: orig.sueldo, jornada: orig.jornada, ubicacion: orig.ubicacion,
         inicio: today(), status: 'Proceso', ingreso: null, ingreso_nombre: '',
@@ -452,7 +452,7 @@ async function reabrirPorDemora(id) {
     if (!orig) { toast('No se encontró la búsqueda', true); return; }
     if (!confirm('¿Reabrir "' + orig.puesto + '" con el contador en 0? Se marcará esta entrada como Sustituida y se creará una nueva con fecha de inicio hoy.')) return;
     const nuevaRow = {
-        numero: nextNro(), puesto: orig.puesto, selector: orig.selector,
+        numero: await nextNro(), puesto: orig.puesto, selector: orig.selector,
         depto: orig.depto, tipo: orig.tipo, motivo: orig.motivo, nivel: orig.nivel,
         sueldo: orig.sueldo, jornada: orig.jornada, ubicacion: orig.ubicacion,
         inicio: today(), status: 'Proceso', ingreso: null, ingreso_nombre: '',
@@ -489,7 +489,7 @@ async function reabrirContinuarConteo(id) {
     const totalActual = tramosDemora(orig).total;
     if (!confirm('¿Reabrir "' + orig.puesto + '" continuando el conteo actual (Total Proceso: ' + totalActual + 'hd)? Se creará una búsqueda nueva con la misma fecha de inicio y se marcará esta como Sustituida.')) return;
     const nuevaRow = {
-        numero: nextNro(), puesto: orig.puesto, selector: orig.selector,
+        numero: await nextNro(), puesto: orig.puesto, selector: orig.selector,
         depto: orig.depto, tipo: orig.tipo, motivo: orig.motivo, nivel: orig.nivel,
         sueldo: orig.sueldo, jornada: orig.jornada, ubicacion: orig.ubicacion,
         inicio: orig.inicio, enviado_sector: orig.cp || null, decision_sector: orig.decision_sector || null,
@@ -536,11 +536,20 @@ async function subirPDF(busquedaId, input) {
     const file = input.files[0];
     if (!file) return;
     toast('Subiendo archivo...');
-    const path = `${busquedaId}/${Date.now()}_${file.name}`;
+    // Supabase Storage rechaza claves con tildes, ñ y algunos símbolos ("Invalid key"), y una
+    // comilla en el nombre rompía el onclick de abrir/eliminar: la ruta usa un nombre saneado
+    // y el nombre original queda solo para mostrar.
+    const nombreSeguro = file.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9._-]+/g, '_');
+    const path = `${busquedaId}/${Date.now()}_${nombreSeguro}`;
     const { error: upErr } = await sb.storage.from('Busquedas-pdfs').upload(path, file);
-    if (upErr) { toast('Error al subir: ' + upErr.message, true); return; }
+    if (upErr) { toast('Error al subir: ' + upErr.message, true); input.value = ''; return; }
     const { data: { session } } = await sb.auth.getSession();
-    await sb.from('archivos').insert({ busqueda_id: busquedaId, nombre: file.name, url: path, subido_por: session.user.id });
+    if (!session) { toast('La sesión venció: volvé a ingresar', true); return; }
+    const { error: insErr } = await sb.from('archivos').insert({ busqueda_id: busquedaId, nombre: file.name, url: path, subido_por: session.user.id });
+    if (insErr) {
+        await sb.storage.from('Busquedas-pdfs').remove([path]); // no dejar el archivo huérfano
+        toast('Error al registrar el archivo: ' + (insErr.message || insErr.code), true); input.value = ''; return;
+    }
     await loadData(busquedaId); refreshBusqueda(busquedaId); toast('PDF subido ✓');
     input.value = '';
 }

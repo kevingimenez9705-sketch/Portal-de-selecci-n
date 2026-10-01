@@ -657,7 +657,14 @@ function mapRow(b) {
     };
 }
 
-function nextNro() { return 'SEL-' + String(nroSeq++).padStart(3, '0'); }
+// Antes de crear una búsqueda se vuelve a mirar el último número en la base: si otra
+// persona creó una mientras tanto, nroSeq en memoria quedaba viejo y se repetía el SEL-xxx.
+async function nextNro() {
+    const { data } = await sb.from('busquedas').select('numero').order('id', { ascending: false }).limit(20);
+    const max = Math.max(0, ...(data || []).map(b => parseInt((b.numero || '').replace('SEL-', '')) || 0));
+    nroSeq = Math.max(nroSeq, max + 1);
+    return 'SEL-' + String(nroSeq++).padStart(3, '0');
+}
 
 async function checkAndFinalizeSearches() {
     // Días hábiles trabajados: desde el ingreso hasta la baja (si la hubo) o hasta hoy.
