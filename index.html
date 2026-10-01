@@ -111,6 +111,7 @@
         <div class="topnav-logo">Panel de Selección</div>
         <div class="topnav-right">
             <span class="topnav-user"><strong id="topnav-nombre">—</strong> · <span id="topnav-rol">—</span></span>
+            <button class="topnav-btn" onclick="recargarDatos()" title="Volver a traer los datos de Supabase"><i class="fas fa-sync-alt"></i> Actualizar</button>
             <button class="topnav-btn hidden" id="salir-vista-aislada" onclick="salirVistaAislada()" title="Volver a elegir selector"><i class="fas fa-arrow-left"></i> Volver a selección</button>
             <div class="topnav-sep"></div>
             <button class="topnav-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Salir</button>
@@ -169,6 +170,11 @@
             </select>
             <input class="filter-input" id="f-search" placeholder="Buscar puesto..." oninput="applyFiltersDebounced()">
         </div>
+
+        <!-- Aviso de datos: vista liviana / historial completo / error de carga (core.js: renderDataBanner) -->
+        <div id="data-banner" class="data-banner hidden"></div>
+        <!-- Un único datalist para el campo "Nivel" de todas las filas del Pipeline -->
+        <datalist id="nivel-datalist-inline"><option>Otros</option><option>Jefe/Encargado</option><option>Gerente/Director</option></datalist>
 
         <!-- PIPELINE -->
         <div id="view-pipeline">

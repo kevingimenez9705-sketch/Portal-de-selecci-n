@@ -348,3 +348,11 @@
             .inline-nav-btn { padding: 6px 12px; font-size: 12px; }
             .fichas-grid { grid-template-columns: 1fr; }
         }
+
+/* Aviso de datos cargados (vista liviana / historial / error) y paginado "Mostrar más" */
+.data-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 9px 14px; margin-bottom: 14px; border-radius: 8px; background: #eef3fb; border: 1px solid #cfdcf0; color: #23395d; font-size: 12px; }
+.data-banner.hidden { display: none; }
+.data-banner > span { flex: 1; min-width: 220px; }
+.data-banner-error { background: #fdecec; border-color: #f3c2c2; color: #7a1c1c; }
+.mostrar-mas { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; padding: 12px; font-size: 12px; color: var(--muted); width: 100%; }
+.fichas-grid > .mostrar-mas { grid-column: 1 / -1; }

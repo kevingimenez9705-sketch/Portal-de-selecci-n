@@ -3,6 +3,35 @@
 //  (búsquedas, candidatos, psicotécnicos, verificaciones, archivos PDF).
 // ══════════════════════════════════════════════
 // ══════════════════════════════════════════════
+//  REFRESCO DESPUÉS DE GUARDAR — solo lo que cambió
+// ══════════════════════════════════════════════
+// Tras editar un candidato: si es un postulante sin asignar se actualiza en memoria;
+// si pertenece a una búsqueda, se recarga solo esa búsqueda y se redibuja su fila.
+// (Antes, para los sin asignar, se recargaban TODAS las búsquedas en cada cambio.)
+async function refrescarCandidato(candId, row) {
+    const sinAsignar = unassignedCandidatos.find(c => c.id === candId);
+    if (sinAsignar) { if (row) Object.assign(sinAsignar, row); refreshView(); return; }
+    const bid = busquedaIdDeCandidato(candId);
+    await loadData(bid);
+    refreshBusqueda(bid);
+}
+
+// Trae una búsqueda puntual (recién creada/reabierta) y la suma arriba de la lista,
+// sin volver a bajar todas las búsquedas.
+async function agregarBusquedaEnMemoria(id) {
+    const { data, error } = await conTimeout(sb.from('busquedas').select(BUSQUEDA_SELECT).eq('id', id).maybeSingle());
+    if (error || !data) { await loadDataFull(); return; }
+    busquedas = [mapRow(data), ...busquedas.filter(b => b.id !== id)];
+    marcarResumenViejo();
+}
+
+// "historial" ya no viene en la carga masiva: se pide solo al reabrir.
+async function traerHistorial(busquedaId) {
+    const { data } = await sb.from('historial').select('*').eq('busqueda_id', busquedaId).order('id');
+    return data || [];
+}
+
+// ══════════════════════════════════════════════
 //  UPDATE FIELD
 // ══════════════════════════════════════════════
 async function toggleHerramienta(id, herramienta, checked) {
@@ -17,7 +46,7 @@ async function toggleHerramienta(id, herramienta, checked) {
     }
     if (error) { toast('Error al guardar: ' + (error.message || error.code), true); return; }
     if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE)', true); return; }
-    await loadData(id); refreshView(); toast('Herramientas actualizadas ✓');
+    aplicarCambiosBusqueda(data[0]); refreshBusqueda(id); toast('Herramientas actualizadas ✓');
 }
 
 async function updateField(id, field, val) {
@@ -33,9 +62,10 @@ async function updateField(id, field, val) {
     const { data, error } = await sb.from('busquedas').update(update).eq('id', id).select();
     if (error) { toast('Error al guardar: ' + (error.message || error.code), true); return; }
     if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE en busquedas)', true); return; }
-    await loadData(id);
+    // Se aplica en memoria lo que devolvió el UPDATE (sin volver a pedir la búsqueda entera).
+    if (!aplicarCambiosBusqueda(data[0])) await loadData(id);
     if (field === 'ingreso') await checkAndFinalizeSearches();
-    refreshView();
+    refreshBusqueda(id);
     const cerrandoSinIngreso = field === 'status' && (val === 'Cerrada' || val === 'Finalizada') && !data[0].ingreso;
     toast(cerrandoSinIngreso ? 'Guardado — ojo: se cerró sin cargar la fecha de ingreso' : 'Guardado ✓');
 }
@@ -47,7 +77,7 @@ async function addEstadoEntry(id) {
     const { error } = await sb.from('estado_log').insert({ busqueda_id: id, texto, fecha: today() });
     if (error) { toast('Error al guardar', true); return; }
     input.value = '';
-    await loadData(id); refreshView(); toast('Comentario agregado ✓');
+    await loadData(id); refreshBusqueda(id); toast('Comentario agregado ✓');
 }
 
 async function removeEstadoEntry(entryId) {
@@ -55,7 +85,7 @@ async function removeEstadoEntry(entryId) {
     if (!confirm('¿Eliminar este comentario? Esta acción no se puede deshacer.')) return;
     const bid = findBusquedaId(b => (b.estado_busqueda || []).some(e => e.id === entryId));
     await sb.from('estado_log').delete().eq('id', entryId);
-    await loadData(bid); refreshView(); toast('Eliminado');
+    await loadData(bid); refreshBusqueda(bid); toast('Eliminado');
 }
 
 function toggleCandModalFechas() {
@@ -93,7 +123,7 @@ function openNuevoPostulanteModal() {
     const opts = busquedas.filter(b => catOf(b) === 'choferes');
     const selEl = document.getElementById('cand-busqueda-select');
     selEl.innerHTML = '<option value="">— Sin asignar (se vincula a una búsqueda después) —</option>'
-        + opts.map(b => `<option value="${b.id}">${b.puesto} · ${b.selector} (${b.numero})</option>`).join('');
+        + opts.map(b => `<option value="${b.id}">${esc(b.puesto)} · ${esc(b.selector)} (${esc(b.numero)})</option>`).join('');
     document.getElementById('cand-selector').innerHTML = '<option value="">— Elegir selector —</option>'
         + SELECTORES.map(s => `<option>${s}</option>`).join('');
     document.getElementById('cand-grp-busqueda').classList.remove('hidden');
@@ -125,28 +155,32 @@ async function saveCand() {
     if (estado === 'Entrevista' && fEntrevista) row.fecha_entrevista = fEntrevista;
     if ((estado === 'Rechazado' || estado === 'Baja') && fRechazo) row.fecha_rechazo = fRechazo;
 
-    const { error } = await sb.from('candidatos').insert(row);
+    const { data: nuevo, error } = await sb.from('candidatos').insert(row).select();
     if (error) {
         console.error('saveCand error:', error, 'ROW:', row);
         toast('Error: ' + (error.message || error.details || error.hint || error.code || 'desconocido'), true);
         return;
     }
-    closeModal('modal-cand'); await loadData(id); refreshView(); toast('Candidato agregado ✓');
+    closeModal('modal-cand');
+    if (id) { await loadData(id); refreshBusqueda(id); }
+    else { unassignedCandidatos = [...(nuevo || []), ...unassignedCandidatos]; refreshView(); }
+    toast('Candidato agregado ✓');
 }
 
 async function removeCand(candId) {
     if (!confirm('¿Eliminar este candidato? Esta acción no se puede deshacer.')) return;
     const bid = busquedaIdDeCandidato(candId);
-    await sb.from('candidatos').delete().eq('id', candId);
-    if (bid) await loadData(bid); else { unassignedCandidatos = unassignedCandidatos.filter(c => c.id !== candId); }
-    refreshView(); toast('Candidato eliminado');
+    const { error } = await sb.from('candidatos').delete().eq('id', candId);
+    if (error) { toast('Error al eliminar: ' + (error.message || error.code), true); return; }
+    if (bid) { await loadData(bid); refreshBusqueda(bid); }
+    else { unassignedCandidatos = unassignedCandidatos.filter(c => c.id !== candId); refreshView(); }
+    toast('Candidato eliminado');
 }
 
 // ── FIX PRINCIPAL: updateCandEstado ya no manda fecha_rechazo=null cuando no existe la col ──
 async function updateCandEstado(candId, estado) {
     const hoy = today();
     const update = { estado };
-    const bid = busquedaIdDeCandidato(candId);
     const c = busquedas.flatMap(b => b.candidatos).find(x => x.id === candId) || {};
 
     if (estado === 'Entrevista') {
@@ -178,14 +212,14 @@ async function updateCandEstado(candId, estado) {
             const { data: d2, error: e2 } = await sb.from('candidatos').update(updateSinRechazo).eq('id', candId).select();
             if (e2) { toast('Error: ' + (e2.message || e2.code), true); return; }
             if (!d2 || d2.length === 0) { toast('No se actualizó (revisar policy UPDATE en candidatos)', true); return; }
-            await loadData(bid); refreshView(); toast('Estado actualizado ✓');
+            await refrescarCandidato(candId, d2[0]); toast('Estado actualizado ✓');
             return;
         }
         toast('Error: ' + (error.message || error.code), true);
         return;
     }
     if (!data || data.length === 0) { toast('No se actualizó (revisar policy UPDATE en candidatos)', true); return; }
-    await loadData(bid); refreshView(); toast('Estado actualizado ✓');
+    await refrescarCandidato(candId, data[0]); toast('Estado actualizado ✓');
 }
 
 async function updateCandFecha(candId, field, val) {
@@ -193,7 +227,7 @@ async function updateCandFecha(candId, field, val) {
     const { data, error } = await sb.from('candidatos').update({ [field]: val || null }).eq('id', candId).select();
     if (error) { toast('Error al guardar fecha: ' + (error.message || error.code), true); return; }
     if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE en candidatos)', true); return; }
-    await loadData(busquedaIdDeCandidato(candId)); refreshView(); toast('Fecha actualizada ✓');
+    await refrescarCandidato(candId, data[0]); toast('Fecha actualizada ✓');
 }
 
 // ── Choferes y Ayudantes: estado de ingreso por postulante ──
@@ -207,7 +241,7 @@ async function updateCandChoferResultado(candId, resultado) {
     }
     if (error) { toast('Error: ' + (error.message || error.code), true); return; }
     if (!data || data.length === 0) { toast('No se actualizó (revisar policy UPDATE en candidatos)', true); return; }
-    await loadData(busquedaIdDeCandidato(candId)); refreshView(); toast('Estado actualizado ✓');
+    await refrescarCandidato(candId, data[0]); toast('Estado actualizado ✓');
 }
 
 async function updateCandChoferFecha(candId, val) {
@@ -219,7 +253,7 @@ async function updateCandChoferFecha(candId, val) {
     }
     if (error) { toast('Error al guardar fecha: ' + (error.message || error.code), true); return; }
     if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE en candidatos)', true); return; }
-    await loadData(busquedaIdDeCandidato(candId)); refreshView(); toast('Fecha actualizada ✓');
+    await refrescarCandidato(candId, data[0]); toast('Fecha actualizada ✓');
 }
 
 // ══════════════════════════════════════════════
@@ -250,8 +284,7 @@ async function updateFichaField(candId, field, val) {
         return;
     }
     if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE en candidatos)', true); return; }
-    await loadData(busquedaIdDeCandidato(candId));
-    refreshView();
+    await refrescarCandidato(candId, data[0]);
     if (document.getElementById('ficha-cand-id')?.value == candId && !document.getElementById('modal-ficha').classList.contains('hidden')) {
         renderFichaModalContent(candId);
     }
@@ -274,13 +307,13 @@ async function savePsico() {
     if (!nombre) return;
     const { error } = await sb.from('psicotecnicos').insert({ busqueda_id: id, nombre, resultado, selector_psico, realizado_por, auth_por });
     if (error) { toast('Error al guardar', true); return; }
-    closeModal('modal-psico'); await loadData(id); refreshView(); toast('Psicotécnico agregado ✓');
+    closeModal('modal-psico'); await loadData(id); refreshBusqueda(id); toast('Psicotécnico agregado ✓');
 }
 async function removePsico(psicoId) {
     if (!confirm('¿Eliminar este psicotécnico? Esta acción no se puede deshacer.')) return;
     const bid = findBusquedaId(b => (b.psicotecnicos || []).some(p => p.id === psicoId));
     await sb.from('psicotecnicos').delete().eq('id', psicoId);
-    await loadData(bid); refreshView(); toast('Eliminado');
+    await loadData(bid); refreshBusqueda(bid); toast('Eliminado');
 }
 
 function openVerifModal(id) {
@@ -308,7 +341,7 @@ async function saveVerif() {
         ({ error } = await sb.from('verificaciones').insert({ busqueda_id: id, tipo, resultado, selector_verif, observaciones }));
     }
     if (error) { toast('Error al guardar: ' + (error.message || error.code), true); return; }
-    closeModal('modal-verif'); await loadData(id); refreshView(); toast('Verificación agregada ✓');
+    closeModal('modal-verif'); await loadData(id); refreshBusqueda(id); toast('Verificación agregada ✓');
 }
 
 // ── Editar estado inline + congelar/reactivar contador ──
@@ -328,14 +361,14 @@ async function updateVerifEstado(verifId, resultado) {
     }
     if (error) { toast('Error: ' + (error.message || error.code), true); return; }
     if (!data || data.length === 0) { toast('No se actualizó (revisar policy UPDATE en verificaciones)', true); return; }
-    await loadData(bid); refreshView(); toast('Estado actualizado ✓');
+    await loadData(bid); refreshBusqueda(bid); toast('Estado actualizado ✓');
 }
 
 async function removeVerif(verifId) {
     if (!confirm('¿Eliminar esta verificación? Esta acción no se puede deshacer.')) return;
     const bid = findBusquedaId(b => (b.verificaciones || []).some(x => x.id === verifId));
     await sb.from('verificaciones').delete().eq('id', verifId);
-    await loadData(bid); refreshView(); toast('Eliminado');
+    await loadData(bid); refreshBusqueda(bid); toast('Eliminado');
 }
 
 async function addNew() {
@@ -364,7 +397,7 @@ async function addNew() {
     }
     if (error) { toast('Error al crear búsqueda', true); return; }
     await sb.from('historial').insert({ busqueda_id: data.id, texto: 'Apertura de vacante', fecha: new Date().toISOString() });
-    closeModal('modal-nueva'); await loadData(); refreshView(); toast('Búsqueda creada ✓');
+    closeModal('modal-nueva'); await agregarBusquedaEnMemoria(data.id); refreshView(); toast('Búsqueda creada ✓');
 }
 
 async function reabrir(id) {
@@ -393,8 +426,9 @@ async function reabrir(id) {
     await sb.from('estado_log').insert({ busqueda_id: nueva.id, texto: textoOrigen, fecha: today() });
     try {
         const histEntries = [{ busqueda_id: nueva.id, texto: textoOrigen, fecha: new Date().toISOString() }];
-        if (orig.historial && orig.historial.length > 0) {
-            orig.historial.forEach(h => histEntries.push({ busqueda_id: nueva.id, texto: '[Historial copiado] ' + h.texto, fecha: new Date().toISOString() }));
+        const histOrig = await traerHistorial(orig.id);
+        if (histOrig.length > 0) {
+            histOrig.forEach(h => histEntries.push({ busqueda_id: nueva.id, texto: '[Historial copiado] ' + h.texto, fecha: new Date().toISOString() }));
         }
         await sb.from('historial').insert(histEntries);
     } catch (e) { console.warn('No se pudo copiar historial:', e); }
@@ -406,7 +440,7 @@ async function reabrir(id) {
         else toast('Fecha de baja inválida — se reabrió igual, pero sin guardar esa fecha', true);
     }
     await sb.from('busquedas').update(updOrig).eq('id', id);
-    await loadData(); refreshView();
+    await loadData(id); await agregarBusquedaEnMemoria(nueva.id); refreshView();
     toast('Búsqueda reabierta como ' + nueva.numero + ' ✓');
 }
 
@@ -442,7 +476,7 @@ async function reabrirPorDemora(id) {
     } catch (e) { console.warn('No se pudo copiar historial:', e); }
     let { error: errUpd } = await sb.from('busquedas').update({ status: 'Sustituida' }).eq('id', id);
     if (errUpd) ({ error: errUpd } = await sb.from('busquedas').update({ status: 'Cerrada' }).eq('id', id));
-    await loadData(); refreshView();
+    await loadData(id); await agregarBusquedaEnMemoria(nueva.id); refreshView();
     toast('Búsqueda reabierta como ' + nueva.numero + ' ✓');
 }
 
@@ -484,15 +518,18 @@ async function reabrirContinuarConteo(id) {
     } catch (e) { console.warn('No se pudo copiar historial:', e); }
     let { error: errUpd } = await sb.from('busquedas').update({ status: 'Sustituida' }).eq('id', id);
     if (errUpd) ({ error: errUpd } = await sb.from('busquedas').update({ status: 'Cerrada' }).eq('id', id));
-    await loadData(); refreshView();
+    await loadData(id); await agregarBusquedaEnMemoria(nueva.id); refreshView();
     toast('Búsqueda reabierta como ' + nueva.numero + ' (conteo continuado) ✓');
 }
 
 async function eliminar(id) {
     if (!isAdmin()) { toast('Solo un administrador puede eliminar búsquedas', true); return; }
     if (!confirm('¿Eliminar esta búsqueda? Esta acción no se puede deshacer.')) return;
-    await sb.from('busquedas').delete().eq('id', id);
-    await loadData(); refreshView(); toast('Búsqueda eliminada');
+    const { error } = await sb.from('busquedas').delete().eq('id', id);
+    if (error) { toast('Error al eliminar: ' + (error.message || error.code), true); return; }
+    busquedas = busquedas.filter(b => b.id !== id);
+    marcarResumenViejo();
+    refreshView(); toast('Búsqueda eliminada');
 }
 
 async function subirPDF(busquedaId, input) {
@@ -504,7 +541,7 @@ async function subirPDF(busquedaId, input) {
     if (upErr) { toast('Error al subir: ' + upErr.message, true); return; }
     const { data: { session } } = await sb.auth.getSession();
     await sb.from('archivos').insert({ busqueda_id: busquedaId, nombre: file.name, url: path, subido_por: session.user.id });
-    await loadData(busquedaId); refreshView(); toast('PDF subido ✓');
+    await loadData(busquedaId); refreshBusqueda(busquedaId); toast('PDF subido ✓');
     input.value = '';
 }
 async function abrirPDF(storagePath) {
@@ -517,6 +554,6 @@ async function eliminarPDF(archivoId, storagePath) {
     const bid = findBusquedaId(b => (b.archivos || []).some(a => a.id === archivoId));
     await sb.storage.from('Busquedas-pdfs').remove([storagePath]);
     await sb.from('archivos').delete().eq('id', archivoId);
-    await loadData(bid); refreshView(); toast('Archivo eliminado');
+    await loadData(bid); refreshBusqueda(bid); toast('Archivo eliminado');
 }
 

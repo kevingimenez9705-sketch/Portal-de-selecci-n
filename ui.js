@@ -3,6 +3,7 @@
 // ══════════════════════════════════════════════
 // ── INFORME ──
 function renderInforme() {
+    const busquedas = datosPanel(); // resumen del historial completo (ver core.js)
     const total       = busquedas.length;
     const cerradas    = busquedas.filter(b => b.status === 'Cerrada' || b.status === 'Finalizada').length;
     const staff       = busquedas.filter(b => b.tipo === 'Staff').length;
@@ -58,9 +59,9 @@ function renderInforme() {
             <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">
                 <thead><tr>${['N°', 'Puesto', 'Selector', 'Días háb.', 'Límite'].map(h => `<th style="padding:8px 10px;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);text-align:left">${h}</th>`).join('')}</tr></thead>
                 <tbody>${abiertas.slice(0, 10).map(({ b, dias, lim }, i) => `<tr style="background:${i % 2 === 0 ? 'var(--bg)' : 'transparent'}">
-                    <td style="padding:8px 10px;font-family:'DM Mono',monospace">${b.numero}</td>
-                    <td style="padding:8px 10px">${b.puesto}</td>
-                    <td style="padding:8px 10px;color:var(--muted)">${b.selector}</td>
+                    <td style="padding:8px 10px;font-family:'DM Mono',monospace">${esc(b.numero)}</td>
+                    <td style="padding:8px 10px">${esc(b.puesto)}</td>
+                    <td style="padding:8px 10px;color:var(--muted)">${esc(b.selector)}</td>
                     <td style="padding:8px 10px;font-family:'DM Mono',monospace;font-weight:700;color:${dias > lim ? 'var(--red)' : 'var(--text)'}">${dias}hd</td>
                     <td style="padding:8px 10px;font-family:'DM Mono',monospace;color:var(--muted)">${lim}hd</td>
                 </tr>`).join('')}</tbody>
@@ -75,7 +76,7 @@ function renderInforme() {
             <div class="chart-card-title"><i class="fas fa-file-signature"></i> Ofertas sin Decisión del Sector · ${ofertasSinDecision.length}</div>
             <div class="tip" style="display:block;margin:-8px 0 12px">El candidato ya tiene una oferta hecha pero todavía no se cargó si el sector la aprobó o no.</div>
             ${ofertasSinDecision.length ? `
-            <div>${ofertasSinDecision.map(b => `<div class="bar-row"><div class="bar-row-top"><span>${b.puesto} <span style="font-size:11px;color:var(--muted)">· ${b.selector}</span></span><span style="font-size:11px;color:var(--muted)">${b.numero}</span></div></div>`).join('')}</div>
+            <div>${ofertasSinDecision.map(b => `<div class="bar-row"><div class="bar-row-top"><span>${esc(b.puesto)} <span style="font-size:11px;color:var(--muted)">· ${esc(b.selector)}</span></span><span style="font-size:11px;color:var(--muted)">${esc(b.numero)}</span></div></div>`).join('')}</div>
             ` : `<span class="tip">Sin ofertas pendientes de decisión</span>`}
         </div>
     </div>
@@ -88,10 +89,10 @@ function renderInforme() {
             <div style="overflow-x:auto"><table style="width:100%;min-width:640px;border-collapse:collapse">
                 <thead><tr>${['N°', 'Ingresó', 'Puesto', 'Selector', 'Fecha ingreso', 'Días háb.', 'Estado actual'].map(h => `<th style="padding:8px 10px;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);text-align:left">${h}</th>`).join('')}</tr></thead>
                 <tbody>${retenidosList.map(({ b, dias }, i) => `<tr style="background:${i % 2 === 0 ? 'var(--bg)' : 'transparent'}">
-                    <td style="padding:8px 10px;font-family:'DM Mono',monospace">${b.numero}</td>
-                    <td style="padding:8px 10px;font-weight:700">${b.ingreso_nombre || '—'}</td>
-                    <td style="padding:8px 10px">${b.puesto}</td>
-                    <td style="padding:8px 10px;color:var(--muted)">${b.selector}</td>
+                    <td style="padding:8px 10px;font-family:'DM Mono',monospace">${esc(b.numero)}</td>
+                    <td style="padding:8px 10px;font-weight:700">${esc(b.ingreso_nombre || '—')}</td>
+                    <td style="padding:8px 10px">${esc(b.puesto)}</td>
+                    <td style="padding:8px 10px;color:var(--muted)">${esc(b.selector)}</td>
                     <td style="padding:8px 10px;font-family:'DM Mono',monospace;color:var(--muted)">${fmtFechaCorta(b.ingreso)}</td>
                     <td style="padding:8px 10px;font-family:'DM Mono',monospace;font-weight:700;color:var(--green)">${dias}hd</td>
                     <td style="padding:8px 10px">${b.fecha_baja ? `<span style="color:var(--red)">Se dio de baja el ${fmtFechaCorta(b.fecha_baja)}</span>` : `<span style="color:var(--green)">Activo</span>`}</td>
@@ -108,7 +109,18 @@ function csvEscape(val) {
     return /[",;\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }
 
-function descargarInformeCSV() {
+async function descargarInformeCSV() {
+    // Con la vista liviana en memoria solo hay activas + últimos meses: el informe tiene
+    // que salir completo, así que se baja el historial (paginado) justo antes de exportar.
+    // El informe sale del resumen del historial completo (función busquedas_resumen).
+    // Si esa función no está creada, se baja el historial completo como antes.
+    if (!resumenPanel) await cargarResumenPanel();
+    if (!resumenPanel && !historialCompleto) {
+        toast('Cargando historial completo para el informe…');
+        const ok = await loadDataFull(true);
+        if (!ok) return; // loadDataFull ya mostró el error
+    }
+    const busquedas = datosPanel();
     // Filtro opcional por selector (dropdown al lado del botón) — para exportar solo lo de
     // una persona sin tener que filtrar en Excel después de descargar todo.
     const selectorFiltro = document.getElementById('informe-selector-filter')?.value || '';
@@ -169,12 +181,12 @@ function showView(v, btn) {
     document.getElementById('main-sub').textContent   = titles[v][1];
     const fChoferSel = document.getElementById('f-chofer-resultado');
     if (fChoferSel) fChoferSel.classList.toggle('hidden', v !== 'choferes');
-    if (v === 'informe') renderInforme();
     if (v === 'pipeline' || v === 'choferes') {
         currentCategoria = (v === 'choferes') ? 'choferes' : 'general';
         // En vista aislada NO se resetea el filtro de selector: si no, alternar
         // Pipeline/Choferes rompía el aislamiento y de golpe se veía (y renderizaba)
         // el total sin filtrar de todas las búsquedas.
+        resetPaginado();
         if (!vistaAislada) {
             filteredIds = null;
             selectorFiltroActivo = '';
@@ -183,9 +195,8 @@ function showView(v, btn) {
         }
         refreshView();
     }
-    if (v === 'stats')    renderStats('general');
-    if (v === 'charts')   { destroyCharts(); renderCharts('general'); }
-    if (v === 'analisis') { destroyCharts(); renderAnalisis(); }
+    if (VISTAS_PANEL.includes(v)) renderPanelGeneral(v);
+    else renderDataBanner();
 }
 function openModal(id = 'modal-nueva') {
     document.getElementById(id).classList.remove('hidden');
