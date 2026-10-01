@@ -204,3 +204,48 @@ function openModal(id = 'modal-nueva') {
 function closeModal(id = 'modal-nueva') { document.getElementById(id).classList.add('hidden'); }
 document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.add('hidden'); }));
 
+
+// ══════════════════════════════════════════════
+//  DIÁLOGOS PROPIOS (reemplazan confirm() / prompt())
+// ══════════════════════════════════════════════
+// La página se ve embebida en Google Sites (iframe con sandbox): ahí el navegador
+// bloquea confirm()/prompt() y devuelven "Cancelar" al instante sin mostrar nada,
+// así que borrar, reabrir o cargar el ingreso no hacía nada. Este diálogo es HTML
+// de la propia página y funciona igual dentro y fuera del iframe.
+function dialogo({ mensaje, okTexto = 'Aceptar', peligro = false, input = null }) {
+    return new Promise(resolve => {
+        const bg = document.createElement('div');
+        bg.className = 'modal-bg';
+        bg.style.zIndex = 200;
+        bg.innerHTML = `
+            <div class="modal-box" style="max-width:440px" role="dialog" aria-modal="true">
+                <div style="font-size:14px;line-height:1.5;white-space:pre-line">${esc(mensaje)}</div>
+                ${input !== null ? `<input class="form-input" style="margin-top:12px" value="${esc(input)}">` : ''}
+                <div class="modal-footer">
+                    <button class="btn-cancel" data-r="no">Cancelar</button>
+                    <button class="btn-primary${peligro ? ' btn-danger' : ''}" data-r="si">${esc(okTexto)}</button>
+                </div>
+            </div>`;
+        const inp = bg.querySelector('input');
+        const cerrar = ok => {
+            document.removeEventListener('keydown', onKey);
+            bg.remove();
+            resolve(input !== null ? (ok ? inp.value : null) : ok);
+        };
+        const onKey = e => { if (e.key === 'Escape') cerrar(false); if (e.key === 'Enter') cerrar(true); };
+        bg.addEventListener('click', e => {
+            if (e.target === bg) cerrar(false);
+            const r = e.target.closest('[data-r]')?.dataset.r;
+            if (r) cerrar(r === 'si');
+        });
+        document.addEventListener('keydown', onKey);
+        document.body.appendChild(bg);
+        (inp || bg.querySelector('[data-r="si"]')).focus();
+    });
+}
+function confirmar(mensaje, okTexto = 'Confirmar') {
+    return dialogo({ mensaje, okTexto, peligro: /eliminar/i.test(mensaje) });
+}
+function pedirTexto(mensaje, valorInicial = '') {
+    return dialogo({ mensaje, input: valorInicial });
+}
