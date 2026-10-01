@@ -32,12 +32,12 @@ function renderPsicoBlock(b, isLocked) {
     const psicoHtml = b.psicotecnicos.length > 0
         ? b.psicotecnicos.map(p => `
             <div class="psico-item">
-                <span class="psico-nombre">${p.nombre}</span>
+                <span class="psico-nombre">${esc(p.nombre)}</span>
                 <span>
-                    <span class="psico-result ${psicoClass(p.resultado)}">${p.resultado}</span>
-                    ${p.selector_psico ? `<span class="psico-quien"><i class="fas fa-user" style="font-size:8px"></i> Realizó: <strong>${p.selector_psico}</strong></span>` : ''}
-                    ${p.realizado_por ? `<span class="psico-quien">Evaluador: ${p.realizado_por}</span>` : ''}
-                    ${p.auth ? `<span class="psico-quien">Auth: ${p.auth}</span>` : ''}
+                    <span class="psico-result ${psicoClass(p.resultado)}">${esc(p.resultado)}</span>
+                    ${p.selector_psico ? `<span class="psico-quien"><i class="fas fa-user" style="font-size:8px"></i> Realizó: <strong>${esc(p.selector_psico)}</strong></span>` : ''}
+                    ${p.realizado_por ? `<span class="psico-quien">Evaluador: ${esc(p.realizado_por)}</span>` : ''}
+                    ${p.auth ? `<span class="psico-quien">Auth: ${esc(p.auth)}</span>` : ''}
                     ${!isLocked ? `<button onclick="removePsico(${p.id})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:9px">✕</button>` : ''}
                 </span>
             </div>`).join('')
@@ -66,16 +66,16 @@ function renderVerifBlock(b, isLocked) {
             }
             return `
             <div class="psico-item">
-                <span class="psico-nombre">${v.tipo}</span>
+                <span class="psico-nombre">${esc(v.tipo)}</span>
                 <span style="text-align:right">
                     ${isLocked
-                        ? `<span class="psico-result ${verifClass(v.resultado)}">${v.resultado}</span>`
+                        ? `<span class="psico-result ${verifClass(v.resultado)}">${esc(v.resultado)}</span>`
                         : `<select class="inline-select" style="font-size:11px" onchange="updateVerifEstado(${v.id},this.value)">
                             ${['Pendiente','En proceso','OK','Observado','No Apto'].map(o => `<option value="${o}" ${v.resultado === o ? 'selected' : ''}>${o === 'OK' ? 'OK / Apto' : o}</option>`).join('')}
                            </select>`}
                     ${counterHtml ? `<span style="display:block">${counterHtml}</span>` : ''}
-                    ${v.selector_verif ? `<span class="psico-quien"><i class="fas fa-user" style="font-size:8px"></i> Realizó: <strong>${v.selector_verif}</strong></span>` : ''}
-                    ${v.observaciones ? `<span class="psico-quien">Obs: ${v.observaciones}</span>` : ''}
+                    ${v.selector_verif ? `<span class="psico-quien"><i class="fas fa-user" style="font-size:8px"></i> Realizó: <strong>${esc(v.selector_verif)}</strong></span>` : ''}
+                    ${v.observaciones ? `<span class="psico-quien">Obs: ${esc(v.observaciones)}</span>` : ''}
                     ${!isLocked ? `<button onclick="removeVerif(${v.id})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:9px">✕</button>` : ''}
                 </span>
             </div>`;
@@ -127,25 +127,72 @@ function inCategoria(b) {
 //  RENDER DISPATCH: pipeline (tabla) vs choferes (fichas)
 // ══════════════════════════════════════════════
 function refreshView() {
-    // filteredIds es una lista fija de ids: si hay un filtro activo se recalcula
-    // antes de dibujar, así las búsquedas creadas/reabiertas/sustituidas después
-    // de filtrar (ej: dentro del panel de un selector) también aparecen.
-    if (filteredIds) filteredIds = computeFilteredIds();
+    // Los filtros se recalculan siempre antes de dibujar (es barato): así las búsquedas
+    // creadas/reabiertas después de filtrar también aparecen, y la vista aislada de un
+    // selector nunca muestra de golpe todo el equipo sin filtrar.
+    filteredIds = computeFilteredIds();
     if (currentCategoria === 'choferes') { renderFichas(); }
     else { renderTable(); }
+}
+
+// Después de editar UNA búsqueda: redibuja solo su fila en vez de la tabla entera
+// (antes cada cambio volvía a armar todas las filas y la pantalla se tildaba).
+function refreshBusqueda(id) {
+    if (!id || currentCategoria !== 'general') { refreshView(); return; }
+    filteredIds = computeFilteredIds();
+    const row = document.getElementById('row-' + id);
+    const b = busquedas.find(x => x.id === id);
+    if (!row || !b || !filteredIds.has(id)) { renderTable(); return; }
+    const tpl = document.createElement('template');
+    tpl.innerHTML = renderRow(b).trim();
+    row.replaceWith(tpl.content.firstElementChild);
+    renderKPIs();
+}
+
+// ── Paginado: se dibujan de a tandas para no armar cientos de filas de una ──
+const PIPELINE_PAGINA = 25;
+const FICHAS_PAGINA   = 15;
+let pipelineVisibles = PIPELINE_PAGINA;
+let fichasVisibles   = FICHAS_PAGINA;
+function resetPaginado() { pipelineVisibles = PIPELINE_PAGINA; fichasVisibles = FICHAS_PAGINA; }
+function mostrarMas(cual, todas) {
+    if (cual === 'fichas') fichasVisibles = todas ? Infinity : fichasVisibles + FICHAS_PAGINA;
+    else pipelineVisibles = todas ? Infinity : pipelineVisibles + PIPELINE_PAGINA;
+    refreshView();
+}
+function mostrarMasHtml(cual, visibles, total) {
+    if (visibles >= total) return '';
+    const paso = cual === 'fichas' ? FICHAS_PAGINA : PIPELINE_PAGINA;
+    return `<div class="mostrar-mas">Mostrando ${visibles} de ${total}
+        <button class="btn-sm" onclick="mostrarMas('${cual}')">Mostrar ${Math.min(paso, total - visibles)} más</button>
+        <button class="btn-sm" onclick="mostrarMas('${cual}', true)" title="Puede tardar con muchas búsquedas">Mostrar todas</button></div>`;
 }
 
 // ══════════════════════════════════════════════
 //  RENDER TABLE
 // ══════════════════════════════════════════════
+function isLockedBusqueda(b) {
+    return (b.status === 'Cerrada' || b.status === 'Finalizada' || b.status === 'Sustituida') && !isAdmin();
+}
+
 function renderTable() {
     const body = document.getElementById('table-body');
     const base = busquedas.filter(inCategoria);
-    const list = filteredIds ? base.filter(b => filteredIds.includes(b.id)) : base;
-    const locked = (b) => (b.status === 'Cerrada' || b.status === 'Finalizada' || b.status === 'Sustituida') && !isAdmin();
+    const list = filteredIds ? base.filter(b => filteredIds.has(b.id)) : base;
+    const visibles = list.slice(0, pipelineVisibles);
 
-    body.innerHTML = list.map(b => {
-        const isLocked = locked(b);
+    body.innerHTML = visibles.length
+        ? visibles.map(renderRow).join('')
+        : `<tr><td colspan="8"><span class="tip">No hay búsquedas para estos filtros.</span></td></tr>`;
+    const mas = mostrarMasHtml('pipeline', visibles.length, list.length);
+    if (mas) body.insertAdjacentHTML('beforeend', `<tr class="row-mostrar-mas"><td colspan="8">${mas}</td></tr>`);
+    renderKPIs();
+    updateDeptoFilter();
+}
+
+// HTML de una fila del Pipeline (se usa al dibujar la tabla y al refrescar una sola fila).
+function renderRow(b) {
+        const isLocked = isLockedBusqueda(b);
         const diasEnEmpresa = b.ingreso ? daysDiff(b.ingreso, b.fecha_baja || null) : 0;
         const cantComentarios = (b.estado_busqueda || []).length;
 
@@ -162,7 +209,7 @@ function renderTable() {
                         tlHtml = `<div class="cand-timeline">
                             <span class="cand-tl-dot cand-tl-dot-blue"></span>
                             <div class="cand-tl-line"></div>
-                            <span class="cand-tl-badge ${vencido ? 'cand-tl-badge-alerta' : 'cand-tl-badge-wait'}">${vencido ? '⚠' : '⏳'} ${d === 0 ? 'Hoy' : d + 'hd esperando'}${descuento > 0 ? ` <span class="cand-tl-desc" title="${(c.demora_descuento_motivo || '').replace(/"/g, '&quot;')}">(-${descuento}hd descontado)</span>` : ''}</span>
+                            <span class="cand-tl-badge ${vencido ? 'cand-tl-badge-alerta' : 'cand-tl-badge-wait'}">${vencido ? '⚠' : '⏳'} ${d === 0 ? 'Hoy' : d + 'hd esperando'}${descuento > 0 ? ` <span class="cand-tl-desc" title="${esc(c.demora_descuento_motivo)}">(-${descuento}hd descontado)</span>` : ''}</span>
                             <div class="cand-tl-line"></div>
                             <span class="cand-tl-dot cand-tl-dot-green" style="opacity:.3"></span>
                         </div>
@@ -174,9 +221,9 @@ function renderTable() {
                                 <input type="number" min="0" class="inline-input" style="width:50px;border:1px solid var(--border);background:#fff" id="justif-dias-${c.id}" value="${descuento || 0}">
                                 <span style="font-size:10px;color:var(--muted)">hd a descontar</span>
                             </div>
-                            <input type="text" class="inline-input" style="border:1px solid var(--border);background:#fff;margin-top:4px;width:100%" id="justif-motivo-${c.id}" placeholder="Motivo (ej: candidato de licencia, feriado)" value="${(c.demora_descuento_motivo || '').replace(/"/g, '&quot;')}">
+                            <input type="text" class="inline-input" style="border:1px solid var(--border);background:#fff;margin-top:4px;width:100%" id="justif-motivo-${c.id}" placeholder="Motivo (ej: candidato de licencia, feriado)" value="${esc(c.demora_descuento_motivo)}">
                             <button class="btn-sm" style="margin-top:5px" onclick="guardarJustificacion(${c.id})">Guardar</button>
-                        </details>` : (descuento > 0 ? `<div class="tip" style="font-size:10px;margin-top:3px">Demora justificada: -${descuento}hd (${c.demora_descuento_motivo || 'sin motivo'})</div>` : '')}`;
+                        </details>` : (descuento > 0 ? `<div class="tip" style="font-size:10px;margin-top:3px">Demora justificada: -${descuento}hd (${esc(c.demora_descuento_motivo || 'sin motivo')})</div>` : '')}`;
                     } else if (c.estado === 'Entrevista' && c.fecha_entrevista) {
                         const d = daysDiff(c.fecha_envio, c.fecha_entrevista);
                         tlHtml = `<div class="cand-timeline">
@@ -243,8 +290,8 @@ function renderTable() {
                 }
 
                 return `<div class="cand-item">
-                    <div class="cand-nombre">${c.nombre}</div>
-                    ${isLocked ? `<div style="font-size:11px;color:var(--muted)">${c.estado}</div>` : `
+                    <div class="cand-nombre">${esc(c.nombre)}</div>
+                    ${isLocked ? `<div style="font-size:11px;color:var(--muted)">${esc(c.estado)}</div>` : `
                     <select class="inline-select" style="margin-top:3px;font-size:12px" onchange="updateCandEstado(${c.id},this.value)">
                         <option value="Enviado" ${c.estado === 'Enviado' ? 'selected' : ''}>✉ Enviado al área</option>
                         <option value="Entrevista" ${c.estado === 'Entrevista' ? 'selected' : ''}>🤝 En entrevista</option>
@@ -263,7 +310,7 @@ function renderTable() {
         const archivosHtml = b.archivos.length > 0
             ? b.archivos.map(a => `
                 <div class="pdf-item">
-                    <span class="pdf-item-name" onclick="abrirPDF('${a.url}')"><i class="fas fa-file-pdf" style="font-size:10px"></i> ${a.nombre}</span>
+                    <span class="pdf-item-name" onclick="abrirPDF('${a.url}')"><i class="fas fa-file-pdf" style="font-size:10px"></i> ${esc(a.nombre)}</span>
                     ${!isLocked ? `<button onclick="eliminarPDF(${a.id},'${a.url}')" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:10px">✕</button>` : ''}
                 </div>`).join('')
             : `<span class="tip">Sin archivos</span>`;
@@ -286,10 +333,10 @@ function renderTable() {
                 <div class="estado-entry">
                     <span class="d-badge">D${idx + 1}</span>
                     <div class="estado-entry-body">
-                        <div class="estado-entry-text">${e.texto}</div>
+                        <div class="estado-entry-text">${esc(e.texto)}</div>
                         <div class="estado-entry-meta">
                             <i class="fas fa-clock" style="font-size:9px"></i>
-                            ${daysDiff(e.fecha) === 0 ? 'Hoy' : 'hace ' + daysDiff(e.fecha) + 'hd'} · ${e.fecha}
+                            ${daysDiff(e.fecha) === 0 ? 'Hoy' : 'hace ' + daysDiff(e.fecha) + 'hd'} · ${esc(e.fecha)}
                             ${isAdmin() ? `<button onclick="removeEstadoEntry(${e.id})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:10px;margin-left:4px" title="Solo admin">✕</button>` : ''}
                         </div>
                     </div>
@@ -312,19 +359,19 @@ function renderTable() {
             </div>` : ''}`;
 
         const reopenedTag = b.reopened_from
-            ? `<div style="margin-top:3px;font-size:10px;color:var(--blue);font-weight:600"><i class="fas fa-redo" style="font-size:8px"></i> Reapertura de ${b.reopened_from}</div>`
+            ? `<div style="margin-top:3px;font-size:10px;color:var(--blue);font-weight:600"><i class="fas fa-redo" style="font-size:8px"></i> Reapertura de ${esc(b.reopened_from)}</div>`
             : '';
         const reabiertaBadge = b.reopened_from
-            ? `<span class="tag tag-reabierta" title="Esta búsqueda reemplaza a ${b.reopened_from}"><i class="fas fa-redo" style="font-size:9px"></i> Reabierta</span>`
+            ? `<span class="tag tag-reabierta" title="Esta búsqueda reemplaza a ${esc(b.reopened_from)}"><i class="fas fa-redo" style="font-size:9px"></i> Reabierta</span>`
             : '';
 
         return `
         <tr id="row-${b.id}" class="${isLocked ? 'row-locked' : ''} ${b.reopened_from ? 'row-reabierta' : ''}">
             <td>
-                <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--muted)">${b.numero}</div>
-                <span class="motivo-chip ${motivoClass(b.motivo)}">${b.motivo}</span>
+                <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--muted)">${esc(b.numero)}</div>
+                <span class="motivo-chip ${motivoClass(b.motivo)}">${esc(b.motivo)}</span>
                 <div style="margin-top:5px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
-                    <span class="tag ${tagClass(b.status)}">${b.status}</span>
+                    <span class="tag ${tagClass(b.status)}">${esc(b.status)}</span>
                     ${reabiertaBadge}
                 </div>
                 <div style="margin-top:4px;font-size:11px;color:var(--muted)">Inicio: ${b.inicio}</div>
@@ -344,19 +391,18 @@ function renderTable() {
             </td>
             <td>
                 ${isLocked
-                    ? `<div style="font-weight:700;font-size:13px">${b.puesto}</div>`
-                    : `<input class="inline-input" value="${b.puesto || ''}" placeholder="Puesto/Cargo" onchange="updateField(${b.id},'puesto',this.value)" style="font-weight:700;font-size:13px;width:100%">`}
-                <div style="font-size:11px;color:var(--muted);margin-top:2px">${b.depto} · <span style="padding:1px 5px;border-radius:3px;background:${b.tipo === 'Staff' ? '#cfe2ff' : '#d1e7dd'};color:${b.tipo === 'Staff' ? '#0a367a' : '#0a3622'};font-weight:700">${b.tipo}</span></div>
+                    ? `<div style="font-weight:700;font-size:13px">${esc(b.puesto)}</div>`
+                    : `<input class="inline-input" value="${esc(b.puesto)}" placeholder="Puesto/Cargo" onchange="updateField(${b.id},'puesto',this.value)" style="font-weight:700;font-size:13px;width:100%">`}
+                <div style="font-size:11px;color:var(--muted);margin-top:2px">${esc(b.depto)} · <span style="padding:1px 5px;border-radius:3px;background:${b.tipo === 'Staff' ? '#cfe2ff' : '#d1e7dd'};color:${b.tipo === 'Staff' ? '#0a367a' : '#0a3622'};font-weight:700">${esc(b.tipo)}</span></div>
                 <div style="margin-top:6px;font-size:12px">
                     Selector:
-                    ${isLocked ? `<strong>${b.selector}</strong>` : `<select class="inline-select" onchange="updateField(${b.id},'selector',this.value)">${SELECTORES.map(s => `<option ${b.selector === s ? 'selected' : ''}>${s}</option>`).join('')}</select>`}
+                    ${isLocked ? `<strong>${esc(b.selector)}</strong>` : `<select class="inline-select" onchange="updateField(${b.id},'selector',this.value)">${SELECTORES.map(s => `<option ${b.selector === s ? 'selected' : ''}>${s}</option>`).join('')}</select>`}
                 </div>
                 <div style="margin-top:4px;font-size:12px;display:flex;align-items:center;gap:4px">
                     <span style="color:var(--muted)">Nivel:</span>
                     ${isLocked
-                        ? `<strong>${b.nivel}</strong>`
-                        : `<input class="inline-input" value="${b.nivel || ''}" placeholder="Nivel del cargo…" list="nivel-datalist-inline" onchange="updateField(${b.id},'nivel',this.value)" style="font-size:12px;font-weight:600;flex:1">
-                           <datalist id="nivel-datalist-inline"><option>Otros</option><option>Jefe/Encargado</option><option>Gerente/Director</option></datalist>`}
+                        ? `<strong>${esc(b.nivel)}</strong>`
+                        : `<input class="inline-input" value="${esc(b.nivel)}" placeholder="Nivel del cargo…" list="nivel-datalist-inline" onchange="updateField(${b.id},'nivel',this.value)" style="font-size:12px;font-weight:600;flex:1">`}
                 </div>
                 <div style="margin-top:6px;font-size:12px">
                     <span style="color:var(--muted)">Herramientas:</span>
@@ -377,9 +423,9 @@ function renderTable() {
                            <input class="inline-input" type="number" value="${b.sueldo || ''}" placeholder="Monto ARS…" onchange="updateField(${b.id},'sueldo',parseFloat(this.value)||0)" style="font-weight:700;font-size:13px;color:var(--green);width:100%">
                        </div>`}
                 ${isLocked
-                    ? `<div style="font-size:11px;font-weight:700;background:#ece9e3;border-radius:4px;padding:2px 6px;display:inline-block;margin-top:2px">${b.jornada || '—'}</div>`
-                    : `<input class="inline-input" value="${b.jornada || ''}" placeholder="Jornada…" onchange="updateField(${b.id},'jornada',this.value)" style="font-size:12px;font-weight:700;background:#ece9e3;border-radius:4px;padding:2px 6px;width:100%;margin-top:2px">`}
-                <div><span class="ubic-pill">📍 ${b.ubicacion}</span></div>
+                    ? `<div style="font-size:11px;font-weight:700;background:#ece9e3;border-radius:4px;padding:2px 6px;display:inline-block;margin-top:2px">${esc(b.jornada || '—')}</div>`
+                    : `<input class="inline-input" value="${esc(b.jornada)}" placeholder="Jornada…" onchange="updateField(${b.id},'jornada',this.value)" style="font-size:12px;font-weight:700;background:#ece9e3;border-radius:4px;padding:2px 6px;width:100%;margin-top:2px">`}
+                <div><span class="ubic-pill">📍 ${esc(b.ubicacion)}</span></div>
             </td>
             <td>
                 ${estadoHtml}
@@ -405,8 +451,8 @@ function renderTable() {
             <td>
                 <div class="section-hdr">Candidato que ingresó</div>
                 ${isLocked
-                    ? `<div style="font-weight:700;color:var(--green)">${b.ingreso_nombre || '—'}</div><div style="font-size:11px;color:var(--muted)">${b.ingreso || ''}</div>`
-                    : `<input class="inline-input" value="${b.ingreso_nombre || ''}" placeholder="Nombre del ingresado" onchange="updateField(${b.id},'ingreso_nombre',this.value)" style="font-weight:700;color:var(--green)">
+                    ? `<div style="font-weight:700;color:var(--green)">${esc(b.ingreso_nombre || '—')}</div><div style="font-size:11px;color:var(--muted)">${b.ingreso || ''}</div>`
+                    : `<input class="inline-input" value="${esc(b.ingreso_nombre)}" placeholder="Nombre del ingresado" onchange="updateField(${b.id},'ingreso_nombre',this.value)" style="font-weight:700;color:var(--green)">
                     <div style="margin-top:5px">
                         <label style="font-size:11px;color:var(--muted)">Fecha de ingreso</label>
                         <input type="date" class="inline-input" value="${b.ingreso || ''}" onchange="updateField(${b.id},'ingreso',this.value)">
@@ -422,7 +468,7 @@ function renderTable() {
                 <div class="sep" style="margin:8px 0"></div>
                 <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
                     ${isLocked
-                        ? `<span class="tag ${tagClass(b.status)}">${b.status}</span>`
+                        ? `<span class="tag ${tagClass(b.status)}">${esc(b.status)}</span>`
                         : `<select class="inline-select" onchange="updateField(${b.id},'status',this.value)">
                             ${['Proceso', 'Cerrada', 'Pausada', 'Finalizada', 'Sustituida'].map(s => `<option ${b.status === s ? 'selected' : ''}>${s}</option>`).join('')}
                            </select>`}
@@ -432,9 +478,6 @@ function renderTable() {
                 </div>
             </td>
         </tr>`;
-    }).join('');
-    renderKPIs();
-    updateDeptoFilter();
 }
 
 // ══════════════════════════════════════════════
@@ -460,10 +503,10 @@ function fechaNacMax() {
 function buildFichaTableHtml(c, b) {
     const isLocked = (b.status === 'Cerrada' || b.status === 'Finalizada' || b.status === 'Sustituida') && !isAdmin();
     const inp = (field, val, type = 'text', ph = '', extra = '') => isLocked
-        ? `<span>${val || '—'}</span>`
-        : `<input class="ficha-input" type="${type}" value="${val || ''}" placeholder="${ph}" ${extra} onchange="updateFichaField(${c.id},'${field}',this.value)">`;
+        ? `<span>${esc(val || '—')}</span>`
+        : `<input class="ficha-input" type="${type}" value="${esc(val)}" placeholder="${ph}" ${extra} onchange="updateFichaField(${c.id},'${field}',this.value)">`;
     const sel = (field, val, opts) => isLocked
-        ? `<span>${val || 'Pendiente'}</span>`
+        ? `<span>${esc(val || 'Pendiente')}</span>`
         : `<select class="ficha-input" onchange="updateFichaField(${c.id},'${field}',this.value)">${opts.map(o => `<option value="${o}" ${(val || 'Pendiente') === o ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
 
     const resChofer = c.resultado_chofer || 'Pendiente';
@@ -520,7 +563,7 @@ function buildFichaTableHtml(c, b) {
                 <td colspan="12">
                     <div class="ficha-estado-inner">
                         <span style="font-weight:800;text-transform:uppercase;letter-spacing:.5px;font-size:11px">Estado:</span>
-                        ${isLocked ? `<strong>${estadoTexto}</strong>` : `
+                        ${isLocked ? `<strong>${esc(estadoTexto)}</strong>` : `
                             <select class="ficha-input" style="width:auto;font-weight:700" onchange="updateCandChoferResultado(${c.id},this.value)">
                                 <option value="Pendiente" ${resChofer === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
                                 <option value="Para ingresar" ${resChofer === 'Para ingresar' ? 'selected' : ''}>Para ingresar</option>
@@ -568,7 +611,7 @@ function renderFichaCard(c, b) {
     const archivosHtml = (b.archivos || []).length > 0
         ? b.archivos.map(a => `
             <div class="pdf-item">
-                <span class="pdf-item-name" onclick="abrirPDF('${a.url}')"><i class="fas fa-file-pdf" style="font-size:10px"></i> ${a.nombre}</span>
+                <span class="pdf-item-name" onclick="abrirPDF('${a.url}')"><i class="fas fa-file-pdf" style="font-size:10px"></i> ${esc(a.nombre)}</span>
                 ${!isLocked ? `<button onclick="eliminarPDF(${a.id},'${a.url}')" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:10px">✕</button>` : ''}
             </div>`).join('')
         : `<span class="tip" style="font-size:11px">Sin archivos PDF de esta búsqueda</span>`;
@@ -578,10 +621,10 @@ function renderFichaCard(c, b) {
         <div class="ficha-card-hdr">
             <div>
                 <div class="ficha-card-puesto">
-                    <i class="fas fa-truck" style="font-size:11px;color:var(--muted)"></i> ${b.puesto}
-                    <span class="tag ${tagClass(b.status)}">${b.status}</span>
+                    <i class="fas fa-truck" style="font-size:11px;color:var(--muted)"></i> ${esc(b.puesto)}
+                    <span class="tag ${tagClass(b.status)}">${esc(b.status)}</span>
                 </div>
-                <div class="ficha-card-meta">${b.numero} · Selector: <strong>${b.selector}</strong> · <span class="motivo-chip ${motivoClass(b.motivo)}">${b.motivo}</span></div>
+                <div class="ficha-card-meta">${esc(b.numero)} · Selector: <strong>${esc(b.selector)}</strong> · <span class="motivo-chip ${motivoClass(b.motivo)}">${esc(b.motivo)}</span></div>
             </div>
             <div class="ficha-card-actions">
                 ${!isLocked ? `<button class="btn-sm btn-danger" onclick="removeCand(${c.id})" title="Eliminar postulante"><i class="fas fa-trash" style="font-size:10px"></i></button>` : ''}
@@ -609,7 +652,7 @@ function renderAsignarBusquedaBox(candId) {
     <div class="ficha-asignar-box">
         <span style="font-size:11px;font-weight:700;color:#7c3d00;white-space:nowrap">Asignar a búsqueda:</span>
         <select class="inline-select" id="asignar-sel-${candId}">
-            ${opts.map(b => `<option value="${b.id}">${b.puesto} · ${b.selector} (${b.numero})</option>`).join('')}
+            ${opts.map(b => `<option value="${b.id}">${esc(b.puesto)} · ${esc(b.selector)} (${esc(b.numero)})</option>`).join('')}
         </select>
         <button class="btn-sm" onclick="asignarCandidatoABusqueda(${candId})"><i class="fas fa-link" style="font-size:9px"></i> Asignar</button>
     </div>`;
@@ -630,7 +673,10 @@ async function updateCandSelector(candId, selector) {
     const { data, error } = await sb.from('candidatos').update({ selector: selector || null }).eq('id', candId).select();
     if (error) { toast('Error al asignar selector: ' + (error.message || error.code), true); return; }
     if (!data || data.length === 0) { toast('No se asignó (revisar policy UPDATE en candidatos)', true); return; }
-    await loadData(); refreshView(); toast('Selector asignado ✓');
+    // Es un postulante sin asignar: se actualiza en memoria, sin recargar todas las búsquedas.
+    const c = unassignedCandidatos.find(x => x.id === candId);
+    if (c) Object.assign(c, data[0]); else await loadData(busquedaIdDeCandidato(candId));
+    refreshView(); toast('Selector asignado ✓');
 }
 
 // Descuenta días hábiles del conteo de espera de un candidato que no dependen del equipo (ej: candidato de licencia, feriado del sector).
@@ -640,12 +686,13 @@ async function guardarJustificacion(candId) {
     const { data, error } = await sb.from('candidatos').update({ demora_descuento_dias: dias, demora_descuento_motivo: motivo || null }).eq('id', candId).select();
     if (error) { toast('Falta la columna "demora_descuento_dias"/"demora_descuento_motivo" en candidatos (Supabase)', true); return; }
     if (!data || data.length === 0) { toast('No se guardó (revisar policy UPDATE en candidatos)', true); return; }
-    await loadData(busquedaIdDeCandidato(candId)); refreshView(); toast('Demora justificada ✓');
+    const bid = busquedaIdDeCandidato(candId);
+    await loadData(bid); refreshBusqueda(bid); toast('Demora justificada ✓');
 }
 
 function renderFichas() {
     const base = busquedas.filter(b => catOf(b) === 'choferes');
-    const list = filteredIds ? base.filter(b => filteredIds.includes(b.id)) : base;
+    const list = filteredIds ? base.filter(b => filteredIds.has(b.id)) : base;
     const choferRes = document.getElementById('f-chofer-resultado')?.value || '';
 
     let cards = [];
@@ -677,7 +724,8 @@ function renderFichas() {
 
     const grid = document.getElementById('fichas-grid');
     grid.innerHTML = cards.length > 0
-        ? cards.map(({ c, b }) => renderFichaCard(c, b)).join('')
+        ? cards.slice(0, fichasVisibles).map(({ c, b }) => renderFichaCard(c, b)).join('')
+            + mostrarMasHtml('fichas', Math.min(fichasVisibles, cards.length), cards.length)
         : `<span class="tip">No hay postulantes cargados todavía. Usá "Nuevo Postulante" para cargar uno (podés asignarlo a una búsqueda más adelante).</span>`;
 
     updateDeptoFilter();
@@ -724,7 +772,7 @@ function applyFiltersDebounced() {
 }
 
 function applyFilters() {
-    filteredIds = computeFilteredIds();
+    resetPaginado();
     refreshView();
 }
 
@@ -751,7 +799,7 @@ function computeFilteredIds() {
                 if (!hay.includes(search)) return false;
             }
             return true;
-        }).map(b => b.id);
+        }).reduce((set, b) => set.add(b.id), new Set());
 }
 
 function updateDeptoFilter() {
@@ -760,6 +808,6 @@ function updateDeptoFilter() {
         .map(b => b.depto).filter(Boolean))];
     const sel = document.getElementById('f-depto');
     const cur = sel.value;
-    sel.innerHTML = '<option value="">Todos los dptos.</option>' + deptos.map(d => `<option ${d === cur ? 'selected' : ''}>${d}</option>`).join('');
+    sel.innerHTML = '<option value="">Todos los dptos.</option>' + deptos.map(d => `<option value="${esc(d)}" ${d === cur ? 'selected' : ''}>${esc(d)}</option>`).join('');
 }
 

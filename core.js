@@ -43,7 +43,19 @@ let selectorFiltroActivo = '';
 let vistaAislada = false;
 
 function isAdmin() { return currentProfile?.rol === 'admin'; }
-function today() { return new Date().toISOString().slice(0, 10); }
+// Fecha local (AAAA-MM-DD). toISOString() da la fecha UTC: en Argentina, después
+// de las 21 hs devolvía el día de mañana.
+function fechaLocalISO(d = new Date()) {
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+function today() { return fechaLocalISO(); }
+
+// Escapa texto cargado por usuarios antes de meterlo en el HTML (comentarios,
+// nombres, puestos…): sin esto, un texto con etiquetas se ejecutaba en la pantalla de todos.
+function esc(v) {
+    if (v === null || v === undefined) return '';
+    return String(v).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
 
 // Soledad (jefa de Selección Staff) ve su Pipeline/Fichas igual que cualquier
 // selector (acotado a lo suyo), pero además es la única que puede ver los
@@ -105,6 +117,7 @@ function renderSelectorChips() {
 function filtrarPorSelector(nombre) {
     if (vistaAislada) return;
     selectorFiltroActivo = nombre;
+    resetPaginado();
     renderSelectorChips();
     applyFilters(); // ya llama refreshView()
 }
@@ -116,7 +129,9 @@ function entrarVistaAislada(nombre) {
     vistaAislada = true;
     selectorFiltroActivo = nombre;
     aplicarVisibilidadPanelGeneral();
-    applyFilters();
+    // Antes solo se filtraba la tabla sin elegir la vista: si la última pantalla
+    // había sido Gráficos, quedaba Gráficos visible y la tabla se armaba oculta.
+    showView('pipeline', document.getElementById('nav-pipeline'));
 }
 
 // Botón "Volver a selección": sale de la vista aislada y vuelve a la landing
@@ -407,52 +422,161 @@ async function logout() { await sb.auth.signOut(); location.reload(); }
 
 async function loadProfile() {
     const { data: { user } } = await sb.auth.getUser();
+    if (!user) return false; // sesión vencida
     const { data, error } = await sb.from('profiles').select('*').eq('id', user.id).single();
-    if (error) { console.error('Error cargando perfil:', error); return; }
+    if (error) { console.error('Error cargando perfil:', error); return true; }
     currentProfile = data;
+    return true;
 }
 
-const BUSQUEDA_SELECT = '*, historial(*), estado_log(*), candidatos(*), psicotecnicos(*), verificaciones(*), archivos(*)';
+// "historial" no se usa para dibujar nada (solo se copia al reabrir, y ahí se pide
+// aparte), así que no se trae en la carga masiva: es una tabla relacionada menos.
+const BUSQUEDA_SELECT = '*, estado_log(*), candidatos(*), psicotecnicos(*), verificaciones(*), archivos(*)';
 
-// Trae TODAS las búsquedas (con sus datos anidados) desde Supabase. Es una consulta pesada
-// (6 tablas relacionadas) — se usa para la carga inicial y para altas/bajas de búsquedas
-// completas. Para editar un campo puntual de una búsqueda ya cargada, usar loadData(id).
-async function loadDataFull() {
-    const { data, error } = await sb
-        .from('busquedas')
-        .select(BUSQUEDA_SELECT)
-        .order('id', { ascending: false });
-    if (error) { console.error('Error cargando búsquedas:', error); toast('Error al cargar datos: ' + (error.message || error.code), true); return; }
-    busquedas = (data || []).map(mapRow);
-    const nums = busquedas.map(b => parseInt((b.numero || '').replace('SEL-', '')) || 0);
-    nroSeq = nums.length ? Math.max(...nums) + 1 : 1;
+// ── Carga liviana ──
+// Traer TODAS las búsquedas con 5 tablas anidadas en una sola consulta terminaba
+// cortada por el timeout de Supabase (y además Supabase devuelve máx. 1000 filas).
+// Ahora: por defecto se traen solo las activas (Proceso/Pausada) y las abiertas en los
+// últimos MESES_RECIENTES meses, en páginas chicas y con timeout propio. El historial
+// completo se pide a mano (botón del aviso) o al descargar el informe.
+const CARGA_PAGINA      = 100;
+const CARGA_TIMEOUT_MS  = 30000;
+const MESES_RECIENTES   = 6;
+let historialCompleto   = false;
+let datosCargados       = false;
+let errorCarga          = null;   // mensaje del último fallo de carga (para el aviso)
+let _cargaEnCurso       = null;   // evita dos cargas completas en paralelo
 
-    // Postulantes sin búsqueda asignada todavía (no vienen embebidos en "busquedas")
-    const { data: sinAsignar, error: errSA } = await sb
-        .from('candidatos')
-        .select('*')
-        .is('busqueda_id', null)
-        .order('id', { ascending: false });
-    if (errSA) console.error('Error cargando postulantes sin asignar:', errSA);
-    unassignedCandidatos = errSA ? [] : (sinAsignar || []);
+function fechaDesdeRecientes() {
+    const d = new Date(); d.setMonth(d.getMonth() - MESES_RECIENTES);
+    return fechaLocalISO(d);
+}
+
+function conTimeout(q) {
+    if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) q = q.abortSignal(AbortSignal.timeout(CARGA_TIMEOUT_MS));
+    return q;
+}
+function mensajeError(error) {
+    const m = (error && (error.message || error.code)) || 'error desconocido';
+    if (/abort|timeout|57014/i.test(m + (error?.code || ''))) return 'La consulta tardó demasiado (timeout)';
+    return m;
+}
+
+async function fetchBusquedasPaginado(completo) {
+    const out = [];
+    for (let from = 0; ; from += CARGA_PAGINA) {
+        let q = sb.from('busquedas').select(BUSQUEDA_SELECT);
+        if (!completo) q = q.or(`status.in.(Proceso,Pausada),inicio.gte.${fechaDesdeRecientes()}`); // filtros antes de order/range
+        q = q.order('id', { ascending: false }).range(from, from + CARGA_PAGINA - 1);
+        const { data, error } = await conTimeout(q);
+        if (error) throw error;
+        out.push(...(data || []));
+        if (!data || data.length < CARGA_PAGINA) break;
+    }
+    return out;
+}
+
+// Trae las búsquedas (livianas o el historial completo). Devuelve true si salió bien.
+// Si falla, se conservan los datos que ya había en memoria.
+async function loadDataFull(completo = historialCompleto) {
+    if (_cargaEnCurso) return _cargaEnCurso;
+    _cargaEnCurso = (async () => {
+        try {
+            const rows = await fetchBusquedasPaginado(completo);
+            busquedas = rows.map(mapRow);
+            historialCompleto = completo;
+
+            // El próximo número SEL-xxx sale de las últimas búsquedas creadas, no solo de
+            // las cargadas (con la carga liviana pueden faltar las viejas).
+            const { data: ult } = await conTimeout(sb.from('busquedas').select('numero').order('id', { ascending: false }).limit(50));
+            const nums = [...busquedas, ...(ult || [])].map(b => parseInt((b.numero || '').replace('SEL-', '')) || 0);
+            nroSeq = nums.length ? Math.max(...nums) + 1 : 1;
+
+            // Postulantes sin búsqueda asignada todavía (no vienen embebidos en "busquedas")
+            const { data: sinAsignar, error: errSA } = await conTimeout(sb
+                .from('candidatos').select('*').is('busqueda_id', null).order('id', { ascending: false }));
+            if (errSA) console.error('Error cargando postulantes sin asignar:', errSA);
+            else unassignedCandidatos = sinAsignar || [];
+
+            datosCargados = true;
+            errorCarga = null;
+            return true;
+        } catch (error) {
+            console.error('Error cargando búsquedas:', error);
+            errorCarga = mensajeError(error);
+            toast('Error al cargar datos: ' + errorCarga, true);
+            return false;
+        } finally {
+            _cargaEnCurso = null;
+            renderDataBanner();
+        }
+    })();
+    return _cargaEnCurso;
 }
 
 // Recarga los datos tras guardar un cambio. Si se pasa el id de una búsqueda puntual,
-// solo se vuelve a pedir ESA fila (con sus candidatos/psicotécnicos/etc.) en vez de las
-// 6 tablas relacionadas de TODAS las búsquedas — mucho más rápido para una edición suelta.
-// Sin id (o si la búsqueda no se encuentra en memoria), recarga todo como antes.
+// solo se vuelve a pedir ESA fila (con sus candidatos/psicotécnicos/etc.).
+// Sin id (o si la búsqueda no se encuentra en memoria), recarga todo.
 async function loadData(scopeId = null) {
     if (!scopeId) { await loadDataFull(); return; }
     const idx = busquedas.findIndex(b => b.id === scopeId);
     if (idx === -1) { await loadDataFull(); return; }
-    const { data, error } = await sb
+    const { data, error } = await conTimeout(sb
         .from('busquedas')
         .select(BUSQUEDA_SELECT)
         .eq('id', scopeId)
-        .maybeSingle();
-    if (error) { console.error('Error recargando búsqueda:', error); toast('Error al recargar: ' + (error.message || error.code), true); return; }
-    if (!data) { busquedas.splice(idx, 1); return; } // se borró entretanto
-    busquedas[idx] = mapRow(data);
+        .maybeSingle());
+    if (error) { console.error('Error recargando búsqueda:', error); toast('Error al recargar: ' + mensajeError(error), true); return; }
+    const i = busquedas.findIndex(b => b.id === scopeId); // pudo cambiar mientras se esperaba
+    if (i === -1) return;
+    if (!data) { busquedas.splice(i, 1); return; } // se borró entretanto
+    busquedas[i] = mapRow(data);
+}
+
+// Aplica en memoria los campos que devolvió un UPDATE de "busquedas" (sin volver a pedir
+// la búsqueda entera con sus tablas relacionadas).
+function aplicarCambiosBusqueda(row) {
+    const b = row && busquedas.find(x => x.id === row.id);
+    if (!b) return false;
+    Object.assign(b, row, { cp: row.enviado_sector });
+    return true;
+}
+
+// Botón "Actualizar" / "Cargar historial completo" / "Reintentar" del aviso.
+async function recargarDatos(completo = historialCompleto) {
+    const ok = await loadDataFull(completo);
+    if (!ok) return;
+    await checkAndFinalizeSearches();
+    const vista = vistaActual();
+    if (vista === 'pipeline' || vista === 'choferes') refreshView();
+    else showView(vista, document.getElementById('nav-' + vista));
+    toast(completo ? 'Historial completo cargado ✓' : 'Datos actualizados ✓');
+}
+function vistaActual() {
+    const ids = ['pipeline', 'choferes', 'stats', 'charts', 'analisis', 'informe'];
+    return ids.find(v => document.getElementById('nav-' + v)?.classList.contains('active')) || 'pipeline';
+}
+
+// Aviso arriba de las vistas: qué datos se están viendo y cómo traer más (o reintentar).
+function renderDataBanner() {
+    const el = document.getElementById('data-banner');
+    if (!el) return;
+    if (errorCarga) {
+        el.className = 'data-banner data-banner-error';
+        el.innerHTML = `<i class="fas fa-exclamation-triangle"></i>
+            <span>No se pudieron cargar los datos: <strong>${esc(errorCarga)}</strong>.${datosCargados ? ' Se muestran los últimos datos cargados.' : ''}</span>
+            <button class="btn-sm" onclick="recargarDatos(false)"><i class="fas fa-redo" style="font-size:9px"></i> Reintentar (solo activas)</button>`;
+        return;
+    }
+    if (!datosCargados) { el.className = 'data-banner hidden'; el.innerHTML = ''; return; }
+    el.className = 'data-banner';
+    el.innerHTML = historialCompleto
+        ? `<i class="fas fa-database"></i><span>Historial completo cargado · <strong>${busquedas.length}</strong> búsquedas.</span>
+           <button class="btn-sm" onclick="recargarDatos(false)">Volver a vista liviana</button>
+           <button class="btn-sm" onclick="recargarDatos(true)"><i class="fas fa-sync-alt" style="font-size:9px"></i> Actualizar</button>`
+        : `<i class="fas fa-bolt"></i><span>Vista liviana: <strong>${busquedas.length}</strong> búsquedas activas o abiertas en los últimos ${MESES_RECIENTES} meses. Para lo histórico, descargá el informe o cargá todo.</span>
+           <button class="btn-sm" onclick="recargarDatos(false)"><i class="fas fa-sync-alt" style="font-size:9px"></i> Actualizar</button>
+           <button class="btn-sm" onclick="recargarDatos(true)">Cargar historial completo</button>`;
 }
 
 // Busca a qué búsqueda pertenece un candidato/psicotécnico/verificación/comentario/archivo
@@ -488,20 +612,26 @@ async function checkAndFinalizeSearches() {
         b.status === 'Cerrada' && b.ingreso && daysDiff(b.ingreso, b.fecha_baja || null) >= 90
     );
     if (toFinalize.length === 0) return;
-    for (const b of toFinalize) {
+    // En paralelo (antes era uno por uno, esperando cada UPDATE antes de mostrar nada).
+    await Promise.all(toFinalize.map(async b => {
         const { error } = await sb.from('busquedas').update({ status: 'Finalizada' }).eq('id', b.id);
         if (!error) b.status = 'Finalizada';
-    }
+    }));
 }
 
 async function initDashboard() {
     document.getElementById('landing-screen').classList.add('hidden');
     document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('loading-screen').classList.remove('hidden');
-    await loadProfile();
-    await loadData();
-    await checkAndFinalizeSearches();
-    document.getElementById('loading-screen').classList.add('hidden');
+    // Los datos se bajan una sola vez: volver a la landing y entrar a otro selector
+    // ya no repite la descarga completa (para refrescar está el botón "Actualizar").
+    if (!datosCargados) {
+        document.getElementById('loading-screen').classList.remove('hidden');
+        const sesionOk = await loadProfile();
+        if (!sesionOk) { location.reload(); return; } // sesión vencida → vuelve al login
+        const ok = await loadDataFull();
+        if (ok) await checkAndFinalizeSearches();
+        document.getElementById('loading-screen').classList.add('hidden');
+    }
     document.getElementById('app').classList.remove('hidden');
     const esAdmin = isAdmin();
     const nombre = esAdmin ? '🔑 ' + (currentProfile?.nombre || 'Administrador') : '👤 ' + (currentProfile?.nombre || 'Selector');
@@ -517,8 +647,10 @@ async function initDashboard() {
     filteredIds = null;
     vistaAislada = false;
     selectorFiltroActivo = '';
+    resetPaginado();
     renderSelectorChips();
     aplicarVisibilidadPanelGeneral();
+    renderDataBanner();
 }
 
 async function initApp() {
